@@ -44,6 +44,7 @@ function coastSigned(x, z) {
   }
   return inside ? best : -best;
 }
+IE.coastSigned = coastSigned;
 IE.isLandPoly = (x, z) => { for (const k in IE.coast) if (inPoly(x, z, IE.coast[k])) return true; return false; };
 
 // ---------- Höhenraster ----------
@@ -79,6 +80,8 @@ function baseHeight(x, z) {
     if (d < v.r) { const t = 1 - d / v.r; h += v.h * Math.pow(t, 1.4) - (d < v.r * 0.08 ? (v.r * 0.08 - d) * 0.9 : 0); }
   }
   h *= 0.25 + 0.75 * ramp;
+  { const b = IE.base, d = Math.max(Math.abs(x - b.x) - b.hw, Math.abs(z - b.z) - b.hd, 0);
+    if (d < 140) h = h + (12 - h) * smooth(140, 10, d); }
   for (const c of IE.cities) {
     const d = Math.hypot(x - c.x, z - c.z);
     if (d < c.r + 150) { const t = smooth(c.r + 150, c.r + 15, d); h = h + (c.base - h) * t; }
@@ -370,7 +373,7 @@ IE.buildWorld = function (scene) {
     g.putImageData(img, 0, 0);
   }, [300, 300]);
   const water = new T.Mesh(new T.PlaneGeometry(18000, 18000), new T.MeshPhongMaterial({
-    color: 0x1b6f93, specular: 0xffffff, shininess: 120, normalMap: waterN, normalScale: new T.Vector2(0.35, 0.35), transparent: true, opacity: 0.88
+    color: 0x1b6f93, specular: 0xffffff, shininess: 120, normalMap: waterN, normalScale: new T.Vector2(0.35, 0.35), transparent: true, opacity: 0.88, side: T.DoubleSide
   }));
   water.rotation.x = -Math.PI / 2; water.position.y = 0; scene.add(water); IE.water = water; IE.waterN = waterN;
 
@@ -398,6 +401,8 @@ IE.buildWorld = function (scene) {
   }
 
   buildCities(scene);
+  buildBase(scene);
+  buildWrecks(scene);
   buildNature(scene);
   buildClouds(scene);
 };
@@ -438,7 +443,14 @@ function buildCities(scene) {
 
   // Sonderpunkte (Shops, Missionen) einsammeln -> dort keine Gebäude
   const reserve = {}; IE.cities.forEach(c => reserve[c.id] = []);
-  IE.shops.forEach(s => { const c = IE.cityById[s.city]; const p = IE.snapLand(c.x + s.dx, c.z + s.dz, c.x, c.z); s.x = p.x; s.z = p.z; reserve[s.city].push({ x: s.x, z: s.z, r: s.type === 'heli' ? 34 : 30 }); });
+  for (const cid of IE.boatShopCities) {
+    const c = IE.cityById[cid], hb = findHarbor(c); if (!hb) continue;
+    IE.shops.push({ type: 'boat', city: cid, harbor: hb, x: hb.land.x - hb.dx * 10, z: hb.land.z - hb.dz * 10, dx: 0, dz: 0, fixed: true });
+    reserve[cid].push({ x: hb.land.x - hb.dx * 12, z: hb.land.z - hb.dz * 12, r: 30 });
+    for (let t = 0; t < 30; t += 6) reserve[cid].push({ x: hb.land.x - hb.dx * t, z: hb.land.z - hb.dz * t, r: 16 });
+  }
+  IE.shops.forEach(s => { if (s.fixed) return; const c = IE.cityById[s.city]; const p = IE.snapLand(c.x + s.dx, c.z + s.dz, c.x, c.z); s.x = p.x; s.z = p.z; reserve[s.city].push({ x: s.x, z: s.z, r: s.type === 'heli' ? 34 : 30 }); });
+  IE.shops.forEach(s => { if (s.fixed) reserve[s.city].push({ x: s.x, z: s.z, r: 26 }); });
   const resolvePt = (o, def) => { const c = IE.cityById[o.city || def]; const p = IE.snapLand(c.x + (o.dx || 0), c.z + (o.dz || 0), c.x, c.z); o.x = p.x; o.z = p.z; return o; };
   IE.missions.forEach(m => {
     resolvePt(m, m.city); reserve[m.city].push({ x: m.x, z: m.z, r: 16 });
@@ -715,6 +727,9 @@ function buildShops(scene) {
                 bx + ext * (Math.abs(az) > 0.7 ? bw / (2 * ext) : bd / (2 * ext)), bz + ext * (Math.abs(az) > 0.7 ? bd / (2 * ext) : bw / (2 * ext)), y + bh);
       s.marker = marker(scene, s.x, y, s.z, s.type === 'car' ? 0x3aa0ff : 0xff4a3a);
       s.spawn = { x: s.x - az * 9, z: s.z + ax * 9, rot: rot + Math.PI / 2 };
+    } else if (s.type === 'boat') {
+      buildHarbor(scene, s);
+      continue;
     } else {
       const pad = add(scene, new T.CylinderGeometry(12, 12, 1, 32), new T.MeshLambertMaterial({ color: 0x8e9396 }), s.x, y + 0.2, s.z);
       const top = new T.Mesh(new T.CircleGeometry(11.5, 32), hmat); top.rotation.x = -Math.PI / 2; top.position.set(s.x, y + 0.72, s.z); top.receiveShadow = true; scene.add(top);
@@ -733,6 +748,130 @@ function buildShops(scene) {
   }
 }
 
+// ---------- Hafen ----------
+function findHarbor(c) {
+  let best = null;
+  for (let a = 0; a < 48; a++) {
+    const ang = a / 48 * Math.PI * 2, dx = Math.cos(ang), dz = Math.sin(ang);
+    let land = null;
+    for (let d = 10; d < c.r + 260; d += 4) {
+      const x = c.x + dx * d, z = c.z + dz * d, h = rawH(x, z);
+      if (h > 0.9) land = { x, z, d };
+      else if (h < -3 && land && d - land.d < 30) {
+        let ok = true; for (let k = 10; k <= 80; k += 10) if (rawH(x + dx * k, z + dz * k) > -2.5) ok = false;
+        if (ok && (!best || d < best.d)) best = { land: { x: land.x, z: land.z }, d, dx, dz };
+        break;
+      } else if (h < -3) break;
+    }
+  }
+  return best;
+}
+function buildHarbor(scene, s) {
+  const hb = s.harbor, dx = hb.dx, dz = hb.dz, rot = Math.atan2(dx, dz);
+  const L = hb.land, y = rawH(s.x, s.z);
+  // Gebäude "NAUTICA" landeinwärts
+  const bx = s.x - dx * 12, bz = s.z - dz * 12;
+  add(scene, new T.BoxGeometry(18, 7, 10), new T.MeshLambertMaterial({ color: 0xf0ece2 }), bx, y + 3.2, bz, rot);
+  add(scene, new T.BoxGeometry(19, 0.6, 11), new T.MeshLambertMaterial({ color: 0x1b5a8a }), bx, y + 6.9, bz, rot);
+  const sign = new T.Mesh(new T.PlaneGeometry(12, 3), new T.MeshBasicMaterial({ map: signTex('NAUTICA', '#0e3a5c', '#ffffff') }));
+  sign.position.set(bx + dx * 5.1, y + 5.2, bz + dz * 5.1); sign.rotation.y = rot; scene.add(sign);
+  IE.addBox(bx - 7, bz - 7, bx + 7, bz + 7, y + 7);
+  s.marker = marker(scene, s.x, y, s.z, 0x35d6e8); s.mx = s.x; s.mz = s.z;
+  // Steg
+  const len = 90, deck = 1.3, start = -6;
+  const wood = new T.MeshLambertMaterial({ color: 0x8a6a48 });
+  const pier = add(scene, new T.BoxGeometry(6, 0.5, len), wood, L.x + dx * (start + len / 2), deck - 0.25, L.z + dz * (start + len / 2), rot);
+  for (let t = start; t <= start + len; t += 6) {
+    const px = L.x + dx * t, pz = L.z + dz * t;
+    IE.addBox(px - 3.2, pz - 3.2, px + 3.2, pz + 3.2, deck, -6);
+    for (const sd of [-1, 1]) add(scene, new T.CylinderGeometry(0.25, 0.25, 8, 6), IE.mat.dark, px + dz * 2.8 * sd, deck - 4, pz - dx * 2.8 * sd, 0, false);
+  }
+  // Liegeplätze
+  s.slots = [];
+  for (let i = 0; i < 6; i++) {
+    const t = 18 + Math.floor(i / 2) * 22, sd = i % 2 ? 1 : -1;
+    const px = L.x + dx * t + dz * 9 * sd, pz = L.z + dz * t - dx * 9 * sd;
+    if (rawH(px, pz) < -1.8) s.slots.push({ x: px, z: pz, rot });
+  }
+  s.spawn = s.slots[0] || { x: L.x + dx * 40, z: L.z + dz * 40, rot };
+}
+
+// ---------- Militärbasis ----------
+function buildBase(scene) {
+  const B = IE.base, y = 12, M = IE.mat;
+  const olive = new T.MeshLambertMaterial({ color: 0x5d6448 }), sand = new T.MeshLambertMaterial({ color: 0xb9ad8a }), fence = new T.MeshLambertMaterial({ color: 0x7c7f7a });
+  // Boden: Beton
+  const g = new T.Mesh(new T.PlaneGeometry(B.hw * 2, B.hd * 2), new T.MeshLambertMaterial({ color: 0x8f8b7e, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
+  g.rotation.x = -Math.PI / 2; g.position.set(B.x, y + 0.05, B.z); g.receiveShadow = true; scene.add(g);
+  // Landebahn
+  const rw = canvasTex(64, 512, (c, w, h) => { c.fillStyle = '#35373a'; c.fillRect(0, 0, w, h); c.fillStyle = '#eee'; for (let i = 0; i < h; i += 40) c.fillRect(w / 2 - 2, i, 4, 22); c.fillRect(2, 0, 3, h); c.fillRect(w - 5, 0, 3, h); });
+  const run = new T.Mesh(new T.PlaneGeometry(26, B.hw * 1.8), new T.MeshLambertMaterial({ map: rw, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  run.rotation.x = -Math.PI / 2; run.rotation.z = Math.PI / 2; run.position.set(B.x, y + 0.08, B.z + B.hd * 0.55); scene.add(run);
+  // Zaun mit Tor (Westseite)
+  const seg = (x0, z0, x1, z1) => { const w = Math.abs(x1 - x0) || 0.4, d = Math.abs(z1 - z0) || 0.4; add(scene, new T.BoxGeometry(w, 4, d), fence, (x0 + x1) / 2, y + 2, (z0 + z1) / 2); IE.addBox(Math.min(x0, x1) - 0.2, Math.min(z0, z1) - 0.2, Math.max(x0, x1) + 0.2, Math.max(z0, z1) + 0.2, y + 4); };
+  const X0 = B.x - B.hw, X1 = B.x + B.hw, Z0 = B.z - B.hd, Z1 = B.z + B.hd;
+  seg(X0, Z0, X1, Z0); seg(X0, Z1, X1, Z1); seg(X1, Z0, X1, Z1); seg(X0, Z0, X0, B.z - 12); seg(X0, B.z + 12, X0, Z1);
+  // Wachtürme
+  for (const [tx, tz] of [[X0, Z0], [X1, Z0], [X0, Z1], [X1, Z1]]) {
+    for (const ox of [-1.5, 1.5]) for (const oz of [-1.5, 1.5]) add(scene, new T.BoxGeometry(0.3, 9, 0.3), M.dark, tx + ox, y + 4.5, tz + oz);
+    add(scene, new T.BoxGeometry(4.4, 2.6, 4.4), olive, tx, y + 10, tz); add(scene, new T.ConeGeometry(3.6, 1.6, 4), olive, tx, y + 12.1, tz, Math.PI / 4);
+  }
+  // Hangars
+  for (let i = 0; i < 3; i++) {
+    const hx = B.x - 90 + i * 45, hz = B.z - 55;
+    const hg = new T.CylinderGeometry(13, 13, 34, 20, 1, false, 0, Math.PI); hg.rotateZ(Math.PI / 2); hg.rotateY(Math.PI / 2);
+    const m = add(scene, hg, olive, hx, y, hz); m.rotation.y = Math.PI / 2;
+    IE.addBox(hx - 13, hz - 17, hx + 13, hz + 17, y + 12);
+  }
+  // Kontrollturm + Kasernen
+  add(scene, new T.BoxGeometry(8, 22, 8), sand, B.x + 100, y + 11, B.z - 60); add(scene, new T.BoxGeometry(11, 4, 11), M.glass, B.x + 100, y + 24, B.z - 60);
+  IE.addBox(B.x + 94, B.z - 66, B.x + 106, B.z - 54, y + 26);
+  for (let i = 0; i < 3; i++) { const kx = B.x + 40 + i * 24, kz = B.z - 70; add(scene, new T.BoxGeometry(18, 6, 10), sand, kx, y + 3, kz); IE.addBox(kx - 9, kz - 5, kx + 9, kz + 5, y + 6); }
+  // Flagge
+  add(scene, new T.CylinderGeometry(0.15, 0.15, 16, 6), M.white, X0 + 20, y + 8, B.z + 18);
+  const fl = canvasTex(96, 64, (c, w, h) => { c.fillStyle = '#009246'; c.fillRect(0, 0, w / 3, h); c.fillStyle = '#f1f2f1'; c.fillRect(w / 3, 0, w / 3, h); c.fillStyle = '#ce2b37'; c.fillRect(2 * w / 3, 0, w / 3, h); });
+  const flag = new T.Mesh(new T.PlaneGeometry(4.5, 3), new T.MeshBasicMaterial({ map: fl, side: T.DoubleSide })); flag.position.set(X0 + 22.3, y + 14.3, B.z + 18); scene.add(flag);
+  // Hubschrauberlandeplatz
+  const hp = new T.Mesh(new T.CircleGeometry(11, 32), new T.MeshLambertMaterial({ map: heliTex() })); hp.rotation.x = -Math.PI / 2; hp.position.set(B.x + 110, y + 0.12, B.z + 10); scene.add(hp);
+  // Sandsäcke
+  for (let i = 0; i < 8; i++) { const sx = X0 + 8, sz = B.z - 30 + i * 7.5; if (Math.abs(sz - B.z) < 14) continue; add(scene, new T.BoxGeometry(2, 1.3, 6), sand, sx, y + 0.65, sz); IE.addBox(sx - 1, sz - 3, sx + 1, sz + 3, y + 1.3); }
+  B.slots = {
+    tank: [{ x: B.x - 90, z: B.z - 20, rot: 0 }, { x: B.x - 45, z: B.z - 20, rot: 0 }, { x: B.x, z: B.z - 20, rot: 0 }],
+    jeep: [{ x: B.x + 40, z: B.z - 45, rot: Math.PI / 2 }, { x: B.x + 40, z: B.z - 38, rot: Math.PI / 2 }, { x: X0 + 25, z: B.z - 6, rot: Math.PI / 2 }],
+    heli: [{ x: B.x + 110, z: B.z + 10, y: y + 0.15 }],
+    soldiers: []
+  };
+  for (let i = 0; i < 14; i++) B.slots.soldiers.push({ x: B.x + (IE.hash(i, 11) - 0.5) * B.hw * 1.7, z: B.z + (IE.hash(i, 12) - 0.5) * B.hd * 1.5 });
+  B.slots.soldiers.push({ x: X0 + 5, z: B.z - 8 }, { x: X0 + 5, z: B.z + 8 });
+}
+
+// ---------- Schiffswracks ----------
+function buildWrecks(scene) {
+  IE.wrecks = [];
+  const rust = new T.MeshLambertMaterial({ color: 0x5a3e2b }), rust2 = new T.MeshLambertMaterial({ color: 0x3f3a33 });
+  const chestM = new T.MeshStandardMaterial({ color: 0x6b4222, roughness: 0.8 }), goldM = new T.MeshStandardMaterial({ color: 0xf2c94c, emissive: 0x8a6a10, metalness: 0.8, roughness: 0.3 });
+  const hs = new T.Shape(); hs.moveTo(-14, -4); hs.lineTo(8, -4); hs.quadraticCurveTo(15, -2, 16, 0); hs.quadraticCurveTo(15, 2, 8, 4); hs.lineTo(-14, 4); hs.closePath();
+  const hull = new T.ExtrudeGeometry(hs, { depth: 6, bevelEnabled: false }); hull.rotateX(-Math.PI / 2);
+  let tries = 0, id = 0;
+  while (IE.wrecks.length < 14 && tries++ < 40000) {
+    const x = G.x0 + rnd() * G.w, z = G.z0 + rnd() * G.d, h = rawH(x, z);
+    if (h > -12 || h < -36) continue;
+    if (IE.wrecks.some(w => Math.hypot(w.x - x, w.z - z) < 380)) continue;
+    const grp = new T.Group(); grp.position.set(x, h - 1.2, z); grp.rotation.set(0, rnd() * 6.28, 0.35 + rnd() * 0.3);
+    const hm = new T.Mesh(hull, rust); grp.add(hm);
+    const cab = new T.Mesh(new T.BoxGeometry(6, 4, 5), rust2); cab.position.set(-7, 8, 0); grp.add(cab);
+    const mast = new T.Mesh(new T.CylinderGeometry(0.4, 0.5, 12, 6), rust2); mast.position.set(3, 11, 0); mast.rotation.z = 0.5; grp.add(mast);
+    scene.add(grp);
+    const cx = x + 6 * Math.cos(id), cz = z + 6 * Math.sin(id), cy = rawH(cx, cz);
+    const chest = new T.Group(); chest.position.set(cx, cy + 0.2, cz);
+    const b = new T.Mesh(new T.BoxGeometry(1.4, 0.8, 0.9), chestM); b.position.y = 0.4; chest.add(b);
+    const lid = new T.Mesh(new T.BoxGeometry(1.45, 0.25, 0.95), goldM); lid.position.y = 0.92; chest.add(lid);
+    const glow = new T.Mesh(new T.SphereGeometry(1.6, 12, 8), new T.MeshBasicMaterial({ color: 0xffd86b, transparent: true, opacity: 0.18, depthWrite: false })); glow.position.y = 0.6; chest.add(glow);
+    scene.add(chest);
+    IE.wrecks.push({ id: id++, x, z, cx, cy, cz, chest, amount: 8000 + Math.round(rnd() * 22) * 1000 });
+  }
+}
+
 // ---------- Natur ----------
 function buildNature(scene) {
   const cyp = [], pine = [], round = [];
@@ -743,6 +882,7 @@ function buildNature(scene) {
     if (IE.nearRoad(x, z)) continue;
     let inCity = false; for (const c of IE.cities) if (Math.hypot(x - c.x, z - c.z) < c.r + 25) { inCity = true; break; }
     if (inCity) continue;
+    if (Math.abs(x - IE.base.x) < IE.base.hw + 40 && Math.abs(z - IE.base.z) < IE.base.hd + 40) continue;
     const n = fbm(x * 0.01 + 50, z * 0.01, 2); if (n < 0.42) continue;
     // Gruppen
     const cnt = 1 + (rnd() * 6 | 0);

@@ -45,6 +45,11 @@ const profiles = {
   limo:  { L: 4.6, W: 1.8, r: 0.34, body: [[-2.3,0.32],[2.3,0.32],[2.32,0.8],[1.2,0.95],[0.5,1.42],[-1.2,1.42],[-1.9,1.0],[-2.32,0.95]], glass: [[1.15,0.98],[0.52,1.37],[-1.16,1.37],[-1.85,1.02]] },
   suv:   { L: 4.5, W: 1.92, r: 0.44, body: [[-2.25,0.5],[2.25,0.5],[2.27,1.15],[1.4,1.3],[0.9,1.92],[-2.1,1.92],[-2.27,1.3]], glass: [[1.36,1.34],[0.9,1.86],[-2.05,1.86],[-2.12,1.36]] },
   sport: { L: 4.4, W: 1.92, r: 0.34, body: [[-2.2,0.3],[2.2,0.3],[2.26,0.58],[0.9,0.86],[0.1,1.24],[-1.1,1.24],[-2.1,0.86],[-2.22,0.74]], glass: [[0.86,0.89],[0.12,1.2],[-1.05,1.2],[-1.9,0.89]] },
+  van:   { L: 4.9, W: 1.96, r: 0.36, body: [[-2.45,0.4],[2.45,0.4],[2.47,1.0],[2.1,1.25],[1.7,2.2],[-2.45,2.25]], glass: [[2.02,1.3],[1.7,2.08],[1.05,2.08],[1.05,1.3]] },
+  kombi: { L: 4.7, W: 1.82, r: 0.34, body: [[-2.35,0.33],[2.35,0.33],[2.37,0.82],[1.3,0.96],[0.6,1.45],[-2.25,1.45],[-2.37,0.95]], glass: [[1.25,0.99],[0.62,1.4],[-2.18,1.4],[-2.28,1.0]] },
+  pickup:{ L: 5.0, W: 1.96, r: 0.42, body: [[-2.5,0.5],[2.5,0.5],[2.52,1.2],[1.6,1.35],[1.0,1.95],[-0.4,1.95],[-0.5,1.3],[-2.5,1.3]], glass: [[1.52,1.38],[1.02,1.9],[-0.35,1.9],[-0.42,1.38]] },
+  retro: { L: 4.0, W: 1.7, r: 0.33, body: [[-2.0,0.35],[2.0,0.35],[2.02,0.75],[1.0,0.86],[0.3,1.32],[-0.8,1.33],[-1.6,0.96],[-2.02,0.8]], glass: [[0.95,0.89],[0.33,1.28],[-0.78,1.29],[-1.5,0.96]] },
+  cabrio:{ L: 4.3, W: 1.9, r: 0.34, body: [[-2.15,0.3],[2.15,0.3],[2.2,0.62],[0.7,0.8],[-1.7,0.84],[-2.15,0.78]], glass: [[0.72,0.8],[0.28,1.16],[0.18,1.16],[0.6,0.8]] },
   super: { L: 4.5, W: 2.02, r: 0.34, body: [[-2.25,0.28],[2.25,0.28],[2.32,0.5],[0.9,0.76],[0.0,1.12],[-1.0,1.12],[-2.2,0.8],[-2.26,0.7]], glass: [[0.86,0.79],[0.02,1.07],[-0.96,1.07],[-2.0,0.83]] }
 };
 const glassMat = new T.MeshStandardMaterial({ color: 0x1c2630, metalness: 0.7, roughness: 0.15 });
@@ -57,6 +62,7 @@ function extr(pts, depth, bevel) {
   g.translate(0, 0, -depth / 2); return g;
 }
 IE.makeCar = function (kind, color, police) {
+  if (kind === 'tank') return IE.makeTank(color);
   const P = profiles[kind];
   const outer = new T.Group(), g = new T.Group(); outer.add(g); g.rotation.y = -Math.PI / 2;
   const key = kind;
@@ -86,8 +92,88 @@ IE.makeCar = function (kind, color, police) {
   return { group: outer, wheels, L: P.L, W: P.W, bodyMat, siren };
 };
 
+// ---------- Panzer ----------
+IE.makeTank = function (color) {
+  const outer = new T.Group(), g = new T.Group(); outer.add(g); g.rotation.y = -Math.PI / 2;
+  const m = new T.MeshLambertMaterial({ color }), dk = lam(0x2a2a26);
+  const hull = new T.Mesh(new T.BoxGeometry(7, 1.3, 3.4), m); hull.position.y = 1.15; hull.castShadow = true; g.add(hull);
+  const glacis = new T.Mesh(new T.BoxGeometry(1.4, 0.9, 3.3), m); glacis.position.set(3.6, 1.2, 0); glacis.rotation.z = -0.5; g.add(glacis);
+  for (const sz of [-1, 1]) { const tr = new T.Mesh(new T.BoxGeometry(7.4, 1.1, 0.8), dk); tr.position.set(0, 0.55, sz * 1.75); tr.castShadow = true; g.add(tr); }
+  const turret = new T.Group(); turret.position.set(-0.4, 1.8, 0); g.add(turret);
+  const tb = new T.Mesh(new T.CylinderGeometry(1.5, 1.8, 0.9, 10), m); tb.position.y = 0.45; tb.castShadow = true; turret.add(tb);
+  const barrel = new T.Mesh(new T.CylinderGeometry(0.16, 0.2, 5, 10), dk); barrel.rotation.z = Math.PI / 2; barrel.position.set(3.3, 0.55, 0); turret.add(barrel);
+  const hatch = new T.Mesh(new T.CylinderGeometry(0.45, 0.45, 0.2, 10), dk); hatch.position.set(-0.4, 0.95, 0.5); turret.add(hatch);
+  // Pseudo-Räder (für die Fahrphysik)
+  const wheels = []; const wg = new T.CylinderGeometry(0.42, 0.42, 0.3, 10); wg.rotateX(Math.PI / 2);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const w = new T.Group(); w.position.set(sx * 2.6, 0.42, sz * 1.75); w.add(new T.Mesh(wg, dk)); w.add(new T.Mesh(wg, dk)); g.add(w); wheels.push(w); }
+  return { group: outer, wheels, L: 7, W: 3.4, bodyMat: m, siren: null, turret, tank: true };
+};
+
+// ---------- Boote ----------
+IE.makeBoat = function (def) {
+  const outer = new T.Group(), g = new T.Group(); outer.add(g); g.rotation.y = -Math.PI / 2;
+  const dims = { jetski: [3.2, 1.2, 0.8], gommone: [5, 2.2, 0.9], riva: [7.5, 2.4, 1.2], speed: [11, 2.8, 1.4], yacht: [22, 6, 3.2] }[def.kind];
+  const [L, W, H] = dims;
+  const sh = new T.Shape(); sh.moveTo(-L / 2, -W / 2); sh.lineTo(L * 0.15, -W / 2); sh.quadraticCurveTo(L * 0.45, -W * 0.35, L / 2, 0); sh.quadraticCurveTo(L * 0.45, W * 0.35, L * 0.15, W / 2); sh.lineTo(-L / 2, W / 2); sh.closePath();
+  const hullG = new T.ExtrudeGeometry(sh, { depth: H, bevelEnabled: true, bevelSize: Math.min(0.15, W * 0.05), bevelThickness: 0.1, bevelSegments: 2 }); hullG.rotateX(-Math.PI / 2); hullG.translate(0, -H * 0.45, 0);
+  const hm = new T.MeshStandardMaterial({ color: def.color, metalness: 0.2, roughness: 0.4 });
+  const hull = new T.Mesh(hullG, hm); hull.castShadow = true; g.add(hull);
+  const am = new T.MeshStandardMaterial({ color: def.accent, metalness: 0.2, roughness: 0.5 });
+  const stripe = new T.Mesh(hullG, am); stripe.scale.set(1.01, 0.18, 1.02); stripe.position.y = H * 0.05; g.add(stripe);
+  const top = H * 0.55;
+  if (def.kind === 'riva') {
+    const deckG = new T.ExtrudeGeometry(sh, { depth: 0.06, bevelEnabled: false }); deckG.rotateX(-Math.PI / 2);
+    const deck = new T.Mesh(deckG, lam(0xa8703a)); deck.scale.set(0.96, 1, 0.92); deck.position.y = top; g.add(deck);
+    const ws = new T.Mesh(new T.BoxGeometry(0.08, 0.5, W * 0.8), glassMat); ws.position.set(0.6, top + 0.3, 0); ws.rotation.z = 0.5; g.add(ws);
+    const seat = new T.Mesh(new T.BoxGeometry(1.6, 0.5, W * 0.7), lam(0xe9e1cc)); seat.position.set(-0.8, top + 0.25, 0); g.add(seat);
+  } else if (def.kind === 'speed') {
+    const cab = new T.Mesh(new T.BoxGeometry(3.4, 0.7, W * 0.75), glassMat); cab.position.set(0.2, top + 0.3, 0); g.add(cab);
+    const deck = new T.Mesh(new T.BoxGeometry(L * 0.7, 0.1, W * 0.85), lam(0xffffff)); deck.position.set(-L * 0.1, top, 0); g.add(deck);
+  } else if (def.kind === 'yacht') {
+    const d1 = new T.Mesh(new T.BoxGeometry(L * 0.6, 2.2, W * 0.8), lam(0xf6f6f2)); d1.position.set(-L * 0.08, top + 1.1, 0); d1.castShadow = true; g.add(d1);
+    const w1 = new T.Mesh(new T.BoxGeometry(L * 0.61, 0.8, W * 0.81), glassMat); w1.position.set(-L * 0.08, top + 1.3, 0); g.add(w1);
+    const d2 = new T.Mesh(new T.BoxGeometry(L * 0.35, 1.8, W * 0.65), lam(0xf6f6f2)); d2.position.set(-L * 0.1, top + 3.1, 0); g.add(d2);
+    const w2 = new T.Mesh(new T.BoxGeometry(L * 0.36, 0.7, W * 0.66), glassMat); w2.position.set(-L * 0.1, top + 3.3, 0); g.add(w2);
+    const mast = new T.Mesh(new T.CylinderGeometry(0.12, 0.12, 3, 6), lam(0xdddddd)); mast.position.set(-L * 0.1, top + 5.4, 0); g.add(mast);
+  } else if (def.kind === 'gommone') {
+    for (const sz of [-1, 1]) { const tube = new T.Mesh(new T.CylinderGeometry(0.38, 0.38, L * 0.8, 10), am); tube.rotation.z = Math.PI / 2; tube.position.set(-L * 0.05, top - 0.1, sz * (W / 2 - 0.3)); g.add(tube); }
+    const con = new T.Mesh(new T.BoxGeometry(0.8, 0.9, 0.8), lam(0xdddddd)); con.position.set(0, top + 0.4, 0); g.add(con);
+  } else {
+    const seat = new T.Mesh(new T.BoxGeometry(1.4, 0.35, 0.5), lam(0x222222)); seat.position.set(-0.3, top + 0.25, 0); g.add(seat);
+    const bar = new T.Mesh(new T.BoxGeometry(0.2, 0.5, 0.8), am); bar.position.set(0.6, top + 0.4, 0); g.add(bar);
+  }
+  return { group: outer, L, W, H, bodyMat: hm };
+};
+IE.spawnBoat = function (scene, defId, x, z, yaw) {
+  const def = IE.boatById[defId], m = IE.makeBoat(def);
+  const v = { type: 'boat', def, m, group: m.group, pos: new T.Vector3(x, 0, z), yaw: yaw || 0, speed: 0, steer: 0, pitch: 0, roll: 0,
+    health: def.kind === 'yacht' ? 3000 : 900, maxHealth: def.kind === 'yacht' ? 3000 : 900, driver: null, dead: false, burn: 0, t: Math.random() * 10 };
+  m.group.position.copy(v.pos); scene.add(m.group); IE.vehicles.push(v); return v;
+};
+IE.updateBoat = function (v, inp, dt) {
+  const d = v.def; if (v.dead) inp = {};
+  v.t += dt;
+  const thr = inp.y || 0, st = inp.x || 0;
+  if (thr > 0) v.speed += d.accel * thr * (1 - Math.max(0, v.speed) / d.speed * 0.7) * dt;
+  else if (thr < 0) v.speed = Math.max(-6, v.speed + 10 * thr * dt);
+  v.speed -= v.speed * (inp.brake ? 1.8 : 0.45) * dt;
+  v.steer += (st - v.steer) * Math.min(1, dt * 5);
+  const as = Math.abs(v.speed);
+  v.yaw -= v.steer * Math.sign(v.speed) * Math.min(as / 3, 1) * (d.kind === 'yacht' ? 0.45 : d.kind === 'jetski' ? 1.6 : 1.0) * dt;
+  const f = IE.fwd(v.yaw), nx = v.pos.x + f.x * v.speed * dt, nz = v.pos.z + f.z * v.speed * dt;
+  const ahead = IE.terrainH(nx + f.x * v.m.L * 0.5 * Math.sign(v.speed || 1), nz + f.z * v.m.L * 0.5 * Math.sign(v.speed || 1));
+  if (ahead > -0.6) { if (as > 6) v.health -= as * 8; v.speed *= -0.3; }
+  else { v.pos.x = nx; v.pos.z = nz; }
+  if (IE.pushOut(v.pos, Math.min(v.m.W * 0.6, 3), -0.5, 2)) { if (as > 6) v.health -= as * 5; v.speed *= -0.3; }
+  const bob = Math.sin(v.t * 1.7) * 0.08 + Math.sin(v.t * 2.9) * 0.04;
+  v.pos.y = (v.dead ? Math.max(-6, v.pos.y - dt * 0.6) : 0.05 + bob);
+  v.pitch += ((-Math.min(as / d.speed, 1) * 0.12) + Math.sin(v.t * 1.3) * 0.02 - v.pitch) * Math.min(1, dt * 3);
+  v.roll += (v.steer * Math.min(as / 10, 1) * 0.15 + Math.sin(v.t * 1.1) * 0.03 - v.roll) * Math.min(1, dt * 3);
+  v.group.position.copy(v.pos); v.group.rotation.order = 'YXZ'; v.group.rotation.y = v.yaw; v.group.rotation.x = v.pitch; v.group.rotation.z = v.roll;
+};
+
 // ---------- Helikopter ----------
-IE.makeHeli = function (color) {
+IE.makeHeli = function (color, armed) {
   const outer = new T.Group(), g = new T.Group(); outer.add(g); g.rotation.y = -Math.PI / 2;
   const bm = new T.MeshStandardMaterial({ color, metalness: 0.5, roughness: 0.35 });
   const body = new T.Mesh(new T.SphereGeometry(1, 20, 14), bm); body.scale.set(2.3, 1.25, 1.25); body.position.set(0.3, 1.55, 0); body.castShadow = true; g.add(body);
@@ -104,6 +190,10 @@ IE.makeHeli = function (color) {
   for (const sz of [-1, 1]) {
     const sk = new T.Mesh(new T.CylinderGeometry(0.07, 0.07, 3.6, 6), lam(0x2a2a2a)); sk.rotation.z = Math.PI / 2; sk.position.set(0.3, 0.1, sz * 0.95); g.add(sk);
     for (const sx of [-0.7, 1.2]) { const st = new T.Mesh(new T.CylinderGeometry(0.05, 0.05, 0.8, 6), lam(0x2a2a2a)); st.position.set(sx, 0.48, sz * 0.8); st.rotation.x = sz * 0.3; g.add(st); }
+  }
+  if (armed) for (const sz of [-1, 1]) {
+    const pod = new T.Mesh(new T.CylinderGeometry(0.25, 0.25, 1.6, 8), lam(0x222222)); pod.rotation.z = Math.PI / 2; pod.position.set(0.4, 1.0, sz * 1.6); g.add(pod);
+    const arm = new T.Mesh(new T.BoxGeometry(0.3, 0.1, 1.2), bm); arm.position.set(0.4, 1.15, sz * 1.1); g.add(arm);
   }
   return { group: outer, rotor, tailRotor: tr, disc, inner: g };
 };
@@ -122,7 +212,7 @@ IE.spawnCar = function (scene, defId, x, z, yaw, opts) {
 };
 IE.spawnHeli = function (scene, defId, x, y, z, yaw) {
   const def = IE.heliById[defId];
-  const m = IE.makeHeli(def.color);
+  const m = IE.makeHeli(def.color, def.armed);
   const v = { type: 'heli', def, m, group: m.group, pos: new T.Vector3(x, y, z), vel: new T.Vector3(), yaw: yaw || 0, rotor: 0, health: 800, maxHealth: 800,
     driver: null, pitch: 0, roll: 0, dead: false, burn: 0 };
   m.group.position.copy(v.pos); scene.add(m.group); IE.vehicles.push(v); return v;
@@ -169,7 +259,7 @@ IE.updateCar = function (v, inp, dt) {
   const tp = Math.atan2(bh - fh, 3.6), tr = Math.atan2(lh - rh, 1.8);
   v.pitch += (tp - v.pitch) * Math.min(1, dt * 8); v.roll += (tr - v.roll) * Math.min(1, dt * 8);
   v.group.position.copy(v.pos); v.group.rotation.set(0, 0, 0); v.group.rotation.order = 'YXZ'; v.group.rotation.y = v.yaw; v.group.rotation.x = v.pitch; v.group.rotation.z = v.roll;
-  v.wheelRot += v.speed * dt / v.m.wheels[0].children[0].geometry.parameters.radiusTop;
+  v.wheelRot += v.speed * dt / 0.36;
   v.m.wheels.forEach((w, i) => { w.children[0].rotation.z = -v.wheelRot; w.children[1].rotation.z = -v.wheelRot; if (i % 2 === 1) w.rotation.y = 0; });
   // Vorderräder lenken (Index 2,3 = vorne, da sx=+1)
   v.m.wheels[2].rotation.y = v.steer * 0.45; v.m.wheels[3].rotation.y = v.steer * 0.45;
@@ -218,14 +308,15 @@ IE.spawnNPC = function (scene, kind, x, z, opts) {
   const r = Math.random;
   let look;
   if (kind === 'police') look = { pants: 0x1a2340, jacket: 0x1a2340, shirt: 0xd8dce6, skin: skins[(r() * 5) | 0], hair: 0x111111 };
+  else if (kind === 'soldier') look = { pants: 0x4b5233, jacket: 0x59613d, shirt: 0x3e4429, skin: skins[(r() * 5) | 0], hair: 0x3a4028 };
   else if (kind === 'enemy') look = { pants: 0x161616, jacket: opts.boss ? 0x5a0d0d : 0x1d1d22, shirt: opts.boss ? 0xf0f0f0 : 0x2a2a2a, skin: skins[(r() * 5) | 0], hair: 0x1a1a1a };
   else look = { pants: pedColors[(r() * 10) | 0], jacket: pedColors[(r() * 10) | 0], shirt: 0xeeeeee, skin: skins[(r() * 5) | 0], hair: [0x2a1a10, 0x111111, 0x7a5a30, 0xaaaaaa][(r() * 4) | 0], female: r() < 0.45 };
   const h = IE.makeHuman(look);
   if (opts.boss) h.group.scale.setScalar(1.12);
   const y = IE.supportH(x, z, 999);
-  const n = { kind, h, group: h.group, pos: new T.Vector3(x, y, z), yaw: r() * 6.28, health: kind === 'ped' ? 40 : (opts.boss ? 600 : kind === 'police' ? 80 : 90),
+  const n = { kind, h, group: h.group, pos: new T.Vector3(x, y, z), yaw: r() * 6.28, health: kind === 'ped' ? 40 : (opts.boss ? 600 : kind === 'police' ? 80 : kind === 'soldier' ? 130 : 90),
     state: 'walk', timer: r() * 3, phase: r() * 6, dead: false, deadT: 0, shootT: 1 + r() * 2, boss: !!opts.boss, name: opts.name, city: opts.city, mission: !!opts.mission, speed: 0 };
-  if (kind !== 'ped') IE.setGunLen(h, opts.boss ? 0.5 : 0.28);
+  if (kind !== 'ped') IE.setGunLen(h, opts.boss ? 0.5 : kind === 'soldier' ? 0.8 : 0.28);
   h.group.position.copy(n.pos); scene.add(h.group); IE.npcs.push(n); return n;
 };
 IE.killNPC = function (n) {

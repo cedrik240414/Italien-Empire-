@@ -63,6 +63,12 @@ body.touch #bars { bottom: auto; top: calc(190px + env(safe-area-inset-top, 0px)
 .bar { height: 8px; background: rgba(0,0,0,0.55); border: 1px solid rgba(0,0,0,0.6); }
 .bar i { display: block; height: 100%; width: 100%; background: var(--verde); transition: width .2s; }
 .bar.ar i { background: var(--sky); }
+.bar.o2 i { background: #8fe6f0; }
+#hudMap { pointer-events: auto; left: calc(16px + env(safe-area-inset-left, 0px)); bottom: calc(262px + env(safe-area-inset-bottom, 0px)); background: rgba(13,15,19,0.75); color: var(--gold); border: 1px solid rgba(217,180,90,0.6); font-size: 16px; font-weight: 700; letter-spacing: 0.12em; padding: 6px 12px; }
+body.touch #hudMap { display: none; }
+#under { inset: 0; background: radial-gradient(ellipse at 50% 20%, rgba(40,150,170,0.18), rgba(4,40,60,0.55) 80%); }
+.maphelp { color: var(--muted); font-size: 14px; font-family: var(--f-hud); }
+@media (max-width: 700px) { .maphelp:first-child { display: none; } }
 #obj { top: calc(14px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); max-width: min(560px, 60vw); text-align: center; font-family: var(--f-hud); font-size: 22px; font-weight: 600; letter-spacing: 0.03em; text-shadow: 0 2px 0 #000, 0 0 10px #000; }
 #obj small { display: block; font-size: 15px; color: var(--gold); letter-spacing: 0.25em; text-transform: uppercase; }
 #timer { top: calc(76px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); font-family: var(--f-hud); font-size: 34px; font-weight: 700; color: var(--gold); text-shadow: 0 2px 0 #000; font-variant-numeric: tabular-nums; }
@@ -91,7 +97,7 @@ body.touch #speed { bottom: auto; top: calc(160px + env(safe-area-inset-top, 0px
 #dialog .who { font-family: var(--f-display); font-size: 26px; font-weight: 700; color: var(--gold); font-style: italic; }
 #dialog .txt { font-size: 18px; line-height: 1.45; margin-top: 2px; }
 #dialog .nx { font-family: var(--f-hud); font-size: 14px; letter-spacing: 0.2em; color: var(--muted); text-align: right; text-transform: uppercase; margin-top: 6px; }
-#toast { left: 50%; top: 32%; transform: translateX(-50%); font-family: var(--f-hud); font-size: 22px; background: rgba(13,15,19,0.8); padding: 8px 16px; border-left: 3px solid var(--rosso); }
+#toast { left: 50%; top: 21%; transform: translateX(-50%); font-family: var(--f-hud); font-size: 22px; background: rgba(13,15,19,0.8); padding: 8px 16px; border-left: 3px solid var(--rosso); }
 #dmg { inset: 0; box-shadow: inset 0 0 120px rgba(200,20,20,0.0); transition: box-shadow 0.3s; }
 #lockhint { left: 50%; top: 60%; transform: translateX(-50%); font-family: var(--f-hud); font-size: 18px; letter-spacing: 0.1em; background: rgba(13,15,19,0.7); padding: 6px 14px; }
 
@@ -113,6 +119,7 @@ body.touch #speed { bottom: auto; top: calc(160px + env(safe-area-inset-top, 0px
 .swatch { display: inline-block; width: 12px; height: 12px; margin-right: 8px; vertical-align: middle; border: 1px solid rgba(255,255,255,0.4); }
 .hint { padding: 12px 22px 18px; font-size: 13px; color: var(--muted); }
 #mapModal .panel { width: min(1100px, 100%); max-height: 94vh; }
+#mapModal header > div { flex-wrap: wrap; justify-content: flex-end; }
 #bigmap { width: 100%; display: block; touch-action: none; }
 .chars { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; padding: 16px 22px 22px; }
 .chars .card { pointer-events: auto; cursor: pointer; text-align: left; color: inherit; font-family: var(--f-body); }
@@ -167,12 +174,12 @@ body.touch.playing #touch { display: block; }
       <div><b>Shift</b> Sprinten · Heli runter</div><div><b>Leertaste</b> Springen · Handbremse · Heli hoch</div>
       <div><b>F</b> Ein-/Aussteigen</div><div><b>E</b> Shop / Mission starten</div>
       <div><b>Q · 1–6 · Mausrad</b> Waffe wechseln</div><div><b>M</b> Karte (Wegpunkt setzen)</div>
-      <div><b>C</b> Charakter wechseln</div><div><b>Esc / P</b> Menü</div>
+      <div><b>C</b> Charakter wechseln</div><div><b>V</b> Ego-Sicht / normale Sicht</div><div><b>Shift (im Wasser)</b> Abtauchen · Leertaste auftauchen</div><div><b>Esc / P</b> Menü</div>
     </div>
     <div class="keys" id="keysTouch" hidden>
       <div><b>Linke Seite</b> Joystick: Laufen / Fahren</div><div><b>Rechte Seite</b> Wischen: Kamera</div>
       <div><b>FEUER</b> Schießen (mit Zielhilfe)</div><div><b>EIN/AUS</b> Fahrzeug</div>
-      <div><b>E</b> Shop / Mission</div><div><b>HOCH / RUNTER</b> Springen · Heli</div>
+      <div><b>E</b> Shop / Mission</div><div><b>HOCH / RUNTER</b> Springen · Heli</div><div><b>TAUCHEN / AUF</b> Unter Wasser schwimmen</div><div><b>SICHT</b> Ego-Sicht umschalten</div>
     </div>
   </div>
 </div>
@@ -183,7 +190,8 @@ body.touch.playing #touch { display: block; }
   <div class="hud" id="weapon"><div class="n" id="wName"></div><div class="a" id="wAmmo"></div></div>
   <div class="hud" id="stars"></div>
   <div class="hud" id="mini"><canvas id="miniC" width="420" height="420"></canvas></div>
-  <div class="hud" id="bars"><div class="bar"><i id="hpB"></i></div><div class="bar ar"><i id="arB"></i></div></div>
+  <div class="hud" id="bars"><div class="bar"><i id="hpB"></i></div><div class="bar ar"><i id="arB"></i></div><div class="bar o2" id="o2W" hidden><i id="o2B"></i></div></div>
+  <button class="hud" id="hudMap">KARTE · M</button>
   <div class="hud" id="obj" hidden></div>
   <div class="hud" id="timer" hidden></div>
   <div class="hud" id="boss" hidden><div id="bossN"></div><div class="bar"><i id="bossB"></i></div></div>
@@ -191,6 +199,7 @@ body.touch.playing #touch { display: block; }
   <div class="hud" id="speed" hidden><div class="v" id="spV">0</div><div class="u" id="spU">KM/H</div><div class="vn" id="spN"></div></div>
   <div class="hud" id="cross"></div>
   <div class="hud" id="scope" hidden></div>
+  <div class="hud" id="under" hidden></div>
   <div class="hud" id="dmg"></div>
   <div class="hud" id="toast" hidden></div>
   <div class="hud" id="banner" hidden></div>
@@ -208,15 +217,16 @@ body.touch.playing #touch { display: block; }
   <button class="tb" id="tWeap">WAFFE</button>
   <button class="tb" id="tSprint">RENNEN</button>
   <button class="tb" id="tAim">ZIELEN</button>
-  <div class="ttop"><button class="tb sm" id="tMap">KARTE</button><button class="tb sm" id="tChar">CREW</button><button class="tb sm" id="tMenu">MENÜ</button></div>
+  <div class="ttop"><button class="tb sm" id="tMap">KARTE</button><button class="tb sm" id="tView">SICHT</button><button class="tb sm" id="tChar">CREW</button><button class="tb sm" id="tMenu">MENÜ</button></div>
 </div>
 
 <div class="modal" id="shopModal" hidden><div class="panel"><header><h2 id="shopT">Laden</h2><div style="display:flex;gap:14px;align-items:center"><span class="cash" id="shopCash"></span><button class="x" data-close>✕</button></div></header><div class="rows" id="shopRows"></div><div class="hint" id="shopHint"></div></div></div>
-<div class="modal" id="mapModal" hidden><div class="panel"><header><h2>Italia</h2><div style="display:flex;gap:14px;align-items:center"><span class="st" style="color:var(--muted);font-size:14px">Tippe auf die Karte, um einen Wegpunkt zu setzen</span><button class="x" data-close>✕</button></div></header><canvas id="bigmap"></canvas></div></div>
+<div class="modal" id="mapModal" hidden><div class="panel"><header><h2>Italia</h2><div style="display:flex;gap:14px;align-items:center"><span class="st maphelp">Tippen: Wegpunkt · Ziehen: verschieben</span><button class="x" id="mapOut" aria-label="Herauszoomen">−</button><span id="mapZoom" class="st maphelp">1.0×</span><button class="x" id="mapIn" aria-label="Hineinzoomen">+</button><button class="x" id="mapMe">Ich</button><button class="x" data-close>✕</button></div></header><canvas id="bigmap"></canvas></div></div>
 <div class="modal" id="charModal" hidden><div class="panel"><header><h2>Die Crew</h2><button class="x" data-close>✕</button></header><div class="chars" id="charList"></div><div class="hint">Beim Wechsel landest du in der Heimatstadt des Charakters. Während einer Mission nicht möglich.</div></div></div>
 <div class="modal" id="pauseModal" hidden><div class="panel"><header><h2>Pausa</h2><button class="x" data-close>✕</button></header>
   <div class="opt"><span>Grafik</span><span><button class="btn ghost" id="optGfx" style="font-size:16px;padding:6px 14px">Hoch</button></span></div>
   <div class="opt"><label for="optSens">Kamera-Empfindlichkeit</label><input type="range" id="optSens" min="0.3" max="2.5" step="0.1" value="1"></div>
+  <div class="opt"><span>Kamera</span><span><button class="btn ghost" id="optView" style="font-size:16px;padding:6px 14px">Normal</button></span></div>
   <div class="opt"><span>Ton</span><span><button class="btn ghost" id="optSnd" style="font-size:16px;padding:6px 14px">An</button></span></div>
   <div class="opt"><span id="progTxt">Fortschritt</span><span><button class="btn ghost" id="optReset" style="font-size:16px;padding:6px 14px;border-color:var(--rosso);color:var(--rosso)">Spielstand löschen</button></span></div>
   <div class="hint" id="pauseHint">Das Spiel speichert automatisch nach jeder Mission und jedem Kauf.</div>

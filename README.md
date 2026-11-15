@@ -14,8 +14,14 @@ Funktioniert mit Maus/Tastatur und mit Touch (iPad/Handy).
 - Autobahnen zwischen den Städten inkl. Brücke über die Straße von Messina
 - Waffenläden (Armeria), Autohäuser (Autosalone), Helikopterplätze (Eliporto) zum Spawnen von Helikoptern
 - 22 Story-Missionen in 5 Kapiteln, Fahndungssystem mit Polizei, Verkehr, Passanten
+- Bootsläden (Nautica) mit Hafen und Steg in 8 Küstenstädten – gekaufte Boote liegen automatisch im Hafen
+- Tauchen mit Sauerstoffanzeige, 14 Schiffswracks mit Schatztruhen auf dem Meeresgrund
+- Militärbasis auf Sardinien (Sperrgebiet) mit Soldaten, Panzern, Militärjeeps und Kampfhubschrauber
+- 15 Autos (Kleinwagen, Lieferwagen, Kombi, Pickup, Oldtimer, Cabrio, Sportwagen, Supersportwagen …)
+- Ego-Sicht oder normale Sicht (Taste V / Knopf SICHT / Menü)
+- Karte mit Zoom, Verschieben und Wegpunkten (Taste M)
 - Charakterwechsel zwischen Jack, Marco und Sofia, automatisches Speichern
 
 ## Steuerung (Tastatur)
 WASD laufen/fahren · Maus Kamera · Linksklick schießen · Rechtsklick zielen · Shift sprinten/Heli runter ·
-Leertaste springen/Handbremse/Heli hoch · F ein-/aussteigen · E Shop/Mission · Q/1–6 Waffe · M Karte · C Charakter · Esc Menü
+Leertaste springen/Handbremse/Heli hoch · F ein-/aussteigen · E Shop/Mission · Q/1–6 Waffe · M Karte · C Charakter · V Sicht · Shift im Wasser abtauchen · Esc Menü

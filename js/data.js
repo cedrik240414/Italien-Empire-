@@ -128,14 +128,38 @@ IE.cars = [
   { id: 'fuori',    name: 'Fuoristrada 4x4', price: 42000,  speed: 46, accel: 18, grip: 2.4, color: 0x5b6a3a, kind: 'suv' },
   { id: 'veloce',   name: 'Veloce GT',       price: 95000,  speed: 64, accel: 26, grip: 2.3, color: 0xf2c230, kind: 'sport' },
   { id: 'toro',     name: 'Toro SV',         price: 280000, speed: 80, accel: 34, grip: 2.6, color: 0x6fbf2a, kind: 'super' },
-  { id: 'rosso',    name: 'Rosso Corsa 812', price: 450000, speed: 88, accel: 38, grip: 2.7, color: 0xc0101a, kind: 'super' }
+  { id: 'rosso',    name: 'Rosso Corsa 812', price: 450000, speed: 88, accel: 38, grip: 2.7, color: 0xc0101a, kind: 'super' },
+  { id: 'furgone',  name: 'Furgone (Lieferwagen)', price: 22000, speed: 36, accel: 12, grip: 1.8, color: 0xe8e4da, kind: 'van' },
+  { id: 'kombi',    name: 'Familiare Kombi', price: 24000, speed: 45, accel: 16, grip: 2.0, color: 0x6e7f8c, kind: 'kombi' },
+  { id: 'pickup',   name: 'Pickup Strada',   price: 32000, speed: 42, accel: 16, grip: 2.1, color: 0x8a2a1e, kind: 'pickup' },
+  { id: 'classica', name: 'Classica 1965',   price: 55000, speed: 48, accel: 15, grip: 1.9, color: 0x9fc3c9, kind: 'retro' },
+  { id: 'rally',    name: 'Rally Integrale', price: 70000, speed: 58, accel: 27, grip: 3.0, color: 0xf3f0e8, kind: 'klein' },
+  { id: 'spider',   name: 'Spider Cabrio',   price: 120000, speed: 66, accel: 27, grip: 2.4, color: 0x1f4f8f, kind: 'cabrio' },
+  { id: 'jeep',     name: 'Militärjeep',     price: 0, speed: 44, accel: 18, grip: 2.5, color: 0x4f5a34, kind: 'suv', military: true },
+  { id: 'panzer',   name: 'Carro Armato (Panzer)', price: 0, speed: 17, accel: 7, grip: 2.6, color: 0x55603a, kind: 'tank', military: true }
 ];
+IE.carColors = [0xd33a2c, 0x2a3b5c, 0xe8e4da, 0x1a1a1a, 0x7c8a8e, 0x3e6b8a, 0xa8382c, 0xf0d24a, 0x5b6a3a, 0x2e6b4f, 0xc77d2e, 0x9fc3c9];
+
+IE.boats = [
+  { id: 'jetski',  name: 'Moto d\'acqua (Jetski)', price: 15000,  speed: 32, accel: 16, color: 0xe8e8e8, accent: 0x1e7fc8, kind: 'jetski' },
+  { id: 'gommone', name: 'Gommone (Schlauchboot)', price: 25000, speed: 26, accel: 12, color: 0x2a2a2a, accent: 0xe05a20, kind: 'gommone' },
+  { id: 'riva',    name: 'Motoscafo Riva',  price: 95000,  speed: 46, accel: 18, color: 0x7a4422, accent: 0xf3efe6, kind: 'riva' },
+  { id: 'offshore',name: 'Offshore Veloce', price: 240000, speed: 62, accel: 24, color: 0xd11f2a, accent: 0xffffff, kind: 'speed' },
+  { id: 'yacht',   name: 'Yacht Azzurra',   price: 750000, speed: 30, accel: 8,  color: 0xf6f6f2, accent: 0x1b3d6e, kind: 'yacht' }
+];
+IE.boatById = {}; IE.boats.forEach(b => IE.boatById[b.id] = b);
+IE.boatShopCities = ['neapel', 'venedig', 'genua', 'palermo', 'bari', 'sanremo', 'cagliari', 'catania'];
+
+// Militärbasis (Sperrgebiet)
+IE.base = { name: 'Base Militare Sardegna', lon: 9.02, lat: 40.62, r: 190, hw: 160, hd: 115 };
+(function () { const p = IE.geo(IE.base.lon, IE.base.lat); IE.base.x = p.x; IE.base.z = p.z; })();
 IE.carById = {}; IE.cars.forEach(c => IE.carById[c.id] = c);
 
 IE.helis = [
   { id: 'libellula', name: 'Libellula',  price: 60000,   speed: 55, climb: 18, color: 0x1e7fc8 },
   { id: 'aquila',    name: 'Aquila 109', price: 180000,  speed: 72, climb: 24, color: 0x222222 },
-  { id: 'falco',     name: 'Falco Executive', price: 520000, speed: 92, climb: 30, color: 0xb8902e }
+  { id: 'falco',     name: 'Falco Executive', price: 520000, speed: 92, climb: 30, color: 0xb8902e },
+  { id: 'predatore', name: 'Predatore (Kampfhubschrauber)', price: 0, speed: 80, climb: 26, color: 0x4a5236, armed: true, military: true }
 ];
 IE.heliById = {}; IE.helis.forEach(h => IE.heliById[h.id] = h);
 
