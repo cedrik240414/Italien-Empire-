@@ -69,6 +69,9 @@ body.touch #bars { bottom: auto; top: calc(190px + env(safe-area-inset-top, 0px)
 .bar.o2 i { background: #8fe6f0; }
 #hudMap { pointer-events: auto; left: calc(16px + env(safe-area-inset-left, 0px)); bottom: calc(262px + env(safe-area-inset-bottom, 0px)); background: rgba(13,15,19,0.75); color: var(--gold); border: 1px solid rgba(217,180,90,0.6); font-size: 16px; font-weight: 700; letter-spacing: 0.12em; padding: 6px 12px; }
 body.touch #hudMap { display: none; }
+#hudAdmin { pointer-events: auto; left: calc(150px + env(safe-area-inset-left, 0px)); bottom: calc(262px + env(safe-area-inset-bottom, 0px)); background: var(--gold); color: var(--ink); border: 1px solid var(--gold); font-size: 16px; font-weight: 700; letter-spacing: 0.12em; padding: 6px 12px; }
+body.touch #hudAdmin { display: none; }
+#tAdmin { background: var(--gold); color: var(--ink); border-color: var(--gold); }
 #under { inset: 0; background: radial-gradient(ellipse at 50% 20%, rgba(40,150,170,0.18), rgba(4,40,60,0.55) 80%); }
 .maphelp { color: var(--muted); font-size: 14px; font-family: var(--f-hud); }
 @media (max-width: 700px) { .maphelp:first-child { display: none; } }
@@ -276,7 +279,7 @@ body.touch.playing #touch { display: block; }
       <div><b>FEUER</b> Schießen (mit Zielhilfe)</div><div><b>EIN/AUS</b> Fahrzeug</div>
       <div><b>E</b> Shop / Mission</div><div><b>HOCH / RUNTER</b> Springen · Heli</div><div><b>TAUCHEN / AUF</b> Unter Wasser schwimmen</div><div><b>SICHT</b> Ego-Sicht umschalten</div><div><b>Kreis links</b> Waffenrad</div><div><b>Flugzeug</b> GAS +/− für Schub, Joystick hoch = Nase hoch</div>
     </div>
-    <div class="ver">Version 14</div>
+    <div class="ver">Version 15</div>
   </div>
 </div>
 
@@ -289,6 +292,7 @@ body.touch.playing #touch { display: block; }
   <div class="hud" id="mini"><canvas id="miniC" width="420" height="420"></canvas></div>
   <div class="hud" id="bars"><div class="bar"><i id="hpB"></i></div><div class="bar ar"><i id="arB"></i></div><div class="bar o2" id="o2W" hidden><i id="o2B"></i></div></div>
   <button class="hud" id="hudMap">KARTE · M</button>
+  <button class="hud" id="hudAdmin" hidden>★ ADMIN</button>
   <div class="hud" id="obj" hidden></div>
   <div class="hud" id="onBadge" hidden></div>
   <div class="hud" id="killFeed"></div>
@@ -317,7 +321,7 @@ body.touch.playing #touch { display: block; }
   <button class="tb" id="tWeap">WAFFE</button>
   <button class="tb" id="tSprint">RENNEN</button>
   <button class="tb" id="tAim">ZIELEN</button>
-  <div class="ttop"><button class="tb sm" id="tMap">KARTE</button><button class="tb sm" id="tView">SICHT</button><button class="tb sm" id="tChar">CREW</button><button class="tb sm" id="tMenu">MENÜ</button></div>
+  <div class="ttop"><button class="tb sm" id="tMap">KARTE</button><button class="tb sm" id="tView">SICHT</button><button class="tb sm" id="tChar">CREW</button><button class="tb sm" id="tMenu">MENÜ</button><button class="tb sm" id="tAdmin" hidden>ADMIN</button></div>
 </div>
 
 <div id="wheel" hidden><div id="wheelRing"></div><div id="wheelInfo"></div></div>
@@ -358,11 +362,11 @@ body.touch.playing #touch { display: block; }
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/data.js?v=14"></script>
-<script src="js/world.js?v=14"></script>
-<script src="js/entities.js?v=14"></script>
-<script src="js/main.js?v=14"></script>
-<script src="js/server-config.js?v=14"></script>
-<script src="js/cfnet.js?v=14"></script>
-<script src="js/online.js?v=14"></script>
-<script src="js/account.js?v=14"></script>
+<script src="js/data.js?v=15"></script>
+<script src="js/world.js?v=15"></script>
+<script src="js/entities.js?v=15"></script>
+<script src="js/main.js?v=15"></script>
+<script src="js/server-config.js?v=15"></script>
+<script src="js/cfnet.js?v=15"></script>
+<script src="js/online.js?v=15"></script>
+<script src="js/account.js?v=15"></script>

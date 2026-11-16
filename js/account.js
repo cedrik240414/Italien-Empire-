@@ -46,9 +46,55 @@ function done(nick, info) {
   if (window.IEgame && IEgame.setAccount) IEgame.setAccount(A.slug, nick);
   $('login').hidden = true;
   $('lgWho').textContent = nick + (A.admin ? ' ★ Admin' : ''); $('acctBar').hidden = false;
-  $('acctAdmin').hidden = !A.admin;
+  showAdminUI();
   if (window.IEonline && IEonline.touchBoard) IEonline.touchBoard();
   if (SRV() && A.token) startPoll();
+  if (!SRV()) claudeAdminInit();
+}
+function showAdminUI() {
+  $('lgWho').textContent = A.nick + (A.admin ? ' ★ Admin' : '');
+  $('acctAdmin').hidden = !A.admin; $('tAdmin').hidden = !A.admin; $('hudAdmin').hidden = !A.admin;
+}
+
+// ---------- claude.ai-Version: Besitzer des Spiels ist Admin, Geschenke & Banns über die gemeinsame Datenbank ----------
+let cUser = null, cBans = [], cGrants = [];
+const CLAIM_KEY = () => 'italienEmpire_claimed_' + (myId || 'x');
+async function claudeAdminInit() {
+  await init();
+  try { if (window.claude && claude.use) cUser = await claude.use('user'); } catch (e) { }
+  if (cUser) { try { if (await cUser.isOwner()) { A.admin = true; A.claudeAdmin = true; showAdminUI(); IEgame.toast('★ Du bist Admin (Besitzer des Spiels)', 3); } } catch (e) { } }
+  if (!db || !myId) return;
+  try {
+    db.collection('admin').doc('bans').onSnapshot(sn => {
+      cBans = (sn.exists && sn.data().list) || [];
+      if (cBans.includes(myId) && !A.claudeAdmin) { if (window.IEonline && IEonline.active) IEonline.leave(); A.onBanned(); }
+    }, () => { });
+    db.collection('admin').doc('grants').onSnapshot(sn => {
+      cGrants = (sn.exists && sn.data().list) || [];
+      let claimed = []; try { claimed = JSON.parse(localStorage.getItem(CLAIM_KEY()) || '[]'); } catch (e) { }
+      for (const g of cGrants) if (g.to === myId && !claimed.includes(g.id)) {
+        claimed.push(g.id); IEgame.addMoney(Math.max(0, Math.min(1e9, +g.amt || 0)), true); IEgame.banner('Geschenk', 'Ein Admin schenkt dir', IEgame.fmt(+g.amt || 0), 4); IEgame.saveGame && IEgame.saveGame();
+      }
+      try { localStorage.setItem(CLAIM_KEY(), JSON.stringify(claimed)); } catch (e) { }
+    }, () => { });
+  } catch (e) { }
+}
+async function claudeList() {
+  const snap = await db.collection('leaderboard').limit(300).get();
+  return snap.docs.map(d => { const v = d.data(); return { nick: v.nick || 'Spieler', slug: d.id, kills: v.kills || 0, money: v.money || 0, admin: d.id === myId, superAdmin: d.id === myId, banned: cBans.includes(d.id), grant: 0, claude: true }; });
+}
+async function claudeAct(target, what, amount) {
+  if (what === 'money') {
+    const ref = db.collection('admin').doc('grants'), cur = await ref.get();
+    const list = ((cur.exists && cur.data().list) || []).slice(-200);
+    list.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), to: target, amt: Math.round(amount) });
+    await ref.set({ list });
+  } else if (what === 'ban' || what === 'unban') {
+    const ref = db.collection('admin').doc('bans'), cur = await ref.get();
+    let list = (cur.exists && cur.data().list) || [];
+    list = what === 'ban' ? [...new Set(list.concat(target))] : list.filter(x => x !== target);
+    await ref.set({ list });
+  } else throw Object.assign(new Error('claude'), { code: 'claude_admin' });
 }
 const ERR = { taken: 'Diesen Spielernamen gibt es schon. Wähle einen anderen oder melde dich an.', unknown: 'Diesen Spielernamen gibt es noch nicht. Tippe auf „Konto erstellen“.',
   wrong_password: 'Falsches Passwort.', banned: 'Dieses Konto wurde von einem Admin gebannt.', bad_name: 'Ungültiger Spielername.', bad_password: 'Ungültiges Passwort.' };
@@ -117,7 +163,7 @@ function startPoll() {
     try {
       const me = await SRV().me();
       if (me.banned && !me.superAdmin) { A.onBanned(); return; }
-      if (me.admin !== A.admin) { A.admin = me.admin; $('lgWho').textContent = A.nick + (A.admin ? ' ★ Admin' : ''); $('acctAdmin').hidden = !A.admin; IEgame.toast(A.admin ? 'Du bist jetzt Admin!' : 'Deine Admin-Rechte wurden entfernt', 4); }
+      if (me.admin !== A.admin) { A.admin = me.admin; showAdminUI(); IEgame.toast(A.admin ? 'Du bist jetzt Admin!' : 'Deine Admin-Rechte wurden entfernt', 4); }
       if (me.grant > 0) { const c = await SRV().claim(); if (c.grant > 0) { IEgame.addMoney(c.grant, true); IEgame.banner('Geschenk', 'Ein Admin schenkt dir', IEgame.fmt(c.grant), 4); IEgame.saveGame && IEgame.saveGame(); } }
     } catch (e) { if (e && e.status === 401) { try { localStorage.removeItem(TOKEN_KEY); } catch (er) { } } }
   };
@@ -127,7 +173,7 @@ A.refresh = () => { if (SRV() && A.token) { clearInterval(pollT); pollT = null; 
 
 // ---------- Admin-Panel ----------
 async function openAdmin() {
-  if (!A.admin || !SRV()) return;
+  if (!A.admin || !(SRV() || A.claudeAdmin)) return;
   IEgame.closeModals(); document.body.classList.add('modalopen');
   $('adminModal').hidden = false;
   const g = IEgame;
@@ -138,7 +184,8 @@ async function openAdmin() {
 let adminCache = [];
 async function renderAdminList() {
   const el = $('adList'); el.innerHTML = '<div class="hint">Lade Spieler …</div>';
-  try { adminCache = (await SRV().list()).players || []; } catch (e) { el.innerHTML = '<div class="hint">Konnte die Spielerliste nicht laden.</div>'; return; }
+  try { adminCache = SRV() ? ((await SRV().list()).players || []) : await claudeList(); } catch (e) { el.innerHTML = '<div class="hint">Konnte die Spielerliste nicht laden.</div>'; return; }
+  if (!adminCache.length) { el.innerHTML = '<div class="hint">Noch keine Spieler in der Rangliste. Sobald jemand spielt, erscheint er hier.</div>'; return; }
   drawAdminList();
 }
 function drawAdminList() {
@@ -152,15 +199,16 @@ function drawAdminList() {
     row.querySelector('.nm').textContent = p.nick + (p.slug === A.slug ? ' (du)' : '') + (p.superAdmin ? ' ★ Haupt-Admin' : p.admin ? ' ★ Admin' : '') + (p.banned ? ' · GEBANNT' : '');
     row.querySelector('.st').textContent = `Abschüsse ${p.kills} · Geld ${IEgame.fmt(p.money)}${p.grant ? ' · wartet auf ' + IEgame.fmt(p.grant) : ''}`;
     const bAdm = row.querySelector('[data-a=adm]'), bBan = row.querySelector('[data-a=ban]');
-    bAdm.textContent = p.admin ? 'Admin entfernen' : 'Admin geben'; bAdm.disabled = p.superAdmin;
+    bAdm.textContent = p.admin ? 'Admin entfernen' : 'Admin geben'; bAdm.disabled = p.superAdmin || !!p.claude;
+    if (p.claude) bAdm.title = 'In der claude.ai-Version: über das Teilen-Menü als „Bearbeiten“ freigeben';
     bBan.textContent = p.banned ? 'Entbannen' : 'Bannen'; bBan.disabled = p.superAdmin || p.slug === A.slug;
     if (!p.banned && !p.superAdmin) bBan.style.cssText = 'border-color:var(--rosso);color:var(--rosso)';
     const act = async (what, amount) => {
-      try { await SRV().act(p.slug, what, amount); IEgame.toast('Erledigt: ' + p.nick, 2);
+      try { if (SRV()) await SRV().act(p.slug, what, amount); else await claudeAct(p.slug, what, amount); IEgame.toast('Erledigt: ' + p.nick, 2);
         if (what === 'ban' && window.IEonline && IEonline.adminKick) IEonline.adminKick(p.slug);
         if (what === 'money' && p.slug === A.slug) A.refresh();
         await renderAdminList(); }
-      catch (e) { IEgame.toast('Fehler: ' + (e.code === 'super_admin' ? 'Der Haupt-Admin kann nicht verändert werden' : e.code || 'Server'), 3); }
+      catch (e) { IEgame.toast('Fehler: ' + (e.code === 'super_admin' ? 'Der Haupt-Admin kann nicht verändert werden' : e.code === 'claude_admin' ? 'Admin-Rechte vergibst du hier über das Teilen-Menü' : e.code || 'Server'), 3); }
     };
     row.querySelector('[data-a=money]').onclick = () => { const v = Math.round(+row.querySelector('input').value || 0); if (v > 0) act('money', Math.min(v, 1e9)); };
     bAdm.onclick = () => act(p.admin ? 'unadmin' : 'admin');
@@ -175,6 +223,8 @@ $('adYacht').addEventListener('click', () => { if (IEgame.game.state !== 'play')
 A.openAdmin = openAdmin;
 $('acctAdmin').addEventListener('click', openAdmin);
 $('pAdmin').addEventListener('click', openAdmin);
+$('hudAdmin').addEventListener('click', openAdmin);
+$('tAdmin').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); openAdmin(); });
 
 $('lgLogin').addEventListener('click', login);
 $('lgRegister').addEventListener('click', register);
