@@ -61,28 +61,53 @@ function extr(pts, depth, bevel) {
   const g = new T.ExtrudeGeometry(s, { depth, bevelEnabled: !!bevel, bevelSize: bevel || 0, bevelThickness: bevel || 0, bevelSegments: 2, curveSegments: 4 });
   g.translate(0, 0, -depth / 2); return g;
 }
+// Polygon an waagrechter Linie abschneiden (keep: true = oberhalb behalten)
+function clipY(pts, c, above) {
+  const out = [], inside = q => above ? q[1] >= c : q[1] <= c;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i], b = pts[(i + 1) % pts.length], ia = inside(a), ib = inside(b);
+    if (ia) out.push(a);
+    if (ia !== ib) { const t = (c - a[1]) / (b[1] - a[1]); out.push([a[0] + (b[0] - a[0]) * t, c]); }
+  }
+  return out;
+}
 IE.makeCar = function (kind, color, police) {
   if (kind === 'tank') return IE.makeTank(color);
   const P = profiles[kind];
   const outer = new T.Group(), g = new T.Group(); outer.add(g); g.rotation.y = -Math.PI / 2;
   const key = kind;
-  if (!geoCache[key]) geoCache[key] = { body: extr(P.body, P.W - 0.12, 0.06), glass: extr(P.glass, P.W - 0.02, 0) };
+  const belt = Math.min.apply(null, P.glass.map(q => q[1])), bottom = Math.min.apply(null, P.body.map(q => q[1]));
+  const cabW = kind === 'cabrio' ? P.W * 0.9 : P.W * 0.84;
+  if (!geoCache[key]) {
+    const gc = P.glass.reduce((a, q) => [a[0] + q[0] / P.glass.length, a[1] + q[1] / P.glass.length], [0, 0]);
+    const glassBig = P.glass.map(q => [gc[0] + (q[0] - gc[0]) * 1.05, gc[1] + (q[1] - gc[1]) * 1.05]);
+    geoCache[key] = { lower: extr(clipY(P.body, belt + 0.02, false), P.W - 0.12, 0.06), upper: extr(clipY(P.body, belt - 0.02, true), cabW - 0.06, 0.03), glass: extr(glassBig, cabW + 0.03, 0) };
+  }
   const bodyMat = new T.MeshStandardMaterial({ color, metalness: 0.55, roughness: 0.35 });
-  const body = new T.Mesh(geoCache[key].body, bodyMat); body.castShadow = true; g.add(body);
+  const body = new T.Mesh(geoCache[key].lower, bodyMat); body.castShadow = true; g.add(body);
+  if (kind !== 'cabrio') { const up = new T.Mesh(geoCache[key].upper, bodyMat); up.castShadow = true; g.add(up); }
   const glass = new T.Mesh(geoCache[key].glass, glassMat); g.add(glass);
   const wheels = [];
-  const wg = new T.CylinderGeometry(P.r, P.r, 0.26, 16); wg.rotateX(Math.PI / 2);
-  const rg = new T.CylinderGeometry(P.r * 0.6, P.r * 0.6, 0.28, 10); rg.rotateX(Math.PI / 2);
+  const wg = new T.CylinderGeometry(P.r, P.r, 0.3, 18); wg.rotateX(Math.PI / 2);
+  const rg = new T.CylinderGeometry(P.r * 0.62, P.r * 0.62, 0.32, 10); rg.rotateX(Math.PI / 2);
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const w = new T.Group(); w.position.set(sx * (P.L / 2 - 0.78), P.r, sz * (P.W / 2 - 0.08));
+    const w = new T.Group(); w.position.set(sx * (P.L / 2 - 0.78), P.r, sz * (P.W / 2 - 0.03));
     const t = new T.Mesh(wg, tireMat); t.castShadow = true; w.add(t); w.add(new T.Mesh(rg, rimMat));
     g.add(w); wheels.push(w);
   }
-  const hl = new T.BoxGeometry(0.06, 0.12, 0.34);
-  for (const sz of [-1, 1]) {
-    const h = new T.Mesh(hl, headMat); h.position.set(P.L / 2 + 0.03, P.body[2][1] - 0.12, sz * (P.W / 2 - 0.3)); g.add(h);
-    const t = new T.Mesh(hl, tailMat); t.position.set(-P.L / 2 - 0.03, P.body[P.body.length - 1][1] - 0.08, sz * (P.W / 2 - 0.3)); g.add(t);
+  const trim = lam(0x1c1c1c);
+  for (const sx of [-1, 1]) {
+    const bp = new T.Mesh(new T.BoxGeometry(0.2, 0.24, P.W * 0.98), trim); bp.position.set(sx * (P.L / 2 + 0.03), bottom + 0.16, 0); g.add(bp);
   }
+  const hl = new T.BoxGeometry(0.1, 0.16, 0.42);
+  const lightY = Math.max(bottom + 0.45, Math.min(belt - 0.18, bottom + 0.75));
+  for (const sz of [-1, 1]) {
+    const h = new T.Mesh(hl, headMat); h.position.set(P.L / 2 + 0.06, lightY, sz * (P.W / 2 - 0.32)); g.add(h);
+    const t = new T.Mesh(hl, tailMat); t.position.set(-P.L / 2 - 0.06, lightY, sz * (P.W / 2 - 0.32)); g.add(t);
+    const mi = new T.Mesh(new T.BoxGeometry(0.12, 0.12, 0.2), bodyMat); mi.position.set(P.glass[0][0] - 0.1, belt + 0.06, sz * (cabW / 2 + 0.12)); g.add(mi);
+  }
+  const plate = new T.Mesh(new T.BoxGeometry(0.03, 0.15, 0.52), lam(0xf4f4f0)); plate.position.set(-P.L / 2 - 0.14, bottom + 0.34, 0); g.add(plate);
+  const plateF = plate.clone(); plateF.position.x = P.L / 2 + 0.14; g.add(plateF);
   let siren = null;
   if (police) {
     const stripe = new T.Mesh(new T.BoxGeometry(P.L * 0.98, 0.18, P.W - 0.05), lam(0xffffff)); stripe.position.set(0, 0.68, 0); g.add(stripe);
