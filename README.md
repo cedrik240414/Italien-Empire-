@@ -26,6 +26,9 @@ Funktioniert mit Maus/Tastatur und mit Touch (iPad/Handy).
 - Story startet am Flughafen von Neapel mit eigenem Hangar: Propellerflugzeug, Kunstflugzeug, Wasserflugzeug, Privatjet; Kampfjet auf der Militärbasis
 - Charakterwechsel zwischen Jack, Marco und Sofia, automatisches Speichern
 
+## Anmeldung
+Beim Start meldet man sich mit Spielername und Passwort an (oder erstellt ein Konto). Das Passwort wird nur als PBKDF2-Hash im privaten Bereich des eigenen Claude-Kontos gespeichert, ohne claude.ai lokal im Browser. Jedes Konto hat eigene Spielstände; der Spielername erscheint online und in der Rangliste.
+
 ## Online-Modus
 - Öffentliche Lobby oder private Lobby mit Code (über claude.ai, angemeldet)
 - Andere Spieler mit Namensschild, gegenseitiges Abschießen (Passivmodus abschaltbar), gemeinsame Crew-Aufträge

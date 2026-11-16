@@ -152,6 +152,23 @@ body.touch #wheelBtn { top: calc(232px + env(safe-area-inset-top, 0px)); }
 .cheat { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 16px; }
 .cheat .seq { display: flex; gap: 4px; flex-wrap: wrap; }
 .cheat .seq b { font-weight: 600; font-size: 13px; letter-spacing: 0.05em; border: 1px solid rgba(217,180,90,0.6); color: var(--gold); padding: 1px 6px; border-radius: 3px; }
+/* Anmeldung */
+#login { position: fixed; inset: 0; z-index: 46; display: grid; place-items: center; overflow-y: auto; touch-action: pan-y; background: radial-gradient(ellipse at 50% 30%, rgba(29,35,48,0.82), rgba(13,15,19,0.96) 70%); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.lgbox { width: min(420px, 100%); display: grid; gap: 8px; background: var(--ink-2); border: 1px solid rgba(217,180,90,0.35); padding: 26px 24px 20px; box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
+.lgt { font-family: var(--f-display); font-size: 44px; line-height: 0.9; color: var(--paper); }
+.lgt em { color: var(--gold); }
+.lgbox h2 { margin: 6px 0 6px; font-family: var(--f-hud); font-size: 16px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.lgbox label { font-family: var(--f-hud); font-size: 15px; letter-spacing: 0.08em; color: var(--gold); margin-top: 4px; }
+.lgbox input { font-family: var(--f-body); font-size: 18px; padding: 11px 12px; background: var(--ink); color: var(--paper); border: 1px solid rgba(243,234,216,0.3); -webkit-user-select: text; user-select: text; touch-action: manipulation; }
+.lgbox input:focus { outline: 2px solid var(--gold); outline-offset: 0; }
+.lgmsg { min-height: 20px; font-size: 14px; color: #ffb4ad; }
+.lgmsg.ok { color: #9fe0b0; }
+.lglink { background: none; border: none; color: var(--muted); text-decoration: underline; font-family: var(--f-body); font-size: 14px; padding: 4px 0; justify-self: start; pointer-events: auto; }
+.lgnote { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+#acctBar { font-family: var(--f-hud); font-size: 17px; letter-spacing: 0.04em; color: #e7dfcf; display: flex; gap: 10px; align-items: baseline; }
+#acctBar b { color: var(--gold); }
+#acctBar .lglink { color: #cfc7b6; }
+
 /* Online */
 .onlinebox { display: grid; gap: 10px; background: rgba(23,27,34,0.85); border: 1px solid rgba(217,180,90,0.25); padding: 14px 16px; }
 #onCode { font-family: var(--f-hud); font-size: 20px; padding: 10px 12px; width: 150px; background: var(--ink); color: var(--paper); border: 1px solid rgba(243,234,216,0.35); text-transform: uppercase; letter-spacing: 0.15em; -webkit-user-select: text; user-select: text; touch-action: manipulation; }
@@ -201,8 +218,23 @@ body.touch.playing #touch { display: block; }
 
 <div id="loading"><div><div class="t">Italien<br>Empire</div><div class="flag"><i></i><i></i><i></i></div><div class="s" id="loadTxt">Italien wird gebaut …</div></div></div>
 
+<div id="login" hidden>
+  <form class="lgbox" id="lgForm" autocomplete="on" onsubmit="return false">
+    <div class="lgt">Italien <em>Empire</em></div>
+    <h2>Anmelden</h2>
+    <label for="lgName">Spielername</label>
+    <input id="lgName" name="username" autocomplete="username" maxlength="16" placeholder="z. B. Jack_Napoli">
+    <label for="lgPw">Passwort</label>
+    <input id="lgPw" name="password" type="password" autocomplete="current-password" maxlength="64" placeholder="mindestens 4 Zeichen">
+    <div class="lgmsg" id="lgMsg" role="status"></div>
+    <div class="btns"><button type="button" class="btn" id="lgLogin">Anmelden</button><button type="button" class="btn ghost" id="lgRegister">Konto erstellen</button></div>
+    <button type="button" class="lglink" id="lgForgot">Passwort vergessen?</button>
+    <p class="lgnote"><span id="lgWhere"></span> Benutze ein eigenes Spiel-Passwort, nicht das von deiner E-Mail oder iCloud.</p>
+  </form>
+</div>
 <div id="title" hidden>
   <div class="wrap">
+    <div id="acctBar" hidden>Angemeldet als <b id="lgWho"></b> <button class="lglink" id="lgOut">Abmelden</button></div>
     <h1>Italien <em>Empire</em></h1>
     <div class="lead">Du spielst in einer riesigen offenen Spielwelt in Italien – von den Alpen bis Sizilien. Wechsle zwischen Jack Moretti, Marco Bellini und Sofia Romano und steigt von kleinen Kriminellen zu den mächtigsten Organisatoren Italiens auf. Dabei geratet ihr zwischen die Mafiaorganisation La Corona, das FIB und eine geheime Verschwörung innerhalb der italienischen Regierung.</div>
     <div class="btns"><button class="btn" id="bNew">Neues Spiel</button><button class="btn ghost" id="bCont" hidden>Weiterspielen</button></div>
@@ -303,8 +335,9 @@ body.touch.playing #touch { display: block; }
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/data.js?v=8"></script>
-<script src="js/world.js?v=8"></script>
-<script src="js/entities.js?v=8"></script>
-<script src="js/main.js?v=8"></script>
-<script src="js/online.js?v=8"></script>
+<script src="js/data.js?v=9"></script>
+<script src="js/world.js?v=9"></script>
+<script src="js/entities.js?v=9"></script>
+<script src="js/main.js?v=9"></script>
+<script src="js/online.js?v=9"></script>
+<script src="js/account.js?v=9"></script>

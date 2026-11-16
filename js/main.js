@@ -11,7 +11,7 @@ const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 if (isTouch) document.body.classList.add('touch');
 
 // ---------- Speicher ----------
-let SAVE_KEY = 'italienEmpire_v1';
+let SAVE_KEY = 'italienEmpire_v1', ACC = '';
 const store = {
   get() { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { return null; } },
   set(v) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(v)); } catch (e) { } },
@@ -92,6 +92,7 @@ const inp = { mx: 0, my: 0, lookX: 0, lookY: 0, fire: false, aim: false, jump: f
 const pressed = new Set();
 const press = k => pressed.add(k);
 addEventListener('keydown', e => {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
   if (e.repeat) return; keys[e.code] = true;
   const m = { KeyF: 'enter', Enter: 'enter', KeyE: 'act', KeyQ: 'weap', KeyM: 'map', KeyC: 'char', KeyV: 'view', Tab: 'wheel', Escape: 'pause', KeyP: 'pause', Space: 'space' };
   if (m[e.code]) press(m[e.code]);
@@ -1532,7 +1533,7 @@ const S_DEFAULT = JSON.parse(JSON.stringify(S));
 function startGame(cont, mode) {
   audioInit();
   if (mode === 'online') {
-    SAVE_KEY = 'italienEmpire_online_v1'; Object.assign(S, JSON.parse(JSON.stringify(S_DEFAULT)), { money: 25000, mission: IE.missions.length });
+    SAVE_KEY = 'italienEmpire_online_v1' + ACC; Object.assign(S, JSON.parse(JSON.stringify(S_DEFAULT)), { money: 25000, mission: IE.missions.length });
     const so = store.get(); if (so) Object.assign(S, so, { mission: IE.missions.length });
     IE.setOnlineWorld(true);
     $('title').hidden = true; $('hudRoot').hidden = false; document.body.classList.add('playing', 'online');
@@ -1589,6 +1590,7 @@ function boot() {
 }
 $('bNew').addEventListener('click', () => startGame(false));
 $('bCont').addEventListener('click', () => startGame(true));
-window.IEgame = { S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
+function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = 'italienEmpire_v1' + ACC; $('bCont').hidden = !store.get(); }
+window.IEgame = { setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
 boot();
 })();

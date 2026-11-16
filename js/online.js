@@ -65,7 +65,7 @@ function ensurePeer(p) {
   }
   r.pr = pr; r.guest = p.guest;
   const by = p.by || (typeof pr.uid === 'string' ? pr.uid : null);
-  if (by !== r.by) { r.by = by; resolveNames(); }
+  if (by !== r.by || (pr.nm && pr.nm !== r.name)) { r.by = by; resolveNames(); }
   if (r.char !== pr.c) {
     if (r.h) scene.remove(r.h.group);
     r.h = IE.makeHuman(IE.chars[pr.c] || IE.chars.jack); IE.setGunLen(r.h, 0.3); scene.add(r.h.group); r.char = pr.c;
@@ -90,11 +90,12 @@ function onPeers(ch) {
   updateBadge();
 }
 async function resolveNames() {
-  if (!user) return;
+  const ids0 = [...O.peers.values()];
+  if (!user) { for (const r of ids0) if (r.pr && r.pr.nm && r.pr.nm !== r.name) { r.name = r.pr.nm.slice(0, 16); if (r.tag) G().scene.remove(r.tag); r.tag = nameTag(r.name); G().scene.add(r.tag); } return; }
   const ids = [...O.peers.values()].map(r => r.by).filter(Boolean); if (!ids.length) return;
   const ps = await user.profiles(ids);
   for (const r of O.peers.values()) {
-    const nm = (r.by && ps[r.by] && ps[r.by].name) || 'Spieler';
+    const nm = (r.pr && typeof r.pr.nm === 'string' && r.pr.nm.slice(0, 16)) || (r.by && ps[r.by] && ps[r.by].name) || 'Spieler';
     if (nm !== r.name || !r.tagNamed) { r.name = nm; r.tagNamed = true; if (r.tag) { G().scene.remove(r.tag); } r.tag = nameTag(nm, r.by && ps[r.by] ? ps[r.by].color : null); G().scene.add(r.tag); }
   }
   updateBadge();
@@ -106,7 +107,7 @@ const r2 = v => Math.round(v * 100) / 100;
 function sendPresence() {
   const g = G(), P = g.P, v = P.veh;
   const pr = { x: r2(P.pos.x), y: r2(P.pos.y), z: r2(P.pos.z), yaw: r2(P.yaw), c: g.S.char, hp: Math.round(P.health), dead: g.game.dead ? 1 : 0,
-    sw: P.under ? 2 : P.swim ? 1 : 0, uid: O.myId || '', k: O.kills, d: O.deaths, pa: O.passive ? 1 : 0, w: g.S.cur };
+    sw: P.under ? 2 : P.swim ? 1 : 0, uid: O.myId || '', nm: (window.IEaccount && IEaccount.nick) || '', k: O.kills, d: O.deaths, pa: O.passive ? 1 : 0, w: g.S.cur };
   pr.v = v ? { t: v.type, id: v.def.id, yaw: r2(v.yaw), p: r2(v.pitch || 0), r: r2(v.roll || 0), col: v.m.bodyMat ? v.m.bodyMat.color.getHex() : undefined } : null;
   room.presence(pr).catch(() => { });
 }
@@ -227,7 +228,7 @@ function saveStats() {
 }
 async function flushStats() {
   if (saving || !dirty) return; saving = true; dirty = false;
-  try { await db.collection('leaderboard').doc(O.myId).set({ kills: O.kills, deaths: O.deaths, jobs: O.jobs, money: Math.round(G().S.money), updated: Date.now() }); }
+  try { await db.collection('leaderboard').doc(O.myId).set({ kills: O.kills, deaths: O.deaths, jobs: O.jobs, money: Math.round(G().S.money), nick: ((window.IEaccount && IEaccount.nick) || '').slice(0, 16), updated: Date.now() }); }
   catch (e) { if (e && e.code === 'permission_denied') G().toast('Rangliste: nur Mitwirkende können Punkte speichern', 3); }
   saving = false; if (dirty) saveStats();
 }
@@ -248,7 +249,7 @@ O.openBoard = async function () {
     list.innerHTML = '';
     snap.docs.forEach((d, i) => {
       const v = d.data(), row = document.createElement('div'); row.className = 'brow' + (d.id === O.myId ? ' me' : '');
-      const nm = (ps[d.id] && ps[d.id].name) || 'Spieler';
+      const nm = (typeof v.nick === 'string' && v.nick) || (ps[d.id] && ps[d.id].name) || 'Spieler';
       row.innerHTML = '<span class="rk"></span><span class="nm"></span><span class="v"></span><span class="v"></span><span class="v"></span><span class="v"></span>';
       const c = row.children; c[0].textContent = i + 1; c[1].textContent = nm + (d.id === O.myId ? ' (du)' : '');
       c[2].textContent = v.kills || 0; c[3].textContent = v.deaths || 0; c[4].textContent = v.jobs || 0; c[5].textContent = '€ ' + Math.round(v.money || 0).toLocaleString('de-DE');
