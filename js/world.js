@@ -62,6 +62,11 @@ function continent(x, z) {
   const lon = x / (IE.K * IE.LONS) + 12.5, lat = 42 - z / IE.K;
   return lat > 45.85 || (lon < 7.55 && lat > 43.8) || (lon > 13.65 && lat > 45.55);
 }
+function zoneFlat(x, z, h) {
+  for (const b of IE.flatZones) { const d = Math.max(Math.abs(x - b.x) - b.hw, Math.abs(z - b.z) - b.hd, 0);
+    if (d < 140) h = h + (b.h - h) * smooth(140, 10, d); }
+  return h;
+}
 function baseHeight(x, z) {
   let sd = coastSigned(x, z);
   if (sd < 0 && continent(x, z)) sd = 120 - sd;
@@ -80,13 +85,11 @@ function baseHeight(x, z) {
     if (d < v.r) { const t = 1 - d / v.r; h += v.h * Math.pow(t, 1.4) - (d < v.r * 0.08 ? (v.r * 0.08 - d) * 0.9 : 0); }
   }
   h *= 0.25 + 0.75 * ramp;
-  for (const b of IE.flatZones) { const d = Math.max(Math.abs(x - b.x) - b.hw, Math.abs(z - b.z) - b.hd, 0);
-    if (d < 140) h = h + (b.h - h) * smooth(140, 10, d); }
   for (const c of IE.cities) {
     const d = Math.hypot(x - c.x, z - c.z);
     if (d < c.r + 150) { const t = smooth(c.r + 150, c.r + 15, d); h = h + (c.base - h) * t; }
   }
-  return h;
+  return zoneFlat(x, z, h);
 }
 
 function rawH(x, z) {
@@ -137,7 +140,7 @@ for (const rd of IE.roadDefs) {
     for (let i = 0; i < hs.length; i++) { let s = 0, n = 0; for (let k = -W; k <= W; k++) { const j = i + k; if (j >= 0 && j < hs.length) { s += hs[j]; n++; } } o[i] = s / n; }
     hs = o;
   }
-  pts.forEach((p, i) => p.y = hs[i]);
+  pts.forEach((p, i) => p.y = zoneFlat(p.x, p.z, hs[i]));
   IE.roads.push({ a: A, b: B, pts });
 }
 const RW = new Float32Array(NV), RH = new Float32Array(NV);
@@ -152,6 +155,7 @@ for (const r of IE.roads) for (const p of r.pts) {
   }
 }
 for (let i = 0; i < NV; i++) if (RW[i] > 0 && H[i] > -0.6) H[i] = H[i] + (RH[i] - 0.45 - H[i]) * RW[i];
+for (let iz = 0; iz <= G.nz; iz++) for (let ix = 0; ix <= G.nx; ix++) { const i = iz * (G.nx + 1) + ix; if (H[i] > -0.6) H[i] = zoneFlat(G.x0 + ix * G.cx, G.z0 + iz * G.cz, H[i]); }
 
 };
 

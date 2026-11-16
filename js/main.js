@@ -1051,6 +1051,9 @@ function buildMapCanvas() {
   g.putImageData(img, 0, 0);
   g.strokeStyle = '#f2d36b'; g.lineWidth = 2; g.lineJoin = 'round';
   for (const r of IE.roads) { g.beginPath(); r.pts.forEach((p, i) => { const x = (p.x - G.x0) * MAP.s, y = (p.z - G.z0) * MAP.s; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); }
+  { const A = IE.airport, a = w2m(A.x - A.hw, A.z - A.hd), b = w2m(A.x + A.hw, A.z + A.hd); g.fillStyle = '#9aa08a'; g.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
+    const r0 = w2m(A.x + 5, A.z - A.hd + 10), r1 = w2m(A.x + 35, A.z + A.hd - 10); g.fillStyle = '#3a3c40'; g.fillRect(r0.x, r0.y, Math.max(2, r1.x - r0.x), r1.y - r0.y); }
+  { const B = IE.base, a = w2m(B.x - B.hw, B.z - B.hd), b = w2m(B.x + B.hw, B.z + B.hd); g.fillStyle = '#8f8b7e'; g.fillRect(a.x, a.y, b.x - a.x, b.y - a.y); }
   for (const ct of IE.cities) { g.fillStyle = 'rgba(214,200,180,0.75)'; g.beginPath(); g.arc((ct.x - G.x0) * MAP.s, (ct.z - G.z0) * MAP.s, Math.max(3, ct.r * MAP.s * 0.8), 0, 7); g.fill(); }
   MAP.c = c;
 }
