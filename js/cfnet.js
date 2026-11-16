@@ -10,7 +10,8 @@ const rand = n => { const a = crypto.getRandomValues(new Uint8Array(n)); return 
 function stored(key, make) { let v = null; try { v = localStorage.getItem(key); } catch (e) { } if (!v) { v = make(); try { localStorage.setItem(key, v); } catch (e) { } } return v; }
 const deviceId = stored('italienEmpire_cfid', () => 'p_' + rand(16));
 const secret = stored('italienEmpire_cfsecret', () => rand(32));
-const myId = () => deviceId + ((window.IEaccount && IEaccount.slug) ? '_' + IEaccount.slug : '');
+const myId = () => (window.IEaccount && IEaccount.slug) || null;
+const tok = () => (window.IEaccount && IEaccount.token) || '';
 
 function makeRoom(name) {
   let ws = null, peer = null, open = false, closed = false, pres = {}, sendT = 0, sendTimer = null, readyRes, readyRej;
@@ -26,15 +27,18 @@ function makeRoom(name) {
   const setConn = c => { open = c; cl.forEach(f => f(c)); };
   function flush() { sendTimer = null; if (open && ws) { sendT = Date.now(); ws.send(JSON.stringify({ t: 'presence', p: pres })); } }
   function connect() {
-    try { ws = new WebSocket(wsBase + '/room/' + encodeURIComponent(name)); } catch (e) { setTimeout(connect, 2000); return; }
+    if (closed) return;
+    if (!tok()) { setTimeout(connect, 1000); return; }
+    try { ws = new WebSocket(wsBase + '/room/' + encodeURIComponent(name) + '?token=' + encodeURIComponent(tok())); } catch (e) { setTimeout(connect, 2000); return; }
     ws.onopen = () => { setConn(true); flush(); };
     ws.onclose = () => { setConn(false); if (!closed) setTimeout(connect, 1500); };
     ws.onmessage = ev => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (m.t === 'denied') { if (m.reason === 'banned') { closed = true; if (window.IEaccount && IEaccount.onBanned) IEaccount.onBanned(); } return; }
       if (m.t === 'welcome') { peer = m.peer; peers.clear(); for (const p of m.peers || []) peers.set(p.peer, mk(p)); readyRes(); notify(snapshot(), [], []); }
       else if (m.t === 'presence') { if (m.peer === peer) return; const had = peers.has(m.peer), p = mk(m); peers.set(m.peer, p); notify(had ? [] : [p], had ? [p] : [], []); }
       else if (m.t === 'leave') { const p = peers.get(m.peer); peers.delete(m.peer); if (p) notify([], [], [p]); }
-      else if (m.t === 'emit') { const msg = { topic: m.topic, data: m.data, peer: m.peer, by: (peers.get(m.peer) || {}).by || null, isMe: m.peer === peer, sameTab: m.peer === peer, kind: 'viewer', guest: false }; (ls[m.topic] || []).forEach(f => { try { f(msg); } catch (e) { console.error(e); } }); }
+      else if (m.t === 'emit') { const msg = { topic: m.topic, data: m.data, peer: m.peer, from: m.from, adm: !!m.adm, by: (peers.get(m.peer) || {}).by || null, isMe: m.peer === peer, sameTab: m.peer === peer, kind: 'viewer', guest: false }; (ls[m.topic] || []).forEach(f => { try { f(msg); } catch (e) { console.error(e); } }); }
     };
   }
   connect();
@@ -69,7 +73,7 @@ const db = {
     return {
       doc: id => ({
         get: async () => { const d = await json(await fetch(`${base}/board/${encodeURIComponent(id)}`)); return { id, exists: !!d.exists, data: () => d.data }; },
-        set: async data => { await json(await fetch(`${base}/board/${encodeURIComponent(id)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({}, data, { secret })) })); }
+        set: async data => { await json(await fetch(`${base}/board/${encodeURIComponent(id)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({}, data, { token: tok() })) })); }
       }),
       orderBy: (f) => q(f, 30)
     };
@@ -77,5 +81,16 @@ const db = {
 };
 const user = { id: async () => myId(), profiles: async ids => Object.fromEntries([].concat(ids).map(i => [i, { id: i, name: '', color: '#d9b45a', avatarUrl: '', email: null, isMe: i === myId(), guest: false }])) };
 
-window.IECF = { use: async n => (n === 'room' ? lobby : n === 'db' ? db : n === 'user' ? user : null), server: base };
+// Konten auf dem Server
+const post = async (path, body) => { const r = await fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); let d = {}; try { d = await r.json(); } catch (e) { } if (!r.ok) throw Object.assign(new Error(d.error || ('HTTP ' + r.status)), { code: d.error || 'http', status: r.status }); return d; };
+const account = {
+  register: (nick, ph) => post('/acc/register', { nick, ph }),
+  login: (nick, ph) => post('/acc/login', { nick, ph }),
+  me: () => post('/acc/me', { token: tok() }),
+  claim: () => post('/acc/claim', { token: tok() }),
+  logout: () => post('/acc/logout', { token: tok() }),
+  list: () => post('/acc/list', { token: tok() }),
+  act: (target, what, amount) => post('/acc/act', { token: tok(), target, what, amount })
+};
+window.IECF = { use: async n => (n === 'room' ? lobby : n === 'db' ? db : n === 'user' ? user : null), server: base, account };
 })();

@@ -296,6 +296,55 @@ IE.updatePlane = function (v, inp, dt) {
   v.group.position.copy(v.pos); v.group.rotation.order = 'YXZ'; v.group.rotation.y = v.yaw; v.group.rotation.x = -v.pitch; v.group.rotation.z = v.roll;
 };
 
+// ---------- Flug-Yacht (Admin) ----------
+// Gruppen-Koordinaten: vorne = +z, Deck auf y = 0
+IE.AIRSHIP = { L: 64, W: 16, cabinZ0: -32 + 3, cabinZ1: -32 + 19, cabinX: 6.5, helmZ: -32 + 21 };
+IE.makeAirship = function () {
+  const A = IE.AIRSHIP, outer = new T.Group(), g = new T.Group(); outer.add(g); g.rotation.y = -Math.PI / 2;
+  const L = A.L, W = A.W;
+  const sh = new T.Shape(); sh.moveTo(-L / 2, -W / 2); sh.lineTo(L * 0.18, -W / 2); sh.quadraticCurveTo(L * 0.45, -W * 0.38, L / 2, 0); sh.quadraticCurveTo(L * 0.45, W * 0.38, L * 0.18, W / 2); sh.lineTo(-L / 2, W / 2); sh.closePath();
+  const hullG = new T.ExtrudeGeometry(sh, { depth: 7, bevelEnabled: true, bevelSize: 0.6, bevelThickness: 0.6, bevelSegments: 3 }); hullG.rotateX(-Math.PI / 2); hullG.translate(0, -7.3, 0);
+  const white = new T.MeshStandardMaterial({ color: 0xf4f2ec, metalness: 0.3, roughness: 0.35 }), navy = new T.MeshStandardMaterial({ color: 0x14284a, metalness: 0.4, roughness: 0.3 }), gold = IE.mat.gold;
+  const hull = new T.Mesh(hullG, white); hull.castShadow = true; g.add(hull);
+  const band = new T.Mesh(hullG, navy); band.scale.set(1.004, 0.16, 1.01); band.position.y = -1.2; g.add(band);
+  const deckG = new T.ExtrudeGeometry(sh, { depth: 0.3, bevelEnabled: false }); deckG.rotateX(-Math.PI / 2); deckG.translate(0, -0.3, 0);
+  const deckTex = IE.canvasTex(64, 256, (c, w, h) => { c.fillStyle = '#9a6a3c'; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 8) { c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(x, 0, 1, h); } for (let i = 0; i < 40; i++) { c.fillStyle = 'rgba(0,0,0,0.12)'; c.fillRect(((Math.random() * 8) | 0) * 8, Math.random() * h, 8, 1); } }, [6, 2]);
+  const deck = new T.Mesh(deckG, new T.MeshLambertMaterial({ map: deckTex })); deck.scale.set(0.985, 1, 0.94); deck.position.y = 0.32; deck.receiveShadow = true; g.add(deck);
+  // Reling
+  const rail = new T.MeshStandardMaterial({ color: 0xd8dde2, metalness: 0.8, roughness: 0.2 });
+  const pts = sh.getPoints(40);
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i + 1], len = Math.hypot(b.x - a.x, b.y - a.y); if (len < 0.1) continue;
+    const r = new T.Mesh(new T.BoxGeometry(len, 0.08, 0.08), rail); r.position.set((a.x + b.x) / 2 * 0.985, 1.25, -(a.y + b.y) / 2 * 0.94); r.rotation.y = Math.atan2(b.y - a.y, b.x - a.x); g.add(r);
+    if (i % 2 === 0) { const p = new T.Mesh(new T.BoxGeometry(0.08, 1.25, 0.08), rail); p.position.set(a.x * 0.985, 0.62, -a.y * 0.94); g.add(p); }
+  }
+  // Kommandobrücke (hinten)
+  const cab = new T.Mesh(new T.BoxGeometry(A.cabinZ1 - A.cabinZ0, 4.2, A.cabinX * 2), white); cab.position.set((A.cabinZ0 + A.cabinZ1) / 2, 2.1, 0); cab.castShadow = true; g.add(cab);
+  const win = new T.Mesh(new T.BoxGeometry(A.cabinZ1 - A.cabinZ0 + 0.1, 1.3, A.cabinX * 2 + 0.1), new T.MeshStandardMaterial({ color: 0x1c2630, metalness: 0.7, roughness: 0.15 })); win.position.set((A.cabinZ0 + A.cabinZ1) / 2, 2.6, 0); g.add(win);
+  const top = new T.Mesh(new T.BoxGeometry(9, 2.6, 9), white); top.position.set(A.cabinZ0 + 6, 5.5, 0); g.add(top);
+  const topW = new T.Mesh(new T.BoxGeometry(9.1, 0.9, 9.1), win.material); topW.position.set(A.cabinZ0 + 6, 5.8, 0); g.add(topW);
+  const mast = new T.Mesh(new T.CylinderGeometry(0.15, 0.2, 6, 8), rail); mast.position.set(A.cabinZ0 + 6, 9.5, 0); g.add(mast);
+  const flag = IE.canvasTex(96, 64, (c, w, h) => { c.fillStyle = '#009246'; c.fillRect(0, 0, w / 3, h); c.fillStyle = '#f1f2f1'; c.fillRect(w / 3, 0, w / 3, h); c.fillStyle = '#ce2b37'; c.fillRect(2 * w / 3, 0, w / 3, h); });
+  const fl = new T.Mesh(new T.PlaneGeometry(2.4, 1.6), new T.MeshBasicMaterial({ map: flag, side: T.DoubleSide })); fl.position.set(A.cabinZ0 + 4.8, 11.6, 0); fl.rotation.y = Math.PI / 2; g.add(fl);
+  // Steuerrad
+  const helmBase = new T.Mesh(new T.CylinderGeometry(0.3, 0.45, 1.1, 10), navy); helmBase.position.set(A.helmZ, 0.85, 0); g.add(helmBase);
+  const wheel = new T.Mesh(new T.TorusGeometry(0.55, 0.06, 6, 16), gold); wheel.position.set(A.helmZ + 0.2, 1.55, 0); wheel.rotation.y = Math.PI / 2; g.add(wheel);
+  // Pool & Liegen vorne
+  const pool = new T.Mesh(new T.BoxGeometry(8, 0.1, 5), new T.MeshStandardMaterial({ color: 0x3fb8d8, metalness: 0.1, roughness: 0.1, emissive: 0x0a3a48 })); pool.position.set(6, 0.42, 0); g.add(pool);
+  for (const z of [-4.5, 4.5]) for (const x of [0, 3, 12]) { const l = new T.Mesh(new T.BoxGeometry(2, 0.4, 0.8), new T.MeshLambertMaterial({ color: 0xf0ece0 })); l.position.set(x, 0.55, z); g.add(l); }
+  // Triebwerke
+  const glow = new T.MeshBasicMaterial({ color: 0x66e0ff }), fans = [];
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const pod = new T.Group(); pod.position.set(sx * 18, -3.5, sz * (W / 2 + 2.6)); g.add(pod);
+    const c = new T.Mesh(new T.CylinderGeometry(2.2, 2.2, 1.6, 20, 1, true), navy); c.material = navy; pod.add(c);
+    const ring = new T.Mesh(new T.TorusGeometry(2.2, 0.18, 6, 24), glow); ring.rotation.x = Math.PI / 2; pod.add(ring);
+    const fan = new T.Group(); for (let i = 0; i < 4; i++) { const b = new T.Mesh(new T.BoxGeometry(3.8, 0.06, 0.5), rail); b.rotation.y = i * Math.PI / 4; fan.add(b); } pod.add(fan); fans.push(fan);
+    const arm = new T.Mesh(new T.BoxGeometry(1, 0.6, 2.8), white); arm.position.set(0, 0.4, -sz * 2); pod.add(arm);
+  }
+  const under = new T.Mesh(new T.PlaneGeometry(L * 0.7, W * 0.7), new T.MeshBasicMaterial({ color: 0x66e0ff, transparent: true, opacity: 0.35, side: T.DoubleSide })); under.rotation.x = Math.PI / 2; under.position.y = -7.8; g.add(under);
+  return { group: outer, L, W, H: 8, bodyMat: white, fans, airship: true };
+};
+
 // ---------- Helikopter ----------
 IE.makeHeli = function (color, armed) {
   const outer = new T.Group(), g = new T.Group(); outer.add(g); g.rotation.y = -Math.PI / 2;

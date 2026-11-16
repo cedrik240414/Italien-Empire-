@@ -37,9 +37,11 @@ O.join = async function (isPublic, code, title) {
   room.onPeers(onPeers, e => G().toast('Online-Verbindung beendet (' + e.code + ')', 4));
   room.on('hit', onHit); room.on('kill', onKill); room.on('job', onJob); room.on('jobstep', onJobStep); room.on('jobkill', onJobKill);
   room.onConnection(c => { O.connected = c; updateBadge(); });
+  room.on('admin', msg => { const d = msg.data || {}; if (msg.adm && window.IEaccount && d.kick && d.kick === IEaccount.slug && IEaccount.onBanned) IEaccount.onBanned(); });
   await loadStats(); dirty = true; flushStats();
   updateBadge();
 };
+O.adminKick = function (slug) { if (room) room.emit('admin', { kick: slug }).catch(() => { }); };
 O.leave = async function () { try { if (room) await room.leave(); } catch (e) { } location.reload(); };
 
 // ---------- Spieler in der Welt ----------
@@ -56,6 +58,7 @@ function vehModel(v) {
   if (v.t === 'heli') return IE.makeHeli((IE.heliById[v.id] || IE.helis[0]).color, (IE.heliById[v.id] || {}).armed);
   if (v.t === 'boat') return IE.makeBoat(IE.boatById[v.id] || IE.boats[0]);
   if (v.t === 'plane') return IE.makePlane(IE.planeById[v.id] || IE.planes[0]);
+  if (v.t === 'airship') return IE.makeAirship();
   return null;
 }
 function ensurePeer(p) {
@@ -79,11 +82,13 @@ function ensurePeer(p) {
     r.veh = pr.v ? vehModel(pr.v) : null; r.vehKey = key;
     if (r.veh) scene.add(r.veh.group);
   }
+  if (pr.ship && !r.shipM) { r.shipM = IE.makeAirship(); r.shipPos = new T.Vector3(pr.ship.x, pr.ship.y, pr.ship.z); scene.add(r.shipM.group); }
+  if (!pr.ship && r.shipM) { scene.remove(r.shipM.group); r.shipM = null; }
   if (!r.tag) { r.tag = nameTag(r.name); scene.add(r.tag); }
 }
 function removePeer(peer) {
   const r = O.peers.get(peer); if (!r) return; const scene = G().scene;
-  if (r.h) scene.remove(r.h.group); if (r.veh) scene.remove(r.veh.group); if (r.tag) scene.remove(r.tag);
+  if (r.h) scene.remove(r.h.group); if (r.veh) scene.remove(r.veh.group); if (r.tag) scene.remove(r.tag); if (r.shipM) scene.remove(r.shipM.group);
   O.peers.delete(peer);
 }
 function onPeers(ch) {
@@ -98,7 +103,7 @@ async function resolveNames() {
   const ids = [...O.peers.values()].map(r => r.by).filter(Boolean); if (!ids.length) return;
   const ps = await user.profiles(ids);
   for (const r of O.peers.values()) {
-    const nm = (r.pr && typeof r.pr.nm === 'string' && r.pr.nm.slice(0, 16)) || (r.by && ps[r.by] && ps[r.by].name) || 'Spieler';
+    const nm = (r.pr && r.pr.adm ? '★ ' : '') + ((r.pr && typeof r.pr.nm === 'string' && r.pr.nm.slice(0, 16)) || (r.by && ps[r.by] && ps[r.by].name) || 'Spieler');
     if (nm !== r.name || !r.tagNamed) { r.name = nm; r.tagNamed = true; if (r.tag) { G().scene.remove(r.tag); } r.tag = nameTag(nm, r.by && ps[r.by] ? ps[r.by].color : null); G().scene.add(r.tag); }
   }
   updateBadge();
@@ -111,7 +116,9 @@ function sendPresence() {
   const g = G(), P = g.P, v = P.veh;
   const pr = { x: r2(P.pos.x), y: r2(P.pos.y), z: r2(P.pos.z), yaw: r2(P.yaw), c: g.S.char, hp: Math.round(P.health), dead: g.game.dead ? 1 : 0,
     sw: P.under ? 2 : P.swim ? 1 : 0, uid: O.myId || '', nm: (window.IEaccount && IEaccount.nick) || '', k: O.kills, d: O.deaths, pa: O.passive ? 1 : 0, w: g.S.cur };
-  pr.v = v ? { t: v.type, id: v.def.id, yaw: r2(v.yaw), p: r2(v.pitch || 0), r: r2(v.roll || 0), col: v.m.bodyMat ? v.m.bodyMat.color.getHex() : undefined } : null;
+  const ship = IE.vehicles.find(q => q.type === 'airship' && q.mine && !q.removeMe);
+  pr.ship = ship ? { x: r2(ship.pos.x), y: r2(ship.pos.y), z: r2(ship.pos.z), yaw: r2(ship.yaw) } : null;
+  pr.v = v && v.type !== 'airship' ? { t: v.type, id: v.def.id, yaw: r2(v.yaw), p: r2(v.pitch || 0), r: r2(v.roll || 0), col: v.m.bodyMat ? v.m.bodyMat.color.getHex() : undefined } : null;
   room.presence(pr).catch(() => { });
 }
 O.update = function (dt) {
@@ -121,18 +128,24 @@ O.update = function (dt) {
   const cam = G().camera;
   for (const r of O.peers.values()) {
     const pr = r.pr; if (!pr) continue;
+    if (r.shipM && pr.ship) { const st = new T.Vector3(pr.ship.x, pr.ship.y, pr.ship.z); if (r.shipPos.distanceTo(st) > 60) r.shipPos.copy(st); else r.shipPos.lerp(st, Math.min(1, dt * 9)); r.shipM.group.position.copy(r.shipPos); r.shipM.group.rotation.set(0, pr.ship.yaw || 0, 0); r.shipM.fans.forEach(f => f.rotation.y += dt * 10); }
     const tgt = new T.Vector3(pr.x, pr.y, pr.z);
     if (r.pos.distanceTo(tgt) > 40) r.pos.copy(tgt); else r.pos.lerp(tgt, Math.min(1, dt * 9));
     const mv = r.pos.distanceTo(r.last) / Math.max(dt, 0.001); r.last.copy(r.pos); r.spd += (mv - r.spd) * Math.min(1, dt * 6);
     let dy = (pr.yaw || 0) - r.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2; r.yaw += dy * Math.min(1, dt * 10);
-    if (pr.v && r.veh) {
+    if (pr.v && r.veh && pr.v.t === 'airship') {
+      r.veh.group.visible = true; r.veh.group.position.copy(r.pos); r.veh.group.rotation.set(0, pr.v.yaw || 0, 0);
+      if (r.veh.fans) r.veh.fans.forEach(f => f.rotation.y += dt * 10);
+      r.h.group.visible = false; r.tag.position.set(r.pos.x, r.pos.y + 14, r.pos.z);
+    } else if (pr.v && r.veh) {
       r.h.group.visible = false; r.veh.group.visible = true;
       r.veh.group.position.copy(r.pos); r.veh.group.rotation.order = 'YXZ';
       r.veh.group.rotation.set(pr.v.t === 'plane' ? -(pr.v.p || 0) : (pr.v.p || 0), pr.v.yaw || 0, pr.v.r || 0);
       if (r.veh.rotor) { r.veh.rotor.rotation.y += dt * 28; r.veh.tailRotor.rotation.z += dt * 40; }
       if (r.veh.prop) r.veh.prop.rotation.x += dt * 50;
+      if (r.veh.fans) r.veh.fans.forEach(f => f.rotation.y += dt * 10);
       if (r.veh.wheels) r.veh.wheels.forEach(w => { if (w.children[0]) w.children[0].rotation.z -= r.spd * dt / 0.36; });
-      r.tag.position.set(r.pos.x, r.pos.y + (pr.v.t === 'plane' ? 6 : 4.2), r.pos.z);
+      r.tag.position.set(r.pos.x, r.pos.y + (pr.v.t === 'plane' ? 6 : pr.v.t === 'airship' ? 14 : 4.2), r.pos.z);
     } else {
       if (r.veh) r.veh.group.visible = false;
       r.h.group.visible = true; r.h.group.position.copy(r.pos);

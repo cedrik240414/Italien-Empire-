@@ -171,6 +171,12 @@ body.touch #wheelBtn { top: calc(232px + env(safe-area-inset-top, 0px)); }
 #acctBar b { color: var(--gold); }
 #acctBar .lglink { color: #cfc7b6; }
 
+/* Admin & Upgrades */
+.adrow .acts input { width: 110px; font-family: var(--f-hud); font-size: 16px; padding: 6px 8px; background: var(--ink); color: var(--paper); border: 1px solid rgba(243,234,216,0.3); -webkit-user-select: text; user-select: text; }
+.adrow { grid-template-columns: minmax(0, 1fr); }
+.adrow .acts { justify-content: flex-start; }
+#acctBar #acctAdmin { color: var(--gold); }
+
 /* Online */
 .onlinebox { display: grid; gap: 10px; background: rgba(23,27,34,0.85); border: 1px solid rgba(217,180,90,0.25); padding: 14px 16px; }
 #onCode { font-family: var(--f-hud); font-size: 20px; padding: 10px 12px; width: 150px; background: var(--ink); color: var(--paper); border: 1px solid rgba(243,234,216,0.35); text-transform: uppercase; letter-spacing: 0.15em; -webkit-user-select: text; user-select: text; touch-action: manipulation; }
@@ -236,7 +242,7 @@ body.touch.playing #touch { display: block; }
 </div>
 <div id="title" hidden>
   <div class="wrap">
-    <div id="acctBar" hidden>Angemeldet als <b id="lgWho"></b> <button class="lglink" id="lgOut">Abmelden</button></div>
+    <div id="acctBar" hidden>Angemeldet als <b id="lgWho"></b> <button class="lglink" id="acctAdmin" hidden>Admin-Panel</button> <button class="lglink" id="lgOut">Abmelden</button></div>
     <h1>Italien <em>Empire</em></h1>
     <div class="lead">Du spielst in einer riesigen offenen Spielwelt in Italien – von den Alpen bis Sizilien. Wechsle zwischen Jack Moretti, Marco Bellini und Sofia Romano und steigt von kleinen Kriminellen zu den mächtigsten Organisatoren Italiens auf. Dabei geratet ihr zwischen die Mafiaorganisation La Corona, das FIB und eine geheime Verschwörung innerhalb der italienischen Regierung.</div>
     <div class="btns"><button class="btn" id="bNew">Neues Spiel</button><button class="btn ghost" id="bCont" hidden>Weiterspielen</button></div>
@@ -270,7 +276,7 @@ body.touch.playing #touch { display: block; }
       <div><b>FEUER</b> Schießen (mit Zielhilfe)</div><div><b>EIN/AUS</b> Fahrzeug</div>
       <div><b>E</b> Shop / Mission</div><div><b>HOCH / RUNTER</b> Springen · Heli</div><div><b>TAUCHEN / AUF</b> Unter Wasser schwimmen</div><div><b>SICHT</b> Ego-Sicht umschalten</div><div><b>Kreis links</b> Waffenrad</div><div><b>Flugzeug</b> GAS +/− für Schub, Joystick hoch = Nase hoch</div>
     </div>
-    <div class="ver">Version 12</div>
+    <div class="ver">Version 13</div>
   </div>
 </div>
 
@@ -318,6 +324,16 @@ body.touch.playing #touch { display: block; }
 <div class="modal" id="lobbyModal" hidden><div class="panel"><header><h2>Öffentliche Lobbys</h2><button class="x" data-close>✕</button></header>
   <div class="rows" id="lobbyRows"></div>
   <div class="hint" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><span id="lobbyTotal"></span><button class="btn ghost" id="lobbyNew" style="font-size:17px;padding:8px 16px">Neue öffentliche Lobby</button></div></div></div>
+<div class="modal" id="adminModal" hidden><div class="panel"><header><h2>Admin-Panel</h2><button class="x" data-close>✕</button></header>
+  <div class="opt" style="flex-wrap:wrap"><span>Für mich</span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center">
+    <button class="btn ghost" id="adFly" style="font-size:15px;padding:6px 12px">Flugmodus: Aus</button>
+    <label for="adSpeed" style="font-size:15px;color:var(--muted)">Tempo</label><input type="range" id="adSpeed" min="20" max="600" step="10" value="120" style="width:140px"><span id="adSpeedV" style="font-size:15px;min-width:76px">432 km/h</span>
+    <button class="btn" id="adYacht" style="font-size:15px;padding:6px 12px">Flug-Yacht spawnen</button></span></div>
+  <div class="hint" style="padding-bottom:6px">Flugmodus: Joystick/WASD fliegt in Blickrichtung, HOCH/RUNTER (Leertaste/Shift) steigt und sinkt. Geld-Geschenke kommen beim Spieler innerhalb von 15 Sekunden an.</div>
+  <div style="padding:0 22px 10px"><input id="adSearch" placeholder="Spieler suchen …" aria-label="Spieler suchen" style="width:100%;font-size:17px;padding:9px 12px;background:var(--ink);color:var(--paper);border:1px solid rgba(243,234,216,0.3);-webkit-user-select:text;user-select:text"></div>
+  <div class="rows" id="adList"></div></div></div>
+<div class="modal" id="upModal" hidden><div class="panel"><header><h2>Upgrades</h2><div style="display:flex;gap:14px;align-items:center"><span class="cash" id="upCash"></span><button class="x" data-close>✕</button></div></header>
+  <div class="rows" id="upRows"></div><div class="hint">Jedes Upgrade kannst du unendlich oft kaufen – es wird nur jedes Mal teurer.</div></div></div>
 <div class="modal" id="boardModal" hidden><div class="panel"><header><h2>Rangliste</h2><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="x" data-sort="kills">Abschüsse</button><button class="x" data-sort="money">Geld</button><button class="x" data-sort="jobs">Aufträge</button><button class="x" data-close>✕</button></div></header>
   <div class="brow bhead"><span class="rk">#</span><span class="nm">Spieler</span><span class="v">Abschüsse</span><span class="v">Tode</span><span class="v">Aufträge</span><span class="v">Geld</span></div>
   <div id="boardList"></div></div></div>
@@ -331,6 +347,7 @@ body.touch.playing #touch { display: block; }
     <div class="opt"><span>Crew-Aufträge <small style="color:var(--muted);font-size:14px">· starten für alle in der Lobby</small></span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" id="onPassive" style="font-size:15px;padding:6px 12px">Passivmodus: Aus</button><button class="btn ghost" id="onBoard2" style="font-size:15px;padding:6px 12px">Rangliste</button></span></div>
     <div id="onJobs" class="jobs"></div>
   </div>
+  <div class="opt"><span>Upgrades &amp; Admin</span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn" id="pUp" style="font-size:16px;padding:6px 14px">Upgrades</button><button class="btn ghost" id="pAdmin" style="font-size:16px;padding:6px 14px" hidden>Admin-Panel</button></span></div>
   <div class="opt"><span>Grafik</span><span><button class="btn ghost" id="optGfx" style="font-size:16px;padding:6px 14px">Hoch</button></span></div>
   <div class="opt"><label for="optSens">Kamera-Empfindlichkeit</label><input type="range" id="optSens" min="0.3" max="2.5" step="0.1" value="1"></div>
   <div class="opt"><span>Kamera</span><span><button class="btn ghost" id="optView" style="font-size:16px;padding:6px 14px">Normal</button></span></div>
@@ -341,11 +358,11 @@ body.touch.playing #touch { display: block; }
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/data.js?v=12"></script>
-<script src="js/world.js?v=12"></script>
-<script src="js/entities.js?v=12"></script>
-<script src="js/main.js?v=12"></script>
-<script src="js/server-config.js?v=12"></script>
-<script src="js/cfnet.js?v=12"></script>
-<script src="js/online.js?v=12"></script>
-<script src="js/account.js?v=12"></script>
+<script src="js/data.js?v=13"></script>
+<script src="js/world.js?v=13"></script>
+<script src="js/entities.js?v=13"></script>
+<script src="js/main.js?v=13"></script>
+<script src="js/server-config.js?v=13"></script>
+<script src="js/cfnet.js?v=13"></script>
+<script src="js/online.js?v=13"></script>
+<script src="js/account.js?v=13"></script>

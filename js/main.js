@@ -21,7 +21,7 @@ const opts = (() => { try { return JSON.parse(localStorage.getItem('italienEmpir
 opts.gfx = opts.gfx || (isTouch ? 'mittel' : 'hoch'); opts.fp = !!opts.fp; opts.sens = opts.sens || 1; if (opts.snd === undefined) opts.snd = true;
 const saveOpts = () => { try { localStorage.setItem('italienEmpire_opts', JSON.stringify(opts)); } catch (e) { } };
 
-const S = { money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], mission: 0, char: 'jack', armor: 0, done: false };
+const S = { money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], up: {}, mission: 0, char: 'jack', armor: 0, done: false };
 function saveGame() { store.set(S); }
 
 // ---------- Renderer ----------
@@ -179,10 +179,21 @@ const CHEATS = [
   { seq: ['E', 'ZIELEN', 'E', 'ZIELEN', 'SPRUNG'], name: 'Kampfjet in der Luft', f() {
       const f = IE.fwd(P.yaw), v = IE.spawnPlane(scene, 'caccia', P.pos.x - f.x * 20, P.pos.z - f.z * 20, P.yaw, Math.max(0, IE.groundH(P.pos.x, P.pos.z)) + 220);
       v.speed = 120; v.throttle = 0.75; v.onGround = false; leaveVehicle(); P.veh = v; v.driver = 'player'; P.swim = P.under = false; P.interior = null; $('speed').hidden = false; cam.yaw = v.yaw; } },
-  { seq: ['RENNEN', 'RENNEN', 'E', 'E'], name: 'Gesundheit & Weste', f() { P.health = 100; S.armor = 100; P.o2 = 1; } },
+  { seq: ['RENNEN', 'RENNEN', 'E', 'E'], name: 'Gesundheit & Weste', f() { P.health = maxHP(); S.armor = 100; P.o2 = 1; } },
   { seq: ['E', 'SPRUNG', 'E', 'SPRUNG', 'ZIELEN'], name: 'Fahndung gelöscht', f() { game.wanted = 0; for (const v of IE.vehicles) if (v.police && v !== P.veh) v.removeMe = true; for (const n of IE.npcs) if (n.kind === 'police') n.remove = true; } },
   { seq: ['ZIELEN', 'SPRUNG', 'ZIELEN', 'SPRUNG', 'RENNEN'], name: '5 Sterne', f() { setWanted(5); } },
-  { seq: ['SPRUNG', 'ZIELEN', 'RENNEN', 'E', 'SPRUNG'], name: '+ 250.000 €', f() { addMoney(250000); } }
+  { seq: ['SPRUNG', 'ZIELEN', 'RENNEN', 'E', 'SPRUNG'], name: '+ 250.000 €', f() { addMoney(250000); } },
+  { seq: ['SPRUNG', 'SPRUNG', 'SPRUNG', 'SPRUNG'], name: 'Supersprung', toggle: 'jump' },
+  { seq: ['RENNEN', 'RENNEN', 'RENNEN', 'E'], name: 'Superschnell laufen', toggle: 'run' },
+  { seq: ['WAFFE', 'E', 'WAFFE', 'E'], name: 'Unendlich Munition', toggle: 'ammo' },
+  { seq: ['ZIELEN', 'WAFFE', 'ZIELEN', 'WAFFE'], name: 'Explosive Kugeln', toggle: 'boom' },
+  { seq: ['SPRUNG', 'E', 'SPRUNG', 'E', 'SPRUNG'], name: 'Mond-Schwerkraft', toggle: 'moon' },
+  { seq: ['RENNEN', 'E', 'ZIELEN', 'WAFFE'], name: 'Nie gesucht', toggle: 'nowanted', on() { game.wanted = 0; } },
+  { seq: ['SPRUNG', 'RENNEN', 'SPRUNG', 'RENNEN', 'SPRUNG'], name: 'Flugmodus', f() { setFly(!P.fly, P.flySpeed || 60); } },
+  { seq: ['ZIELEN', 'ZIELEN', 'ZIELEN', 'E'], name: 'Privatjet in der Luft', f() {
+      const f = IE.fwd(P.yaw), v = IE.spawnPlane(scene, 'jet', P.pos.x - f.x * 25, P.pos.z - f.z * 25, P.yaw, Math.max(0, IE.groundH(P.pos.x, P.pos.z)) + 250);
+      v.speed = 110; v.throttle = 0.7; v.onGround = false; leaveVehicle(); P.veh = v; v.driver = 'player'; P.swim = P.under = false; P.interior = null; P.fly = false; $('speed').hidden = false; cam.yaw = v.yaw; } },
+  { seq: ['E', 'E', 'E', 'RENNEN', 'RENNEN'], name: '+ 1 Stufe Geld-Multiplikator', f() { S.up = S.up || {}; S.up.geld = upLvl('geld') + 1; } }
 ];
 let cheatBuf = [];
 function cheatInput(sym) {
@@ -192,21 +203,22 @@ function cheatInput(sym) {
   for (const c of CHEATS.slice().sort((a, b) => b.seq.length - a.seq.length)) {
     if (seq.length < c.seq.length || c.seq.some((x, i) => seq[seq.length - c.seq.length + i] !== x)) continue;
     cheatBuf = [];
-    if (window.IEonline && IEonline.active && IEonline.isPublic) { toast('Cheats sind in der öffentlichen Lobby aus'); return; }
+    if (window.IEonline && IEonline.active && IEonline.isPublic && !(window.IEaccount && IEaccount.admin)) { toast('Cheats sind in der öffentlichen Lobby aus'); return; }
+    if (c.toggle) { game.ch[c.toggle] = !game.ch[c.toggle]; if (game.ch[c.toggle] && c.on) c.on(); sfx('pass'); banner('Cheat ' + (game.ch[c.toggle] ? 'an' : 'aus'), c.name, '', 2.5); return; }
     c.f(); sfx('pass'); banner('Cheat aktiviert', c.name, '', 2.5); return;
   }
 }
 
 // ---------- Spielzustand ----------
-const game = { state: 'load', time: 0, wanted: 0, seenT: 0, dead: false, deadT: 0, cityActive: null };
+const game = { ch: {}, state: 'load', time: 0, wanted: 0, seenT: 0, dead: false, deadT: 0, cityActive: null };
 const P = { pos: new T.Vector3(), vy: 0, yaw: 0, h: null, veh: null, health: 100, onGround: true, phase: 0, swim: false, fireT: 0, aimT: 0, hurtT: 0, o2: 1, under: false };
 const cam = { yaw: 0, pitch: 0.28, dist: 5.5, cur: new T.Vector3(), target: new T.Vector3() };
 let missionBeam, waypoint = null, wpBeam;
 const effects = [];
 const pickups = [];
 
-function uiOpen() { return ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal'].some(id => !$(id).hidden); }
-function closeModals() { document.body.classList.remove('modalopen'); ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal'].forEach(id => $(id).hidden = true); }
+function uiOpen() { return ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal', 'adminModal', 'upModal'].some(id => !$(id).hidden); }
+function closeModals() { document.body.classList.remove('modalopen'); ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal', 'adminModal', 'upModal'].forEach(id => $(id).hidden = true); }
 
 // ---------- Waffenrad ----------
 const GUN_SVG = {
@@ -292,7 +304,32 @@ function updateEffects(dt) {
 let toastT = 0, bannerT = 0, gainT = 0;
 function toast(t, sec) { $('toast').textContent = t; $('toast').hidden = false; toastT = sec || 2.5; }
 function banner(k, h, m, sec) { $('banner').innerHTML = `<div class="in"><div class="k">${k}</div><div class="h">${h}</div>${m ? `<div class="m">${m}</div>` : ''}</div>`; $('banner').hidden = false; bannerT = sec || 4; }
-function addMoney(v) { S.money += v; if (v > 0) { $('moneyG').textContent = '+ ' + fmt(v); $('moneyG').style.opacity = 1; gainT = 2; sfx('cash'); } }
+const UPGRADES = [
+  { id: 'geld', name: 'Geld-Multiplikator', base: 15000, grow: 1.55, eff: l => `× ${(1 + 0.25 * l).toFixed(2)} auf alles verdiente Geld` },
+  { id: 'leben', name: 'Lebensenergie', base: 8000, grow: 1.45, eff: l => `${100 + 20 * l} Lebenspunkte` },
+  { id: 'schaden', name: 'Waffenschaden', base: 12000, grow: 1.5, eff: l => `+ ${10 * l} % Schaden` },
+  { id: 'tempo', name: 'Lauftempo', base: 6000, grow: 1.4, eff: l => `+ ${6 * l} % Tempo zu Fuß` },
+  { id: 'panzerung', name: 'Panzerung', base: 7000, grow: 1.45, eff: l => `− ${Math.round((1 - Math.pow(0.93, l)) * 100)} % Schaden an dir` }
+];
+const upLvl = id => (S.up && S.up[id]) || 0;
+const upCost = u => Math.round(u.base * Math.pow(u.grow, upLvl(u.id)) / 100) * 100;
+const moneyMult = () => 1 + 0.25 * upLvl('geld');
+const maxHP = () => 100 + 20 * upLvl('leben');
+const dmgMult = () => 1 + 0.1 * upLvl('schaden');
+function openUpgrades() {
+  closeModals(); $('upModal').hidden = false; if (locked) document.exitPointerLock();
+  const el = $('upRows'); el.innerHTML = ''; $('upCash').textContent = fmt(S.money);
+  for (const u of UPGRADES) {
+    const l = upLvl(u.id), c = upCost(u), row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = '<div><div class="nm"></div><div class="st"></div></div><div class="acts"><button class="buy"></button></div>';
+    row.querySelector('.nm').textContent = `${u.name} · Stufe ${l}`;
+    row.querySelector('.st').textContent = `Jetzt: ${u.eff(l)} → nächste Stufe: ${u.eff(l + 1)}`;
+    const b = row.querySelector('button'); b.textContent = 'Kaufen · ' + fmt(c); b.disabled = S.money < c;
+    b.onclick = () => { if (S.money < upCost(u)) return; S.money -= upCost(u); S.up = S.up || {}; S.up[u.id] = upLvl(u.id) + 1; if (u.id === 'leben') P.health = Math.min(maxHP(), P.health + 20); sfx('cash'); saveGame(); openUpgrades(); };
+    el.appendChild(row);
+  }
+}
+function addMoney(v, raw) { if (v > 0 && !raw) v = Math.round(v * moneyMult()); S.money += v; if (v > 0) { $('moneyG').textContent = '+ ' + fmt(v); $('moneyG').style.opacity = 1; gainT = 2; sfx('cash'); } }
 
 // ---------- Dialog ----------
 const dlg = { active: false, lines: [], i: 0, done: null };
@@ -303,12 +340,13 @@ $('dialog').addEventListener('pointerdown', e => { e.stopPropagation(); press('s
 
 // ---------- Wanted ----------
 function starsN() { return game.wanted > 0 ? Math.max(1, Math.floor(game.wanted + 0.01)) : 0; }
-function setWanted(n) { game.wanted = clamp(Math.max(game.wanted, n), 0, 5); game.seenT = 0; }
-function addWanted(n) { game.wanted = clamp(game.wanted + n, 0, 5); game.seenT = 0; }
+function setWanted(n) { if (game.ch && game.ch.nowanted) { game.wanted = 0; return; } game.wanted = clamp(Math.max(game.wanted, n), 0, 5); game.seenT = 0; }
+function addWanted(n) { if (game.ch && game.ch.nowanted) { game.wanted = 0; return; } game.wanted = clamp(game.wanted + n, 0, 5); game.seenT = 0; }
 
 // ---------- Schaden ----------
 function hurtPlayer(dmg) {
   if (game.dead) return;
+  dmg *= Math.pow(0.93, upLvl('panzerung'));
   if (P.veh && P.veh.type === 'car') { P.veh.health -= dmg * 4; dmg *= 0.35; }
   if (S.armor > 0) { const a = Math.min(S.armor, dmg * 0.7); S.armor -= a; dmg -= a; }
   P.health -= dmg; P.hurtT = 0.4;
@@ -325,6 +363,9 @@ function damageNPC(n, dmg, byPlayer) {
       if (n.kind === 'soldier') { setWanted(3); addWanted(0.5); for (const o of IE.npcs) if (o.kind === 'soldier') o.alert = true; }
       if (n.mission && mission.coop && ONL()) IEonline.jobKill(mission.def.id, mission.step, n.id);
       if (n.kind === 'enemy') { const amt = n.boss ? 5000 : 40 + (Math.random() * 160 | 0); spawnCash(n.pos, amt); }
+      else if (n.kind === 'ped') spawnCash(n.pos, 15 + (Math.random() * 70 | 0));
+      else if (n.kind === 'police') spawnCash(n.pos, 60 + (Math.random() * 120 | 0));
+      else if (n.kind === 'soldier') spawnCash(n.pos, 120 + (Math.random() * 230 | 0));
     }
   } else if (n.kind === 'ped') { n.state = 'flee'; n.timer = 8; }
 }
@@ -359,7 +400,7 @@ function playerShoot(dt) {
   }
   P.fireT = w.rate;
   if (!w.auto && !isTouch) inp.fire = false;
-  if (w.id !== 'faust' && w.id !== 'heligun') S.weapons[w.id]--;
+  if (w.id !== 'faust' && w.id !== 'heligun' && !game.ch.ammo) S.weapons[w.id]--;
   P.aimT = 1.2;
   // Strahl aus der Kamera
   camera.getWorldDirection(ray.d); ray.o.copy(camera.position);
@@ -404,14 +445,15 @@ function playerShoot(dt) {
       if (ONL()) IEonline.melee(P.pos, P.yaw, w.dmg);
       // Nahkampf: nächster NPC vor dem Spieler
       const f = IE.fwd(P.yaw);
-      for (const n of IE.npcs) if (!n.dead && Math.hypot(n.pos.x - (P.pos.x + f.x), n.pos.z - (P.pos.z + f.z)) < 1.3) { damageNPC(n, w.dmg, true); sfx('hit'); flashHit(); if (n.kind === 'ped') { n.state = 'flee'; n.timer = 8; } }
+      for (const n of IE.npcs) if (!n.dead && Math.hypot(n.pos.x - (P.pos.x + f.x), n.pos.z - (P.pos.z + f.z)) < 1.3) { damageNPC(n, w.dmg * dmgMult(), true); sfx('hit'); flashHit(); if (n.kind === 'ped') { n.state = 'flee'; n.timer = 8; } }
       return;
     }
     const end = ray.o.clone().addScaledVector(d, Math.min(bestT, w.range + skip));
     if (k === 0 || w.pellets > 1) tracer(muzzle, end);
     if (hitR) { IEonline.sendHit(hitR, w.dmg); flashHit(); }
-    if (hitN) { damageNPC(hitN, w.dmg * (head ? 2.5 : 1), true); flashHit(); }
-    if (hitV) { hitV.health -= w.dmg * 1.4; flashHit(); if (hitV.police) setWanted(Math.max(game.wanted, 1)); if (hitV.traffic && hitV.driver === 'npc' && hitV.ai) { hitV.ai.panic = 6; } }
+    if (hitN) { damageNPC(hitN, w.dmg * (head ? 2.5 : 1) * dmgMult(), true); flashHit(); }
+    if (game.ch.boom && k === 0 && game.time - (game.boomT || 0) > 0.18) { game.boomT = game.time; explosion(end.clone(), 3.5); }
+    if (hitV) { hitV.health -= w.dmg * 1.4 * dmgMult(); flashHit(); if (hitV.police) setWanted(Math.max(game.wanted, 1)); if (hitV.traffic && hitV.driver === 'npc' && hitV.ai) { hitV.ai.panic = 6; } }
   }
   flash(muzzle); sfx('shot', w.id === 'cecchino' ? 1.2 : w.id === 'pistola' ? 0.6 : 0.8);
   // Passanten in der Nähe geraten in Panik; Schüsse in der Stadt locken Polizei
@@ -453,12 +495,70 @@ function fireShell(v, aimAt) {
 let hitT = 0; function flashHit() { $('cross').classList.add('hit'); hitT = 0.12; sfx('hit', 0.6); }
 
 // ---------- Fahrzeuge ein/aus ----------
-function vehReach(v) { return v.type === 'heli' ? 6 : v.type === 'plane' ? v.m.L * 0.45 + 2 : v.type === 'boat' ? v.m.L * 0.5 + 2.5 : v.m.tank ? 5 : 3.6; }
+// ---------- Flug-Yacht ----------
+function shipLocal(v, x, z) { const c = Math.cos(v.yaw), s = Math.sin(v.yaw), dx = x - v.pos.x, dz = z - v.pos.z; return { lx: dx * c - dz * s, lz: dx * s + dz * c }; }
+function shipWorld(v, lx, lz) { const c = Math.cos(v.yaw), s = Math.sin(v.yaw); return new T.Vector3(v.pos.x + lx * c + lz * s, v.pos.y + 0.45, v.pos.z - lx * s + lz * c); }
+function deckHalf(lz) { return (lz < 11.5 ? 8 : 8 * Math.max(0, (32 - lz) / 20.5)) * 0.94 - 0.45; }
+const helmWorld = (v, back) => shipWorld(v, 0, IE.AIRSHIP.helmZ - (back || 0.8));
+function airshipGround(g) {
+  P.shipCand = null;
+  for (const v of IE.vehicles) {
+    if (v.type !== 'airship' || v.dead) continue;
+    const deckY = v.pos.y + 0.45; if (P.pos.y < deckY - 2.5 || P.pos.y > deckY + 7) continue;
+    let { lx, lz } = shipLocal(v, P.pos.x, P.pos.z);
+    if (lz < -31.5 || lz > 31.5 || Math.abs(lx) > deckHalf(lz) + 0.6) continue;
+    if (P.pos.y < deckY + 1.6) {
+      lz = clamp(lz, -31, 30.5); const hw = Math.max(0.3, deckHalf(lz)); lx = clamp(lx, -hw, hw);
+      const A = IE.AIRSHIP;
+      if (lz > A.cabinZ0 - 0.4 && lz < A.cabinZ1 + 0.4 && Math.abs(lx) < A.cabinX + 0.4) {
+        const dl = [lz - (A.cabinZ0 - 0.4), (A.cabinZ1 + 0.4) - lz, (A.cabinX + 0.4) - Math.abs(lx)], m = Math.min(...dl);
+        if (m === dl[1]) lz = A.cabinZ1 + 0.4; else if (m === dl[0]) lz = A.cabinZ0 - 0.4; else lx = Math.sign(lx || 1) * (A.cabinX + 0.4);
+      }
+      const w = shipWorld(v, lx, lz); P.pos.x = w.x; P.pos.z = w.z;
+    }
+    P.shipCand = { v, deckY }; return Math.max(g, deckY);
+  }
+  return g;
+}
+function updateAirship(v, inp, dt) {
+  const px = v.pos.x, py = v.pos.y, pz = v.pos.z, pyaw = v.yaw, piloted = v.driver === 'player';
+  v.speed += ((piloted ? (inp.y || 0) * v.maxSpeed : 0) - v.speed) * Math.min(1, dt * 0.5);
+  if (piloted) v.yaw -= (inp.x || 0) * 0.45 * dt;
+  v.vy += ((piloted ? (inp.up || 0) * 16 : 0) - v.vy) * Math.min(1, dt * 1.5);
+  const f = IE.fwd(v.yaw); v.pos.x += f.x * v.speed * dt; v.pos.z += f.z * v.speed * dt; v.pos.y += v.vy * dt;
+  const minY = Math.max(IE.groundH(v.pos.x, v.pos.z), 0) + 9; if (v.pos.y < minY) { v.pos.y = minY; v.vy = Math.max(0, v.vy); }
+  if (v.pos.y > 1500) v.pos.y = 1500;
+  v.group.position.copy(v.pos); v.group.rotation.set(0, v.yaw, 0);
+  v.m.fans.forEach(fn => fn.rotation.y += dt * (6 + Math.abs(v.speed)));
+  // wer auf dem Deck steht, fliegt mit
+  if (!P.veh && P.onShip === v && !P.fly) {
+    const d = v.yaw - pyaw, c = Math.cos(d), s = Math.sin(d), rx = P.pos.x - px, rz = P.pos.z - pz;
+    P.pos.x = v.pos.x + rx * c + rz * s; P.pos.z = v.pos.z - rx * s + rz * c; P.pos.y += v.pos.y - py; P.yaw += d; cam.yaw += d;
+  }
+}
+function spawnAirship() {
+  if (P.veh) { toast('Erst aussteigen'); return; }
+  for (const v of IE.vehicles) if (v.type === 'airship' && v.mine) v.removeMe = true;
+  P.fly = false; P.interior = null;
+  const m = IE.makeAirship(), base = Math.max(IE.groundH(P.pos.x, P.pos.z), 0) + 14;
+  const v = { type: 'airship', def: { id: 'imperatore', name: 'Flug-Yacht Imperatore' }, m, group: m.group, pos: new T.Vector3(P.pos.x, base, P.pos.z), yaw: P.yaw, vy: 0, speed: 0, maxSpeed: 75,
+    health: 1e9, maxHealth: 1e9, driver: null, owned: true, mine: true, rotor: 0.7, pitch: 0, roll: 0, dead: false, burn: 0 };
+  m.group.position.copy(v.pos); m.group.rotation.y = v.yaw; scene.add(m.group); IE.vehicles.push(v);
+  const w = helmWorld(v, 1.6); P.pos.copy(w); P.vy = 0; P.onShip = v; cam.yaw = v.yaw; cam.pitch = 0.35;
+  banner('Admin', 'Flug-Yacht Imperatore', 'Am Steuerrad F / EIN-AUS zum Fliegen', 4);
+}
+function airshipBelow() {
+  for (const v of IE.vehicles) if (v.type === 'airship' && !v.dead && P.pos.y < v.pos.y - 1 && v.pos.y - P.pos.y < 60 && Math.hypot(P.pos.x - v.pos.x, P.pos.z - v.pos.z) < 40) return v;
+  return null;
+}
+const vehDist = v => v.type === 'airship' ? helmWorld(v).distanceTo(P.pos) : v.pos.distanceTo(P.pos);
+function vehReach(v) { if (v.type === 'airship') return 3.6; return v.type === 'heli' ? 6 : v.type === 'plane' ? v.m.L * 0.45 + 2 : v.type === 'boat' ? v.m.L * 0.5 + 2.5 : v.m.tank ? 5 : 3.6; }
 function tryEnterExit() {
   if (P.interior) return;
   if (P.veh) {
     const v = P.veh;
     if (v.type === 'heli' && v.pos.y - IE.supportH(v.pos.x, v.pos.z, v.pos.y) > 3 && Math.hypot(v.vel.x, v.vel.z) > 3) { /* Fallschirm-loser Absprung */ }
+    if (v.type === 'airship') { v.driver = null; P.veh = null; const hp = helmWorld(v, 1.8); P.pos.copy(hp); P.vy = 0; P.onShip = v; $('speed').hidden = true; engineSound(null); return; }
     if ((v.type === 'car' || v.type === 'boat') && Math.abs(v.speed) > 6) { toast('Zu schnell zum Aussteigen'); return; }
     if (v.type === 'plane' && (!v.onGround || v.speed > 6)) { toast('Erst landen und anhalten'); return; }
     v.driver = null; P.veh = null;
@@ -471,7 +571,7 @@ function tryEnterExit() {
   let best = null, bd = 1e9;
   for (const v of IE.vehicles) {
     if (v.dead) continue;
-    const d = v.pos.distanceTo(P.pos), lim = vehReach(v);
+    const d = vehDist(v), lim = vehReach(v);
     if (d < lim && d < bd) { bd = d; best = v; }
   }
   if (!best) return;
@@ -482,10 +582,33 @@ function tryEnterExit() {
   }
   if (best.hostile && !best.dead) { toast('Dieses Fahrzeug gehört dem Feind'); return; }
   if (best.def.military && !best.stolen) { best.stolen = true; setWanted(3); toast('Militärfahrzeug gestohlen!'); for (const n of IE.npcs) if (n.kind === 'soldier') n.alert = true; }
+  if (best.type === 'airship') cam.pitch = 0.35;
   P.veh = best; best.driver = 'player'; best.traffic = false; best.ai = null; P.swim = false; P.under = false;
   P.h.group.visible = false; $('speed').hidden = false;
   $('spN').textContent = best.def.name;
   cam.yaw = best.yaw;
+}
+
+// ---------- Flugmodus ----------
+function setFly(on, speed) {
+  if (on && P.veh) { toast('Erst aussteigen'); return; }
+  P.fly = !!on; if (speed) P.flySpeed = speed; P.vy = 0; P.swim = P.under = false;
+  toast(P.fly ? `Flugmodus an · ${Math.round((P.flySpeed || 60) * 3.6)} km/h` : 'Flugmodus aus', 2);
+}
+function flyUpdate(dt, ctrl, mx, my) {
+  const sp = P.flySpeed || 60;
+  const cp = Math.cos(cam.pitch), f = IE.fwd(cam.yaw);
+  const d = new T.Vector3(f.x * cp * my - f.z * mx, -Math.sin(cam.pitch) * my, f.z * cp * my + f.x * mx);
+  if (ctrl && inp.hold.space) d.y += 1; if (ctrl && inp.hold.down) d.y -= 1;
+  if (d.lengthSq() > 1) d.normalize();
+  P.pos.addScaledVector(d, sp * dt);
+  P.pos.y = Math.min(2500, Math.max(P.pos.y, IE.groundH(P.pos.x, P.pos.z) + 0.2, -60));
+  const moving = d.lengthSq() > 0.01;
+  if (moving) P.yaw += angDiff(P.yaw, Math.atan2(d.x, d.z) || P.yaw) * Math.min(1, dt * 8);
+  P.h.group.position.copy(P.pos); P.h.group.rotation.set(moving ? 1.35 : 0.15, P.yaw, 0);
+  P.h.armL.rotation.x = P.h.armR.rotation.x = moving ? -2.9 : -0.3; P.h.legL.rotation.x = P.h.legR.rotation.x = 0;
+  P.onGround = false; P.vy = 0; P.o2 = 1;
+  playerShoot(dt);
 }
 
 // ---------- Spieler-Update ----------
@@ -497,9 +620,11 @@ function updatePlayer(dt) {
     const v = P.veh;
     if (v.type === 'car') { IE.updateCar(v, { x: mx, y: my, brake: ctrl && inp.hold.space }, dt); if (v.m.tank) v.m.turret.rotation.y += angDiff(v.m.turret.rotation.y, angDiff(v.yaw, cam.yaw)) * Math.min(1, dt * 3); }
     else if (v.type === 'boat') IE.updateBoat(v, { x: mx, y: my, brake: ctrl && inp.hold.space }, dt);
+    else if (v.type === 'airship') updateAirship(v, { x: mx, y: my, up: ctrl ? (inp.hold.space ? 1 : 0) - (inp.hold.down ? 1 : 0) : 0 }, dt);
     else if (v.type === 'plane') IE.updatePlane(v, { x: mx, y: my, up: ctrl ? (inp.hold.space ? 1 : 0) - (inp.hold.down ? 1 : 0) : 0, brake: ctrl && inp.hold.down && v.throttle < 0.02 }, dt);
     else IE.updateHeli(v, { x: mx, y: my, up: ctrl ? (inp.hold.space ? 1 : 0) - (inp.hold.down ? 1 : 0) : 0 }, dt);
     P.pos.copy(v.pos); P.yaw = v.yaw;
+    if (v.type === 'airship') { P.pos.copy(helmWorld(v)); P.h.group.position.copy(P.pos); P.h.group.rotation.set(0, v.yaw, 0); IE.animHuman(P.h, 0, 0, false, false); P.h.armL.rotation.x = P.h.armR.rotation.x = -1.1; P.onShip = v; }
     if (v.dead && v.burn > 2.5) { /* Explosion behandelt */ }
     // Überfahren
     if (v.type === 'car' && Math.abs(v.speed) > 6) for (const n of IE.npcs) {
@@ -513,11 +638,12 @@ function updatePlayer(dt) {
   let dx = f.x * my + r.x * mx, dz = f.z * my + r.z * mx; const ml = Math.hypot(dx, dz);
   const aiming = inp.aim || P.aimT > 0 || inp.fire;
   P.aimT -= dt;
-  const speed = P.swim ? (P.under ? (inp.sprint && !inp.hold.down ? 5.4 : 4) : (inp.sprint ? 5 : 3.4)) : (inp.sprint ? 7.8 : 4.6) * (aiming && !inp.sprint ? 0.75 : 1) * (S.cur === 'minigun' ? 0.72 : 1);
+  if (P.fly) { flyUpdate(dt, ctrl, mx, my); return; }
+  const speed = (P.swim ? (P.under ? (inp.sprint && !inp.hold.down ? 5.4 : 4) : (inp.sprint ? 5 : 3.4)) : (inp.sprint ? 7.8 : 4.6) * (aiming && !inp.sprint ? 0.75 : 1) * (S.cur === 'minigun' ? 0.72 : 1)) * (1 + 0.06 * upLvl('tempo')) * (game.ch.run ? 2.4 : 1);
   if (ml > 0.05) { dx /= Math.max(ml, 1); dz /= Math.max(ml, 1); P.pos.x += dx * speed * dt; P.pos.z += dz * speed * dt; }
   if (aiming && !P.swim) P.yaw = cam.yaw; else if (ml > 0.1) P.yaw += angDiff(P.yaw, Math.atan2(dx, dz)) * Math.min(1, dt * 10);
   IE.pushOut(P.pos, 0.4, P.pos.y, 1.8);
-  const g = IE.supportH(P.pos.x, P.pos.z, P.pos.y);
+  const g = airshipGround(IE.supportH(P.pos.x, P.pos.z, P.pos.y));
   P.swim = g < -1.3 && P.pos.y < -0.8;
   if (P.swim) {
     const up = ctrl && inp.hold.space, dn = ctrl && inp.hold.down;
@@ -538,12 +664,13 @@ function updatePlayer(dt) {
     if (P.under) { P.bubT = (P.bubT || 0) - dt; if (P.bubT <= 0) { P.bubT = 0.35; bubble(P.pos.x + Math.sin(P.yaw) * 1.2, P.pos.y + 1.3, P.pos.z + Math.cos(P.yaw) * 1.2); } }
   } else {
     P.under = false;
-    if (ctrl && pressed.has('space') && P.onGround) { P.vy = 7.5; P.onGround = false; }
-    P.vy -= 24 * dt; P.pos.y += P.vy * dt;
-    if (P.pos.y <= g) { if (P.vy < -22) hurtPlayer((-P.vy - 22) * 6); P.pos.y = g; P.vy = 0; P.onGround = true; }
+    if (ctrl && pressed.has('space') && P.onGround) { P.vy = game.ch.jump ? 22 : 7.5; P.onGround = false; }
+    P.vy -= (game.ch.moon ? 5 : 24) * dt; P.pos.y += P.vy * dt;
+    if (P.pos.y <= g) { if (P.vy < -22 && !game.ch.jump && !game.ch.moon) hurtPlayer((-P.vy - 22) * 6); P.pos.y = g; P.vy = 0; P.onGround = true; }
     else if (P.pos.y - g > 0.3) P.onGround = false;
     if (!P.onGround && g < -1.3 && P.pos.y < -1.25) { P.pos.y = -1.25; P.vy = 0; }
   }
+  P.onShip = P.shipCand && Math.abs(P.pos.y - P.shipCand.deckY) < 0.35 ? P.shipCand.v : null;
   P.phase += dt * (P.swim ? (ml > 0.05 ? 4 + speed : 2.5) : ml > 0.05 ? speed * 2.1 : 0);
   IE.animHuman(P.h, P.phase, ml > 0.05 ? (inp.sprint ? 0.9 : 0.6) * Math.min(1, ml) : 0, aiming && S.cur !== 'faust' && !P.swim, false);
   if (!P.onGround && !P.swim) { P.h.legL.rotation.x = 0.5; P.h.legR.rotation.x = -0.3; }
@@ -870,6 +997,7 @@ function vehiclesUpdate(dt) {
       else if (v.type === 'car') { if (dp < 300) IE.updateCar(v, { x: 0, y: 0, brake: true }, dt); }
       else if (v.type === 'boat') { if (dp < 400) IE.updateBoat(v, { brake: true }, dt); }
       else if (v.type === 'plane') { if (dp < 800) IE.updatePlane(v, { brake: true }, dt); }
+      else if (v.type === 'airship') updateAirship(v, {}, dt);
       else IE.updateHeli(v, {}, dt);
     }
     if (!v.dead && v.health <= 0) {
@@ -1046,7 +1174,7 @@ function die() {
 }
 function respawn() {
   P.interior = null;
-  game.dead = false; P.health = 100; game.wanted = 0;
+  game.dead = false; P.health = maxHP(); game.wanted = 0;
   const { c } = cityOf(P.pos.x, P.pos.z);
   const lost = Math.min(S.money, Math.round(S.money * 0.05)); S.money -= lost;
   placePlayer(c.cx + 30, c.cz + 55); P.h.group.rotation.set(0, 0, 0);
@@ -1098,7 +1226,7 @@ function renderShop() {
         [{ t: 'Kaufen · ' + fmt(w.price), buy: true, dis: S.money < w.price, f: () => { S.money -= w.price; S.weapons[w.id] = w.clip; S.cur = w.id; updateGunModel(); sfx('cash'); } }]);
     }
     row('Schutzweste', `Panzerung ${Math.round(S.armor)} / 100`, [{ t: 'Kaufen · € 2.500', buy: true, dis: S.money < 2500 || S.armor >= 100, f: () => { S.money -= 2500; S.armor = 100; sfx('cash'); } }]);
-    row('Erste-Hilfe-Set', `Gesundheit ${Math.round(P.health)} / 100`, [{ t: 'Kaufen · € 500', buy: true, dis: S.money < 500 || P.health >= 100, f: () => { S.money -= 500; P.health = 100; sfx('cash'); } }]);
+    row('Erste-Hilfe-Set', `Gesundheit ${Math.round(P.health)} / ${maxHP()}`, [{ t: 'Kaufen · € 500', buy: true, dis: S.money < 500 || P.health >= maxHP(), f: () => { S.money -= 500; P.health = maxHP(); sfx('cash'); } }]);
   } else if (s.type === 'plane') {
     $('shopT').textContent = 'Hangar Moretti · Flughafen'; $('shopHint').textContent = 'Steuerung: Leertaste / GAS + = Schub, Shift / GAS − = weniger Schub. Joystick bzw. W/S = Nase hoch/runter, A/D = Kurve. Zum Starten auf die Startbahn rollen, Vollgas geben und ab Abhebegeschwindigkeit hochziehen.';
     for (const pl of IE.planes.filter(p => !p.military)) {
@@ -1226,7 +1354,7 @@ function drawMini() {
   g.beginPath(); g.moveTo(0, -16); g.lineTo(11, 12); g.lineTo(0, 6); g.lineTo(-11, 12); g.closePath(); g.stroke(); g.fill(); g.restore();
   // Rahmen mit Gesundheit
   g.lineWidth = 7; g.strokeStyle = 'rgba(0,0,0,0.6)'; g.beginPath(); g.arc(R, R, R - 4, 0, 7); g.stroke();
-  g.strokeStyle = '#2f9a5c'; g.beginPath(); g.arc(R, R, R - 4, Math.PI * 0.5, Math.PI * 0.5 + Math.PI * clamp(P.health / 100, 0, 1)); g.stroke();
+  g.strokeStyle = '#2f9a5c'; g.beginPath(); g.arc(R, R, R - 4, Math.PI * 0.5, Math.PI * 0.5 + Math.PI * clamp(P.health / maxHP(), 0, 1)); g.stroke();
   g.strokeStyle = '#4fa3e0'; g.beginPath(); g.arc(R, R, R - 4, Math.PI * 0.5, Math.PI * 0.5 - Math.PI * clamp(S.armor / 100, 0, 1), true); g.stroke();
   g.fillStyle = '#fff'; g.font = 'bold 26px Barlow Condensed, Arial'; g.textAlign = 'center'; const nr = cityOf(pp.x, pp.z); g.fillText(nr.d < nr.c.r + 60 ? nr.c.name.toUpperCase() : '', R, W - 30);
 }
@@ -1312,11 +1440,13 @@ function switchChar(id) {
 
 // ---------- Pause ----------
 function openPause() {
-  $('cheatList').innerHTML = CHEATS.map(c => `<div class="cheat"><span class="seq">${c.seq.map(x => `<b>${x}</b>`).join('')}</span><span>${c.name}</span></div>`).join('');
+  $('cheatList').innerHTML = CHEATS.map(c => `<div class="cheat"><span class="seq">${c.seq.map(x => `<b>${x}</b>`).join('')}</span><span>${c.name}${c.toggle ? (game.ch[c.toggle] ? ' · <b style="color:var(--verde)">an</b>' : ' · aus') : ''}</span></div>`).join('');
+  $('pAdmin').hidden = !(window.IEaccount && IEaccount.admin);
   $('pauseModal').hidden = false; if (window.IEonline) IEonline.renderPause(); if (locked) document.exitPointerLock();
   $('progTxt').textContent = `Story: ${Math.min(S.mission, IE.missions.length)} / ${IE.missions.length} Missionen`;
   $('optSnd').textContent = opts.snd ? 'An' : 'Aus'; $('optSens').value = opts.sens; $('optView').textContent = opts.fp ? 'Ego-Sicht' : 'Normal';
 }
+$('pUp').addEventListener('click', () => openUpgrades());
 $('optGfx').addEventListener('click', () => { opts.gfx = { hoch: 'mittel', mittel: 'niedrig', niedrig: 'hoch' }[opts.gfx]; saveOpts(); applyGfx(); });
 $('optSnd').addEventListener('click', () => { opts.snd = !opts.snd; saveOpts(); $('optSnd').textContent = opts.snd ? 'An' : 'Aus'; if (!opts.snd && AU.master) AU.master.gain.value = 0; else if (AU.master) AU.master.gain.value = 0.5; else audioInit(); });
 $('optView').addEventListener('click', () => { opts.fp = !opts.fp; saveOpts(); $('optView').textContent = opts.fp ? 'Ego-Sicht' : 'Normal'; });
@@ -1335,8 +1465,8 @@ function updateCamera(dt) {
   inp.lookX = inp.lookY = 0;
   let tgt, dist, h;
   if (P.veh) {
-    const v = P.veh; tgt = v.pos; dist = v.type === 'plane' ? 12 + v.m.L * 0.9 : v.type === 'heli' ? 17 : v.type === 'boat' ? 7 + v.m.L * 0.7 : v.m.tank ? 15 : 8 + v.m.L * 0.4; h = v.type === 'plane' ? 3.5 : v.type === 'heli' ? 2.5 : v.type === 'boat' ? 1.5 + v.m.H : v.m.tank ? 4 : 1.6;
-    const mov = v.type === 'heli' ? Math.hypot(v.vel.x, v.vel.z) : Math.abs(v.speed);
+    const v = P.veh; tgt = v.pos; dist = v.type === 'airship' ? 70 : v.type === 'plane' ? 12 + v.m.L * 0.9 : v.type === 'heli' ? 17 : v.type === 'boat' ? 7 + v.m.L * 0.7 : v.m.tank ? 15 : 8 + v.m.L * 0.4; h = v.type === 'airship' ? 10 : v.type === 'plane' ? 3.5 : v.type === 'heli' ? 2.5 : v.type === 'boat' ? 1.5 + v.m.H : v.m.tank ? 4 : 1.6;
+    const mov = v.type === 'heli' ? Math.hypot(v.vel.x, v.vel.z) : Math.abs(v.speed || 0);
     if (v.type === 'plane' && performance.now() - inp.lastLook > 700 && mov > 3) { cam.yaw += angDiff(cam.yaw, v.yaw) * Math.min(1, dt * 3); cam.pitch += ((opts.fp ? -v.pitch : 0.16 - v.pitch * 0.7) - cam.pitch) * Math.min(1, dt * 3); }
     else if (performance.now() - inp.lastLook > 1400 && mov > 3 && !v.m.tank) { cam.yaw += angDiff(cam.yaw, v.yaw + (v.type === 'car' && v.speed < -1 ? Math.PI : 0)) * Math.min(1, dt * 2.2); cam.pitch += ((opts.fp ? 0.05 : v.type === 'heli' ? 0.32 : 0.2) - cam.pitch) * dt; }
     camera.fov = lerp(camera.fov, 62 + clamp(mov - 20, 0, 50) * 0.25, dt * 3);
@@ -1350,14 +1480,15 @@ function updateCamera(dt) {
   }
   camera.updateProjectionMatrix();
   const f = IE.fwd(cam.yaw), right = { x: -f.z, z: f.x };
-  P.h.group.visible = game.dead || (!P.veh && !opts.fp);
+  P.h.group.visible = game.dead || ((!P.veh || P.veh.type === 'airship') && !opts.fp);
   if (opts.fp && !game.dead) {
     // Ego-Sicht: Augenposition
     const e = new T.Vector3();
     if (P.veh) {
       const v = P.veh, vf = IE.fwd(v.yaw), left = { x: vf.z, z: -vf.x };
+      if (v.type === 'airship') { const hp = helmWorld(v); e.set(hp.x, hp.y + 1.65, hp.z); } else {
       const o = v.type === 'plane' ? (v.def.kind === 'jet' ? [6.8, v.m.gearH + 2.0, 0] : v.def.kind === 'fighter' ? [3.2, v.m.gearH + 1.9, 0] : [1.3, v.m.gearH + 1.3, 0]) : v.type === 'heli' ? [1.5, 1.9, 0.45] : v.type === 'boat' ? [-v.m.L * 0.08, v.m.H * 0.55 + 1.25, 0] : v.m.tank ? [-0.4, 3.4, 0] : [-0.15, v.def.kind === 'suv' || v.def.kind === 'van' || v.def.kind === 'pickup' ? 1.6 : 1.12, 0.38];
-      e.set(v.pos.x + vf.x * o[0] + left.x * o[2], v.pos.y + o[1], v.pos.z + vf.z * o[0] + left.z * o[2]);
+      e.set(v.pos.x + vf.x * o[0] + left.x * o[2], v.pos.y + o[1], v.pos.z + vf.z * o[0] + left.z * o[2]); }
     } else { e.set(P.pos.x + f.x * 0.2, P.pos.y + (P.under ? 1.1 : 1.65), P.pos.z + f.z * 0.2); }
     camera.position.copy(e);
     const cp = Math.cos(cam.pitch);
@@ -1375,6 +1506,10 @@ function updateCamera(dt) {
   const hitD = IE.rayBoxes(cam.target, dir, dl);
   if (hitD < dl) tmpV.copy(cam.target).addScaledVector(dir, Math.max(0.6, hitD - 0.3));
   const gy = IE.groundH(tmpV.x, tmpV.z) + 0.5; if (tmpV.y < gy) tmpV.y = gy;
+  { const sv = P.onShip || (P.veh && P.veh.type === 'airship' ? P.veh : null);
+    if (sv) { const A = IE.AIRSHIP, q = shipLocal(sv, tmpV.x, tmpV.z), dy = sv.pos.y + 0.45;
+      if (q.lz > A.cabinZ0 - 1 && q.lz < A.cabinZ1 + 1 && Math.abs(q.lx) < A.cabinX + 1 && tmpV.y < dy + 9) tmpV.y = dy + 9;
+      else if (q.lz > -33 && q.lz < 33 && Math.abs(q.lx) < 9 && tmpV.y < dy + 1.2) tmpV.y = dy + 1.2; } }
   if (P.under) tmpV.y = Math.min(tmpV.y, -0.8);
   else if (tmpV.y < 0.4 && IE.groundH(tmpV.x, tmpV.z) < 0) tmpV.y = 0.4;
   camera.position.copy(tmpV);
@@ -1397,11 +1532,12 @@ function updateHUD(dt) {
   if (gainT > 0) { gainT -= dt; if (gainT <= 0) $('moneyG').style.opacity = 0; }
   const w = curWeapon(); $('wName').textContent = w.name; $('wAmmo').textContent = w.id === 'faust' ? '' : S.weapons[w.id];
   const sn = starsN(); if (sn !== game.lastStars) { game.lastStars = sn; let st = ''; for (let i = 1; i <= 5; i++) st += `<span class="${sn >= i ? 'on' : ''}">★</span>`; $('stars').innerHTML = st; }
-  $('hpB').style.width = clamp(P.health, 0, 100) + '%'; $('arB').style.width = clamp(S.armor, 0, 100) + '%';
+  $('hpB').style.width = clamp(P.health / maxHP() * 100, 0, 100) + '%'; $('arB').style.width = clamp(S.armor, 0, 100) + '%';
   if (P.veh) {
     const v = P.veh;
     if (v.type === 'plane') { $('spV').textContent = Math.round(v.speed * 3.6); $('spU').textContent = 'KM/H · ' + Math.round(v.pos.y - Math.max(0, IE.groundH(v.pos.x, v.pos.z))) + ' M · SCHUB ' + Math.round(v.throttle * 100) + ' %'; }
     else if (v.type === 'car' || v.type === 'boat') { $('spV').textContent = Math.round(Math.abs(v.speed) * 3.6); $('spU').textContent = 'KM/H'; }
+    else if (v.type === 'airship') { $('spV').textContent = Math.round(Math.abs(v.speed) * 3.6); $('spU').textContent = 'KM/H · ' + Math.round(v.pos.y - Math.max(0, IE.groundH(v.pos.x, v.pos.z))) + ' M HÖHE'; }
     else { $('spV').textContent = Math.round(v.pos.y - Math.max(0, IE.groundH(v.pos.x, v.pos.z))); $('spU').textContent = 'M HÖHE · ' + Math.round(Math.hypot(v.vel.x, v.vel.z) * 3.6) + ' KM/H'; }
     $('spN').textContent = v.def.name + (v.health < v.maxHealth * 0.3 ? ' · BESCHÄDIGT' : '');
   }
@@ -1425,7 +1561,8 @@ function updateHUD(dt) {
     else if (!P.veh) {
       const s = nearestShop();
       if (s) pr = `<b>E</b> · ${s.type === 'weapon' ? 'Waffenladen betreten' : s.type === 'car' ? 'Autohaus betreten' : s.type === 'boat' ? 'Bootsladen betreten' : s.type === 'plane' ? 'Hangar: Flugzeug wählen' : 'Helikopterplatz'}`;
-      else { for (const v of IE.vehicles) if (!v.dead && v.pos.distanceTo(P.pos) < vehReach(v)) { pr = `<b>F</b> · Einsteigen: ${v.def.name}`; break; }
+      else { for (const v of IE.vehicles) if (!v.dead && vehDist(v) < vehReach(v)) { pr = v.type === 'airship' ? '<b>F</b> · Ans Steuer der Flug-Yacht' : `<b>F</b> · Einsteigen: ${v.def.name}`; break; }
+      if (!pr && airshipBelow()) pr = '<b>E</b> · An Bord der Flug-Yacht gehen';
       if (!pr && P.under) pr = 'Unter Wasser · Luft ' + Math.round(P.o2 * 100) + ' %'; }
     } else if (P.veh.type === 'heli' && P.veh.rotor < 0.75) pr = 'Rotor läuft an …';
     else if (P.veh.type === 'plane' && P.veh.onGround && P.veh.speed < P.veh.def.minSpeed) pr = isTouch ? 'GAS + halten · ab ' + Math.round(P.veh.def.minSpeed * 3.6) + ' km/h Joystick hoch = abheben' : 'Leertaste = Gas · ab ' + Math.round(P.veh.def.minSpeed * 3.6) + ' km/h W = abheben';
@@ -1438,10 +1575,11 @@ function updateHUD(dt) {
   if (isTouch) {
     const inH = P.veh && P.veh.type === 'heli', inC = P.veh && P.veh.type === 'car';
     const inB = P.veh && P.veh.type === 'boat';
-    $('tDown').style.display = inH || (P.swim && !P.veh) ? '' : 'none'; $('tDown').textContent = P.veh && P.veh.type === 'plane' ? 'GAS −' : inH ? 'RUNTER' : 'TAUCHEN';
+    const inA = P.veh && P.veh.type === 'airship';
+    $('tDown').style.display = inH || inA || P.fly || (P.swim && !P.veh) ? '' : 'none'; $('tDown').textContent = P.veh && P.veh.type === 'plane' ? 'GAS −' : inH || inA || P.fly ? 'RUNTER' : 'TAUCHEN';
     const inP = P.veh && P.veh.type === 'plane';
     if (inP) $('tDown').style.display = '';
-    $('tJump').textContent = inP ? 'GAS +' : inH ? 'HOCH' : inC || inB ? 'BREMSE' : P.swim ? 'AUF' : 'SPRUNG';
+    $('tJump').textContent = inP ? 'GAS +' : inH || inA || P.fly ? 'HOCH' : inC || inB ? 'BREMSE' : P.swim ? 'AUF' : 'SPRUNG';
     $('tSprint').style.display = P.veh ? 'none' : ''; $('tAim').style.display = P.veh ? 'none' : '';
     $('tFire').style.display = (inH || (P.veh && P.veh.type === 'plane')) && !P.veh.def.armed ? 'none' : '';
   }
@@ -1468,6 +1606,7 @@ function frame() {
         if (!mission.active && m && Math.hypot(P.pos.x - m.x, P.pos.z - m.z) < 7) startMission();
         else if (P.interior && Math.hypot(P.pos.x - P.interior.it.door.x, P.pos.z - P.interior.it.door.z) < 2.6) exitInterior();
         else if (P.interior && P.interior.shop && Math.hypot(P.pos.x - P.interior.it.counter.x, P.pos.z - P.interior.it.counter.z) < 3.4) openShop(P.interior.shop);
+        else if (!P.veh && !P.interior && airshipBelow()) { const v = airshipBelow(); P.pos.copy(shipWorld(v, 0, -6)); P.vy = 0; P.onShip = v; fade(); }
         else if (!P.veh && !P.interior) {
           const s = nearestShop();
           if (s && SHOP_ROOM[s.type]) { if (starsN() > 0) toast('Mit Fahndungslevel lässt dich niemand rein'); else enterInterior(SHOP_ROOM[s.type], s.mx, s.mz, s); }
@@ -1501,7 +1640,7 @@ function frame() {
     }
   }
   // Lebensregeneration bis 50
-  if (!game.dead && P.health < 50 && P.hurtT < -4) P.health = Math.min(50, P.health + dt * 2);
+  if (!game.dead && P.health < maxHP() * 0.5 && P.hurtT < -4) P.health = Math.min(maxHP() * 0.5, P.health + dt * 2);
   updateEffects(dt);
   if (ONL()) IEonline.update(dt);
   // Wegpunkt
@@ -1537,7 +1676,7 @@ function startGame(cont, mode) {
     const so = store.get(); if (so) Object.assign(S, so, { mission: IE.missions.length });
     IE.setOnlineWorld(true);
     $('title').hidden = true; $('hudRoot').hidden = false; document.body.classList.add('playing', 'online');
-    buildPlayerModel();
+    buildPlayerModel(); P.health = maxHP();
     const c = IE.cityById[IE.chars[S.char].home]; placePlayer(c.cx + 20 + Math.random() * 30, c.cz + 50 + Math.random() * 20);
     missionStartMarker(); game.state = 'play'; last = performance.now();
     if (!isTouch) { try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => { }); } catch (e) { } }
@@ -1547,7 +1686,7 @@ function startGame(cont, mode) {
   const sv = cont ? store.get() : null;
   if (sv) Object.assign(S, sv); else { store.del(); }
   $('title').hidden = true; $('hudRoot').hidden = false; document.body.classList.add('playing');
-  buildPlayerModel();
+  buildPlayerModel(); P.health = maxHP();
   for (const w of IE.wrecks) if (S.wrecks.includes(w.id)) { w.got = true; w.chest.visible = false; }
   const m = curMission();
   if (!sv) {
@@ -1591,6 +1730,6 @@ function boot() {
 $('bNew').addEventListener('click', () => startGame(false));
 $('bCont').addEventListener('click', () => startGame(true));
 function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = 'italienEmpire_v1' + ACC; $('bCont').hidden = !store.get(); }
-window.IEgame = { setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
+window.IEgame = { setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
 boot();
 })();
