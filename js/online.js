@@ -248,6 +248,7 @@ O.touchBoard = async function () {
 };
 let boardSort = 'kills';
 O.openBoard = async function () {
+  document.body.classList.add('modalopen');
   $('boardModal').hidden = false; const list = $('boardList');
   document.querySelectorAll('[data-sort]').forEach(b => b.classList.toggle('cur', b.dataset.sort === boardSort));
   await O.init();
@@ -334,12 +335,13 @@ function renderLobbies() {
     row.querySelector('.nm').textContent = l.t;
     row.querySelector('.st').textContent = `${l.n} / ${MAX_PLAYERS} Spieler` + (l.names.length ? ' · ' + l.names.slice(0, 6).join(', ') + (l.names.length > 6 ? ' …' : '') : '');
     const b = row.querySelector('button'); b.disabled = l.n >= MAX_PLAYERS; if (l.n >= MAX_PLAYERS) b.textContent = 'Voll';
-    b.addEventListener('click', () => { $('lobbyModal').hidden = true; goOnline(true, l.id, l.t); });
+    b.addEventListener('click', () => { G().closeModals(); goOnline(true, l.id, l.t); });
     el.appendChild(row);
   }
   $('lobbyTotal').textContent = total ? `${total} Spieler online` : 'Gerade spielt niemand online – starte eine Lobby!';
 }
 O.openLobbies = async function () {
+  document.body.classList.add('modalopen');
   $('lobbyModal').hidden = false; $('lobbyRows').innerHTML = '<div class="hint">Suche Lobbys …</div>';
   const ok = await O.init();
   if (!ok) { $('lobbyRows').innerHTML = '<div class="hint">Online ist hier nicht verfügbar. Öffne das Spiel auf claude.ai, während du angemeldet bist.</div>'; $('lobbyTotal').textContent = ''; return; }
@@ -349,7 +351,7 @@ O.openLobbies = async function () {
 const CITY_NAMES = ['Roma', 'Napoli', 'Milano', 'Firenze', 'Venezia', 'Palermo', 'Torino', 'Genova', 'Bari', 'Bologna'];
 $('lobbyNew').addEventListener('click', () => {
   const t = 'Lobby ' + CITY_NAMES[(Math.random() * CITY_NAMES.length) | 0] + ' ' + (100 + ((Math.random() * 900) | 0));
-  $('lobbyModal').hidden = true; goOnline(true, 'pub-' + t.toLowerCase().replace(/[^a-z0-9]+/g, '-'), t);
+  G().closeModals(); goOnline(true, 'pub-' + t.toLowerCase().replace(/[^a-z0-9]+/g, '-'), t);
 });
 $('bOnPub').addEventListener('click', () => O.openLobbies());
 $('bOnNew').addEventListener('click', () => goOnline(false, O.newCode()));

@@ -206,7 +206,7 @@ const effects = [];
 const pickups = [];
 
 function uiOpen() { return ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal'].some(id => !$(id).hidden); }
-function closeModals() { ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal'].forEach(id => $(id).hidden = true); }
+function closeModals() { document.body.classList.remove('modalopen'); ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal'].forEach(id => $(id).hidden = true); }
 
 // ---------- Waffenrad ----------
 const GUN_SVG = {
