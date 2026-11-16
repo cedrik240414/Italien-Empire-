@@ -5,6 +5,18 @@ Story: Jack Moretti, Marco Bellini und Sofia Romano steigen von kleinen Kriminel
 Organisatoren Italiens auf und geraten zwischen La Corona, das FIB und eine geheime Verschwörung.
 
 ## Spielen
+**Online spielen über GitHub Pages:** https://cedrik240414.github.io/Italien-Empire-/
+(nachdem Pages wie unten eingeschaltet ist)
+
+### GitHub Pages einschalten (einmalig)
+1. Im Repository auf **Settings** → links **Pages**.
+2. Bei **Build and deployment** → **Source**: „Deploy from a branch“.
+3. Bei **Branch** den Branch mit dem Spiel wählen (z. B. `main` oder `claude/gallant-davinci-ykn0eh`) und Ordner **/ (root)** → **Save**.
+4. Nach 1–2 Minuten ist das Spiel unter der Adresse oben erreichbar.
+
+Hinweis: Auf GitHub Pages funktionieren Story, Shops, Fahrzeuge, Anmeldung (lokal im Browser gespeichert) und Cheats.
+Online-Lobbys und die gemeinsame Rangliste brauchen einen Server und laufen nur in der claude.ai-Version.
+
 `index.html` über einen Webserver öffnen (z. B. `python3 -m http.server` und dann http://localhost:8000).
 Funktioniert mit Maus/Tastatur und mit Touch (iPad/Handy).
 
