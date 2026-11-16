@@ -148,6 +148,32 @@ body.touch #wheelBtn { top: calc(232px + env(safe-area-inset-top, 0px)); }
 .opt { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 22px; border-bottom: 1px solid rgba(243,234,216,0.07); font-family: var(--f-hud); font-size: 20px; }
 .opt input[type=range] { width: 160px; }
 
+.cheats { display: grid; gap: 6px; }
+.cheat { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 16px; }
+.cheat .seq { display: flex; gap: 4px; flex-wrap: wrap; }
+.cheat .seq b { font-weight: 600; font-size: 13px; letter-spacing: 0.05em; border: 1px solid rgba(217,180,90,0.6); color: var(--gold); padding: 1px 6px; border-radius: 3px; }
+/* Online */
+.onlinebox { display: grid; gap: 10px; background: rgba(23,27,34,0.85); border: 1px solid rgba(217,180,90,0.25); padding: 14px 16px; }
+#onCode { font-family: var(--f-hud); font-size: 20px; padding: 10px 12px; width: 150px; background: var(--ink); color: var(--paper); border: 1px solid rgba(243,234,216,0.35); text-transform: uppercase; letter-spacing: 0.15em; -webkit-user-select: text; user-select: text; touch-action: manipulation; }
+.onstatus { font-family: var(--f-hud); font-size: 16px; color: var(--gold); letter-spacing: 0.04em; }
+.onhint { font-size: 13px; color: var(--muted); }
+#onBadge { top: calc(14px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); font-family: var(--f-hud); font-size: 14px; letter-spacing: 0.12em; background: rgba(13,15,19,0.72); border-left: 3px solid var(--verde); padding: 4px 10px; white-space: nowrap; }
+body.online #obj { top: calc(46px + env(safe-area-inset-top, 0px)); }
+#killFeed { right: calc(16px + env(safe-area-inset-right, 0px)); top: calc(170px + env(safe-area-inset-top, 0px)); display: grid; gap: 4px; justify-items: end; font-family: var(--f-hud); font-size: 16px; }
+#killFeed div { background: rgba(13,15,19,0.72); padding: 3px 10px; border-right: 3px solid var(--rosso); }
+body.touch #killFeed { top: calc(210px + env(safe-area-inset-top, 0px)); }
+.brow { display: grid; grid-template-columns: 34px minmax(0, 1fr) repeat(4, minmax(56px, auto)); gap: 8px; padding: 9px 22px; border-bottom: 1px solid rgba(243,234,216,0.07); font-family: var(--f-hud); font-size: 18px; font-variant-numeric: tabular-nums; align-items: center; }
+.brow .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brow .v { text-align: right; }
+.brow.bhead { color: var(--muted); font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; }
+.brow.me { background: rgba(217,180,90,0.14); }
+.brow .rk { color: var(--gold); }
+[data-sort].cur { border-color: var(--gold); color: var(--gold); }
+.jobs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; padding: 0 22px 12px; }
+.jobbtn { display: grid; gap: 2px; text-align: left; font-size: 18px; padding: 10px 12px; }
+.jobbtn small { font-size: 13px; color: var(--muted); letter-spacing: 0.02em; text-transform: none; }
+@media (max-width: 600px) { .brow { grid-template-columns: 26px minmax(0, 1fr) repeat(2, auto); } .brow .v:nth-child(4), .brow .v:nth-child(5) { display: none; } }
+
 /* Touch-Steuerung */
 #touch { position: fixed; inset: 0; z-index: 6; pointer-events: none; display: none; }
 body.touch.playing #touch { display: block; }
@@ -180,6 +206,13 @@ body.touch.playing #touch { display: block; }
     <h1>Italien <em>Empire</em></h1>
     <div class="lead">Du spielst in einer riesigen offenen Spielwelt in Italien – von den Alpen bis Sizilien. Wechsle zwischen Jack Moretti, Marco Bellini und Sofia Romano und steigt von kleinen Kriminellen zu den mächtigsten Organisatoren Italiens auf. Dabei geratet ihr zwischen die Mafiaorganisation La Corona, das FIB und eine geheime Verschwörung innerhalb der italienischen Regierung.</div>
     <div class="btns"><button class="btn" id="bNew">Neues Spiel</button><button class="btn ghost" id="bCont" hidden>Weiterspielen</button></div>
+    <div class="sect">Online</div>
+    <div class="onlinebox">
+      <div class="btns"><button class="btn" id="bOnPub">Öffentliche Lobby</button><button class="btn ghost" id="bOnNew">Private Lobby erstellen</button></div>
+      <div class="btns"><input id="onCode" maxlength="8" placeholder="Lobby-Code" autocomplete="off" aria-label="Lobby-Code"><button class="btn ghost" id="bOnJoin">Private Lobby beitreten</button><button class="btn ghost" id="bBoard">Rangliste</button></div>
+      <div class="onstatus" id="onStatus">Online wird geprüft …</div>
+      <div class="onhint">Online gibt es mehr Häuser, ihr könnt euch gegenseitig abschießen oder zusammen Crew-Aufträge machen. In der öffentlichen Lobby sind Cheats aus.</div>
+    </div>
     <div class="sect">Die Crew</div>
     <div class="cast" id="cast"></div>
     <div class="sect">Gegner &amp; Verbündete</div>
@@ -216,6 +249,8 @@ body.touch.playing #touch { display: block; }
   <div class="hud" id="bars"><div class="bar"><i id="hpB"></i></div><div class="bar ar"><i id="arB"></i></div><div class="bar o2" id="o2W" hidden><i id="o2B"></i></div></div>
   <button class="hud" id="hudMap">KARTE · M</button>
   <div class="hud" id="obj" hidden></div>
+  <div class="hud" id="onBadge" hidden></div>
+  <div class="hud" id="killFeed"></div>
   <div class="hud" id="timer" hidden></div>
   <div class="hud" id="boss" hidden><div id="bossN"></div><div class="bar"><i id="bossB"></i></div></div>
   <div class="hud" id="prompt" hidden></div>
@@ -245,20 +280,31 @@ body.touch.playing #touch { display: block; }
 </div>
 
 <div id="wheel" hidden><div id="wheelRing"></div><div id="wheelInfo"></div></div>
+<div class="modal" id="boardModal" hidden><div class="panel"><header><h2>Rangliste</h2><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="x" data-sort="kills">Abschüsse</button><button class="x" data-sort="money">Geld</button><button class="x" data-sort="jobs">Aufträge</button><button class="x" data-close>✕</button></div></header>
+  <div class="brow bhead"><span class="rk">#</span><span class="nm">Spieler</span><span class="v">Abschüsse</span><span class="v">Tode</span><span class="v">Aufträge</span><span class="v">Geld</span></div>
+  <div id="boardList"></div></div></div>
 <div class="modal" id="shopModal" hidden><div class="panel"><header><h2 id="shopT">Laden</h2><div style="display:flex;gap:14px;align-items:center"><span class="cash" id="shopCash"></span><button class="x" data-close>✕</button></div></header><div class="rows" id="shopRows"></div><div class="hint" id="shopHint"></div></div></div>
 <div class="modal" id="mapModal" hidden><div class="panel"><header><h2>Italia</h2><div style="display:flex;gap:14px;align-items:center"><span class="st maphelp">Tippen: Wegpunkt · Ziehen: verschieben</span><button class="x" id="mapOut" aria-label="Herauszoomen">−</button><span id="mapZoom" class="st maphelp">1.0×</span><button class="x" id="mapIn" aria-label="Hineinzoomen">+</button><button class="x" id="mapMe">Ich</button><button class="x" data-close>✕</button></div></header><canvas id="bigmap"></canvas></div></div>
 <div class="modal" id="charModal" hidden><div class="panel"><header><h2>Die Crew</h2><button class="x" data-close>✕</button></header><div class="chars" id="charList"></div><div class="hint">Beim Wechsel landest du in der Heimatstadt des Charakters. Während einer Mission nicht möglich.</div></div></div>
 <div class="modal" id="pauseModal" hidden><div class="panel"><header><h2>Pausa</h2><button class="x" data-close>✕</button></header>
+  <div id="onPause" hidden>
+    <div class="opt"><span id="onLobbyTxt"></span><span><button class="btn ghost" id="onLeave" style="font-size:16px;padding:6px 14px;border-color:var(--rosso);color:var(--rosso)">Online verlassen</button></span></div>
+    <div class="opt" style="display:block"><div id="onPlayers" style="font-size:17px"></div><div id="onStats" style="color:var(--muted);font-size:15px;margin-top:4px"></div></div>
+    <div class="opt"><span>Crew-Aufträge <small style="color:var(--muted);font-size:14px">· starten für alle in der Lobby</small></span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" id="onPassive" style="font-size:15px;padding:6px 12px">Passivmodus: Aus</button><button class="btn ghost" id="onBoard2" style="font-size:15px;padding:6px 12px">Rangliste</button></span></div>
+    <div id="onJobs" class="jobs"></div>
+  </div>
   <div class="opt"><span>Grafik</span><span><button class="btn ghost" id="optGfx" style="font-size:16px;padding:6px 14px">Hoch</button></span></div>
   <div class="opt"><label for="optSens">Kamera-Empfindlichkeit</label><input type="range" id="optSens" min="0.3" max="2.5" step="0.1" value="1"></div>
   <div class="opt"><span>Kamera</span><span><button class="btn ghost" id="optView" style="font-size:16px;padding:6px 14px">Normal</button></span></div>
   <div class="opt"><span>Ton</span><span><button class="btn ghost" id="optSnd" style="font-size:16px;padding:6px 14px">An</button></span></div>
   <div class="opt"><span id="progTxt">Fortschritt</span><span><button class="btn ghost" id="optReset" style="font-size:16px;padding:6px 14px;border-color:var(--rosso);color:var(--rosso)">Spielstand löschen</button></span></div>
+  <div class="opt" style="display:block"><div style="margin-bottom:8px">Cheat-Codes <span style="color:var(--muted);font-size:15px">· Knöpfe schnell nacheinander drücken (Tastatur: E, Rechtsklick = ZIELEN, Leertaste = SPRUNG, Shift = RENNEN, Q = WAFFE)</span></div><div id="cheatList" class="cheats"></div></div>
   <div class="hint" id="pauseHint">Das Spiel speichert automatisch nach jeder Mission und jedem Kauf.</div>
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/data.js?v=7"></script>
-<script src="js/world.js?v=7"></script>
-<script src="js/entities.js?v=7"></script>
-<script src="js/main.js?v=7"></script>
+<script src="js/data.js?v=8"></script>
+<script src="js/world.js?v=8"></script>
+<script src="js/entities.js?v=8"></script>
+<script src="js/main.js?v=8"></script>
+<script src="js/online.js?v=8"></script>

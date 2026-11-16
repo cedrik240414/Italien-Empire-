@@ -351,3 +351,27 @@ IE.missions = [
       { t: 'talk', lines: [['Erzähler','La Corona ist zerschlagen. Richard Hayes wird von Elena Conti verhaftet.'],['Jack','Jetzt gehört Italien uns.'],['Erzähler','Das Ende der Geschichte ist nicht das Ende des Spiels. Erkunde Italien, kaufe Autos, Helikopter und Waffen!']] }
     ] }
 ];
+
+// ===== ONLINE: Crew-Aufträge (gemeinsam mit anderen Spielern) =====
+IE.coopJobs = [
+  { id: 'transporter', coop: true, ch: 0, title: 'Der Geldtransporter', city: 'rom', dx: 150, dz: 200, reward: 60000,
+    steps: [
+      { t: 'goto', city: 'rom', dx: 150, dz: 200, r: 30, text: 'Fahrt zum Geldtransporter in Rom' },
+      { t: 'kill', city: 'rom', dx: 150, dz: 200, n: 10, text: 'Schaltet die Wachleute aus' },
+      { t: 'collect', city: 'rom', dx: 158, dz: 206, r: 5, text: 'Schnappt euch das Geld' },
+      { t: 'escape', stars: 2, text: 'Hängt die Polizei ab' } ] },
+  { id: 'kartell', coop: true, ch: 0, title: 'Das Kartell am Hafen', city: 'genua', dx: 80, dz: 90, reward: 80000,
+    steps: [
+      { t: 'goto', city: 'genua', dx: 80, dz: 90, r: 30, text: 'Fahrt zum Hafen von Genua' },
+      { t: 'kill', city: 'genua', dx: 80, dz: 90, n: 12, text: 'Besiegt das Kartell', boss: 'Kartellboss Russo' } ] },
+  { id: 'tresor', coop: true, ch: 0, title: 'Der Tresor der Banca', city: 'mailand', dx: 110, dz: -110, reward: 120000,
+    steps: [
+      { t: 'goto', city: 'mailand', dx: 110, dz: -110, r: 6, inside: 'bank', text: 'Geht in die Privatbank in Mailand' },
+      { t: 'kill', city: 'mailand', dx: 110, dz: -110, n: 8, inside: 'bank', text: 'Überwältigt die Bankwachen' },
+      { t: 'collect', city: 'mailand', dx: 110, dz: -110, r: 2.5, inside: 'bank', text: 'Räumt den Tresor aus' },
+      { t: 'escape', stars: 3, text: 'Entkommt der Polizei' } ] },
+  { id: 'showdown', coop: true, ch: 0, title: 'Showdown in Palermo', city: 'palermo', dx: 150, dz: 90, reward: 150000,
+    steps: [
+      { t: 'goto', city: 'palermo', dx: 150, dz: 90, r: 30, text: 'Trefft euch in Palermo' },
+      { t: 'kill', city: 'palermo', dx: 150, dz: 90, n: 14, text: 'Vernichtet Vittorios Armee', boss: 'Vittorios Leibwächter' } ] }
+];

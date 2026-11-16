@@ -207,6 +207,7 @@ IE.collAt = function (x, z) { return COLL.map.get(ckey(Math.floor(x / COLL.cell)
 IE.pushOut = function (pos, rad, y, height) {
   let hit = false; const list = IE.collAt(pos.x, pos.z);
   for (const b of list) {
+    if (b.online && !IE.onlineOn) continue;
     if (y > b.top - 0.3 || y + (height || 1.8) < b.bottom) continue;
     if (b.t === 'box') {
       const cx = Math.max(b.minx, Math.min(b.maxx, pos.x)), cz = Math.max(b.minz, Math.min(b.maxz, pos.z));
@@ -233,7 +234,7 @@ IE.pushOut = function (pos, rad, y, height) {
 IE.supportH = function (x, z, y) {
   let g = IE.groundH(x, z);
   for (const b of IE.collAt(x, z)) {
-    if (b.t !== 'box' || b.top > y + 0.6 || b.top <= g) continue;
+    if (b.t !== 'box' || b.top > y + 0.6 || b.top <= g || (b.online && !IE.onlineOn)) continue;
     if (x >= b.minx && x <= b.maxx && z >= b.minz && z <= b.maxz) g = b.top;
   }
   return g;
@@ -245,7 +246,7 @@ IE.rayBoxes = function (o, d, maxD) {
   for (let s = 0; s < maxD; s += step) {
     const x = o.x + d.x * s, z = o.z + d.z * s;
     for (const b of IE.collAt(x, z)) {
-      if (seen.has(b) || b.t !== 'box') continue; seen.add(b);
+      if (seen.has(b) || b.t !== 'box' || (b.online && !IE.onlineOn)) continue; seen.add(b);
       let tmin = 0, tmax = best;
       const ax = [['x', b.minx, b.maxx], ['y', b.bottom, b.top], ['z', b.minz, b.maxz]];
       let ok = true;
@@ -407,6 +408,7 @@ IE.buildWorld = function (scene) {
   buildCities(scene);
   buildBase(scene);
   buildAirport(scene);
+  buildOnlineHouses(scene);
   buildInteriors(scene);
   buildWrecks(scene);
   buildNature(scene);
@@ -459,7 +461,7 @@ function buildCities(scene) {
   IE.shops.forEach(s => { if (s.fixed) reserve[s.city].push({ x: s.x, z: s.z, r: 26 }); });
   const resolvePt = (o, def) => { if (o.at === 'airport') { o.x = IE.airport.spawn.x; o.z = IE.airport.spawn.z; return o; } const c = IE.cityById[o.city || def]; const p = IE.snapLand(c.x + (o.dx || 0), c.z + (o.dz || 0), c.x, c.z); o.x = p.x; o.z = p.z; return o; };
   IE.airport.spawn = { x: IE.airport.x - 40, z: IE.airport.z + 40 };
-  IE.missions.forEach(m => {
+  IE.missions.concat(IE.coopJobs || []).forEach(m => {
     resolvePt(m, m.city); if (!m.at) reserve[m.city].push({ x: m.x, z: m.z, r: 16 });
     m.steps.forEach(s => {
       if (s.city) { resolvePt(s, s.city); reserve[s.city].push({ x: s.x, z: s.z, r: s.t === 'kill' ? 40 : 18 }); }
@@ -853,6 +855,51 @@ function buildBase(scene) {
   B.slots.soldiers.push({ x: X0 + 5, z: B.z - 8 }, { x: X0 + 5, z: B.z + 8 });
 }
 
+// ---------- Zusätzliche Häuser (Online-Modus) ----------
+IE.onlineOn = false;
+function buildOnlineHouses(scene) {
+  const houses = [];
+  const okSpot = (x, z, w, d) => {
+    const h0 = rawH(x, z); if (h0 < 1.5 || h0 > 160) return false;
+    for (const q of [[-w / 2, -d / 2], [w / 2, -d / 2], [-w / 2, d / 2], [w / 2, d / 2]]) { const h = rawH(x + q[0], z + q[1]); if (h < 1.2 || Math.abs(h - h0) > 2.5 || IE.nearRoad(x + q[0], z + q[1])) return false; }
+    for (const c of IE.cities) if (Math.hypot(x - c.x, z - c.z) < c.r + 12) return false;
+    for (const f of IE.flatZones) if (Math.abs(x - f.x) < f.hw + 40 && Math.abs(z - f.z) < f.hd + 40) return false;
+    for (const hh of houses) if (Math.abs(hh.x - x) < (hh.w + w) / 2 + 3 && Math.abs(hh.z - z) < (hh.d + d) / 2 + 3) return false;
+    return true;
+  };
+  const tryHouse = (x, z) => { const w = 9 + rnd() * 6, d = 9 + rnd() * 6; if (!okSpot(x, z, w, d)) return; houses.push({ x, z, w, d, f: rnd() < 0.6 ? 2 : 3, y: rawH(x, z) - 0.5 }); };
+  // Vororte rund um jede Stadt
+  for (const c of IE.cities) {
+    const n = Math.round(c.r / 4);
+    for (let i = 0; i < n * 3 && houses.length < 4000; i++) { const a = rnd() * Math.PI * 2, r = c.r + 18 + rnd() * 110; tryHouse(c.x + Math.cos(a) * r, c.z + Math.sin(a) * r); }
+  }
+  // Dörfer entlang der Straßen
+  for (const r of IE.roads) for (let i = 60; i < r.pts.length - 60; i += 90) {
+    const p = r.pts[i], q = r.pts[i + 1], tx = q.x - p.x, tz = q.z - p.z, l = Math.hypot(tx, tz) || 1, sd = rnd() < 0.5 ? 1 : -1;
+    const cx = p.x + (-tz / l) * sd * 45, cz = p.z + (tx / l) * sd * 45;
+    for (let k = 0; k < 14; k++) tryHouse(cx + (rnd() - 0.5) * 70, cz + (rnd() - 0.5) * 70);
+  }
+  const pal = [0xe9c27a, 0xeeddb8, 0xd98a5c, 0xf0e3c8, 0xc9734b, 0xe6a96f, 0xf4f0e6, 0xe2c08a];
+  const grp = new T.Group(); grp.visible = false; scene.add(grp); IE.onlineGroup = grp;
+  const m4 = new T.Matrix4(), q = new T.Quaternion(), sc = new T.Vector3(), ps = new T.Vector3();
+  for (const f of [2, 3]) {
+    const arr = houses.filter(h => h.f === f); if (!arr.length) continue;
+    const geo = new T.BoxGeometry(1, 1, 1); geo.translate(0, 0.5, 0);
+    const uv = geo.attributes.uv, nrm = geo.attributes.normal;
+    for (let i = 0; i < uv.count; i++) { if (Math.abs(nrm.getY(i)) > 0.5) { uv.setXY(i, 0.02, 0.02); continue; } uv.setXY(i, uv.getX(i) * 2, uv.getY(i) * f); }
+    const im = new T.InstancedMesh(geo, new T.MeshLambertMaterial({ map: IE.facadeTex }), arr.length);
+    arr.forEach((h, i) => { ps.set(h.x, h.y, h.z); sc.set(h.w, f * 3.4 + 0.5, h.d); m4.compose(ps, q, sc); im.setMatrixAt(i, m4); im.setColorAt(i, new T.Color(pal[(IE.hash(i, f) * pal.length) | 0])); });
+    im.castShadow = true; im.receiveShadow = true; grp.add(im);
+  }
+  const rg = new T.ConeGeometry(0.7072, 1, 4, 1); rg.rotateY(Math.PI / 4); rg.translate(0, 0.5, 0);
+  const rim = new T.InstancedMesh(rg, IE.mat.terracotta, houses.length);
+  houses.forEach((h, i) => { ps.set(h.x, h.y + h.f * 3.4 + 0.5, h.z); sc.set(h.w + 0.8, Math.min(h.w, h.d) * 0.3, h.d + 0.8); m4.compose(ps, q, sc); rim.setMatrixAt(i, m4); });
+  rim.castShadow = true; grp.add(rim);
+  for (const h of houses) { const b = IE.addBox(h.x - h.w / 2, h.z - h.d / 2, h.x + h.w / 2, h.z + h.d / 2, h.y + h.f * 3.4 + 0.5, h.y); b.online = true; }
+  IE.onlineHouses = houses;
+}
+IE.setOnlineWorld = function (on) { IE.onlineOn = !!on; if (IE.onlineGroup) IE.onlineGroup.visible = !!on; };
+
 // ---------- Flughafen ----------
 function buildAirport(scene) {
   const A = IE.airport, y = A.h, M = IE.mat;
@@ -1026,6 +1073,7 @@ function buildNature(scene) {
     const cnt = 1 + (rnd() * 6 | 0);
     for (let i = 0; i < cnt; i++) {
       const px = x + (rnd() - 0.5) * 30, pz = z + (rnd() - 0.5) * 30, ph = rawH(px, pz); if (ph < 2 || IE.nearRoad(px, pz)) continue;
+      if (IE.collAt(px, pz).some(b => b.online && px > b.minx - 3 && px < b.maxx + 3 && pz > b.minz - 3 && pz < b.maxz + 3)) continue;
       const s = 0.7 + rnd() * 0.7;
       const tusc = z > -900 && z < -100 && x > -800 && x < 300; // grob Toskana/Umbrien
       if (ph > 55) round.push({ x: px, z: pz, y: ph, s: s * 1.1, dark: true });

@@ -26,6 +26,18 @@ Funktioniert mit Maus/Tastatur und mit Touch (iPad/Handy).
 - Story startet am Flughafen von Neapel mit eigenem Hangar: Propellerflugzeug, Kunstflugzeug, Wasserflugzeug, Privatjet; Kampfjet auf der Militärbasis
 - Charakterwechsel zwischen Jack, Marco und Sofia, automatisches Speichern
 
+## Online-Modus
+- Öffentliche Lobby oder private Lobby mit Code (über claude.ai, angemeldet)
+- Andere Spieler mit Namensschild, gegenseitiges Abschießen (Passivmodus abschaltbar), gemeinsame Crew-Aufträge
+- Rangliste (Abschüsse, Geld, Aufträge), mehr Häuser (Vororte und Dörfer)
+- Mitspieler brauchen das geteilte Spiel mit der Rolle „Mitwirkende“, damit Treffer, Aufträge und Ranglisten-Einträge zählen
+
+## Cheat-Codes (Knöpfe schnell nacheinander)
+E E ZIELEN SPRUNG RENNEN = Helikopter · ZIELEN ZIELEN E E SPRUNG = alle Waffen · WAFFE WAFFE E ZIELEN = Minigun ·
+SPRUNG SPRUNG E RENNEN = Supersportwagen · RENNEN SPRUNG RENNEN SPRUNG E = Panzer · E ZIELEN E ZIELEN SPRUNG = Kampfjet ·
+RENNEN RENNEN E E = Gesundheit · E SPRUNG E SPRUNG ZIELEN = Fahndung weg · ZIELEN SPRUNG ZIELEN SPRUNG RENNEN = 5 Sterne ·
+SPRUNG ZIELEN RENNEN E SPRUNG = Geld. In der öffentlichen Lobby sind Cheats aus.
+
 ## Steuerung (Tastatur)
 WASD laufen/fahren · Maus Kamera · Linksklick schießen · Rechtsklick zielen · Shift sprinten/Heli runter ·
 Leertaste springen/Handbremse/Heli hoch · F ein-/aussteigen · E Shop/Mission · Q/1–6 Waffe · M Karte · C Charakter · V Sicht · Shift im Wasser abtauchen · Tab Waffenrad · Esc Menü
