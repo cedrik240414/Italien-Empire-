@@ -37,7 +37,7 @@ IE.animHuman = function (h, phase, amp, aiming, dead) {
   h.armL.rotation.x = -s * 0.8;
   if (aiming) { h.armR.rotation.x = -Math.PI / 2; h.armR.rotation.z = 0; } else h.armR.rotation.x = s * 0.8;
 };
-IE.setGunLen = function (h, len) { h.gun.visible = len > 0; if (len > 0) { h.gunMesh.scale.z = len / 0.3; h.gunMesh.position.z = len / 2 - 0.05; } };
+IE.setGunLen = function (h, len, thick) { h.gun.visible = len > 0; if (len > 0) { h.gunMesh.scale.set(thick || 1, thick || 1, len / 0.3); h.gunMesh.position.z = len / 2 - 0.05; } };
 
 // ---------- Autos ----------
 const profiles = {
@@ -170,6 +170,105 @@ IE.updateBoat = function (v, inp, dt) {
   v.pitch += ((-Math.min(as / d.speed, 1) * 0.12) + Math.sin(v.t * 1.3) * 0.02 - v.pitch) * Math.min(1, dt * 3);
   v.roll += (v.steer * Math.min(as / 10, 1) * 0.15 + Math.sin(v.t * 1.1) * 0.03 - v.roll) * Math.min(1, dt * 3);
   v.group.position.copy(v.pos); v.group.rotation.order = 'YXZ'; v.group.rotation.y = v.yaw; v.group.rotation.x = v.pitch; v.group.rotation.z = v.roll;
+};
+
+// ---------- Flugzeuge ----------
+IE.makePlane = function (def) {
+  const outer = new T.Group(), g = new T.Group(); outer.add(g); g.rotation.y = -Math.PI / 2;
+  const bm = new T.MeshStandardMaterial({ color: def.color, metalness: 0.4, roughness: 0.35 }), am = new T.MeshStandardMaterial({ color: def.accent, metalness: 0.3, roughness: 0.4 }), dk = lam(0x222222);
+  const mesh = (geo, mat, x, y, z) => { const m = new T.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; g.add(m); return m; };
+  const k = def.kind; let prop = null, L, W, gearH;
+  const fus = (len, r0, r1) => { const c = new T.CylinderGeometry(r1, r0, len, 14); c.rotateZ(-Math.PI / 2); return c; };
+  if (k === 'prop' || k === 'stunt' || k === 'sea') {
+    L = 8; W = 11; gearH = k === 'sea' ? 1.6 : 1.2;
+    mesh(fus(7, 0.75, 0.35), bm, -0.6, gearH + 0.6, 0);
+    const nose = mesh(new T.SphereGeometry(0.75, 12, 10), bm, 2.9, gearH + 0.6, 0); nose.scale.x = 0.8;
+    mesh(new T.BoxGeometry(1.7, 0.6, 1.1), glassMat, 1.4, gearH + 1.25, 0);
+    mesh(new T.BoxGeometry(1.6, 0.14, k === 'stunt' ? 8.5 : 11), bm, 1.0, k === 'stunt' ? gearH + 0.25 : gearH + 1.55, 0);
+    mesh(new T.BoxGeometry(1.0, 0.16, 11.04), am, 0.95, k === 'stunt' ? gearH + 0.26 : gearH + 1.56, 0).scale.set(0.3, 1, 1);
+    mesh(new T.BoxGeometry(0.9, 0.1, 3.4), bm, -3.8, gearH + 0.7, 0);
+    mesh(new T.BoxGeometry(1.1, 1.4, 0.1), am, -3.9, gearH + 1.3, 0);
+    prop = new T.Group(); prop.position.set(3.55, gearH + 0.6, 0); g.add(prop);
+    for (let i = 0; i < 2; i++) { const b = new T.Mesh(new T.BoxGeometry(0.06, 2.2, 0.18), dk); b.rotation.x = i * Math.PI / 2; prop.add(b); }
+    if (k === 'sea') for (const sz of [-1, 1]) { mesh(fus(5, 0.3, 0.25), am, 0.4, 0.35, sz * 1.4); mesh(new T.BoxGeometry(0.1, 1.1, 0.1), dk, 0.8, 0.95, sz * 1.2); }
+    else { for (const sz of [-1, 1]) { mesh(new T.CylinderGeometry(0.32, 0.32, 0.2, 10).rotateX(Math.PI / 2), dk, 1.2, 0.32, sz * 1.1); mesh(new T.BoxGeometry(0.1, 0.9, 0.1), dk, 1.2, 0.8, sz * 0.9); } mesh(new T.CylinderGeometry(0.22, 0.22, 0.15, 8).rotateX(Math.PI / 2), dk, -3.3, 0.6, 0); }
+  } else if (k === 'jet') {
+    L = 17; W = 15; gearH = 1.4;
+    mesh(fus(14, 1.3, 0.6), bm, -1, gearH + 1.3, 0);
+    const nose = mesh(new T.SphereGeometry(1.3, 14, 10), bm, 6, gearH + 1.3, 0); nose.scale.x = 1.8;
+    mesh(new T.BoxGeometry(1.2, 0.4, 2.2), glassMat, 7.2, gearH + 1.9, 0);
+    for (let i = 0; i < 6; i++) mesh(new T.BoxGeometry(0.4, 0.3, 0.05), glassMat, 4 - i * 1.4, gearH + 1.7, 1.28).scale.z = 1;
+    for (let i = 0; i < 6; i++) mesh(new T.BoxGeometry(0.4, 0.3, 0.05), glassMat, 4 - i * 1.4, gearH + 1.7, -1.28);
+    for (const sz of [-1, 1]) { const wg = mesh(new T.BoxGeometry(2.6, 0.2, 7), bm, 0, gearH + 0.8, sz * 4.4); wg.rotation.y = sz * 0.35; mesh(fus(3, 0.5, 0.45), am, -5.5, gearH + 1.9, sz * 1.6); }
+    mesh(new T.BoxGeometry(2, 3, 0.15), am, -7.4, gearH + 3, 0); mesh(new T.BoxGeometry(1.4, 0.15, 5), bm, -7.9, gearH + 4.4, 0);
+    for (const [gx, gz] of [[4.5, 0], [-0.5, 1.4], [-0.5, -1.4]]) { mesh(new T.CylinderGeometry(0.4, 0.4, 0.3, 10).rotateX(Math.PI / 2), dk, gx, 0.4, gz); mesh(new T.BoxGeometry(0.15, 1.2, 0.15), dk, gx, 1, gz); }
+  } else {
+    L = 15; W = 10; gearH = 1.3;
+    mesh(fus(11, 1.0, 0.8), bm, -1, gearH + 1.0, 0);
+    const nc = new T.ConeGeometry(1.0, 4, 14); nc.rotateZ(-Math.PI / 2); mesh(nc, bm, 6.5, gearH + 1.0, 0);
+    const cp = mesh(new T.SphereGeometry(0.75, 12, 8), glassMat, 3.2, gearH + 1.7, 0); cp.scale.set(2.2, 0.8, 0.9);
+    const ws = new T.Shape(); ws.moveTo(2.5, 0); ws.lineTo(-4.5, 5); ws.lineTo(-5.5, 5); ws.lineTo(-5, 0); ws.lineTo(-5.5, -5); ws.lineTo(-4.5, -5); ws.closePath();
+    const wg = new T.ExtrudeGeometry(ws, { depth: 0.18, bevelEnabled: false }); wg.rotateX(Math.PI / 2); mesh(wg, bm, 0, gearH + 0.9, 0);
+    for (const sz of [-1, 1]) { const f = mesh(new T.BoxGeometry(2, 2.4, 0.12), am, -5.2, gearH + 2.3, sz * 0.9); f.rotation.x = sz * 0.25; mesh(new T.CylinderGeometry(0.15, 0.15, 3, 6).rotateZ(Math.PI / 2), dk, -1, gearH + 0.6, sz * 3.2); }
+    mesh(new T.CylinderGeometry(0.7, 0.8, 0.8, 12).rotateZ(Math.PI / 2), dk, -6.9, gearH + 1.0, 0);
+    for (const [gx, gz] of [[3.5, 0], [-1.5, 1.5], [-1.5, -1.5]]) { mesh(new T.CylinderGeometry(0.35, 0.35, 0.25, 10).rotateX(Math.PI / 2), dk, gx, 0.35, gz); mesh(new T.BoxGeometry(0.12, 1.1, 0.12), dk, gx, 0.9, gz); }
+  }
+  return { group: outer, L, W, H: gearH + 2, bodyMat: bm, prop, gearH };
+};
+IE.spawnPlane = function (scene, defId, x, z, yaw, y) {
+  const def = IE.planeById[defId], m = IE.makePlane(def);
+  const v = { type: 'plane', def, m, group: m.group, pos: new T.Vector3(x, y !== undefined ? y : IE.supportH(x, z, 999), z), yaw: yaw || 0, pitch: 0, roll: 0, speed: 0, throttle: 0, vy: 0,
+    health: def.kind === 'jet' ? 2500 : 1500, maxHealth: def.kind === 'jet' ? 2500 : 1500, driver: null, dead: false, burn: 0, onGround: true };
+  m.group.position.copy(v.pos); m.group.rotation.y = v.yaw; scene.add(m.group); IE.vehicles.push(v); return v;
+};
+IE.planeGround = function (v) {
+  const g = IE.supportH(v.pos.x, v.pos.z, v.pos.y + 1.5);
+  if (g < -0.3) return v.def.kind === 'sea' ? 0 : g;
+  return g;
+};
+IE.updatePlane = function (v, inp, dt) {
+  const d = v.def, piloted = !!v.driver && !v.dead;
+  if (piloted) v.throttle = Math.max(0, Math.min(1, v.throttle + (inp.up || 0) * 0.45 * dt)); else v.throttle = Math.max(0, v.throttle - dt);
+  const g = IE.planeGround(v);
+  const onG = v.pos.y <= g + 0.08;
+  const target = v.throttle * d.speed * (1 - 0.45 * Math.max(0, Math.sin(v.pitch)));
+  v.speed += (target - v.speed) * (target > v.speed ? (d.kind === 'fighter' ? 0.45 : 0.3) : 0.12) * dt;
+  if (onG) {
+    if (v.throttle < 0.05 || inp.brake) v.speed = Math.max(0, v.speed - (inp.brake ? 14 : 3) * dt);
+    v.yaw -= (inp.x || 0) * 0.9 * dt * Math.min(v.speed / 4, 1);
+    v.roll += (0 - v.roll) * Math.min(1, dt * 6);
+    if ((inp.y || 0) > 0.2 && v.speed > d.minSpeed) v.pitch = Math.min(0.35, v.pitch + 0.6 * dt); else v.pitch += (0 - v.pitch) * Math.min(1, dt * 4);
+    if (v.speed < d.minSpeed && v.pitch > 0) v.pitch = Math.max(0, v.pitch - dt);
+  } else {
+    const turn = d.turn;
+    if (d.kind === 'stunt' || d.kind === 'fighter') v.roll += (inp.x || 0) * 2.6 * turn * 0.6 * dt;
+    else v.roll += ((inp.x || 0) * 0.9 - v.roll) * Math.min(1, dt * 1.8);
+    if (!(inp.x) && (d.kind === 'stunt' || d.kind === 'fighter')) v.roll += (Math.round(v.roll / (Math.PI * 2)) * Math.PI * 2 - v.roll) * Math.min(1, dt * 1.2);
+    const cr = Math.cos(v.roll);
+    v.pitch += (inp.y || 0) * 0.8 * turn * cr * dt;
+    v.yaw -= Math.sin(v.roll) * 0.75 * turn * Math.min(v.speed / d.minSpeed, 1.6) * dt * Math.sign(cr || 1) * (cr < 0 ? -1 : 1);
+    v.yaw += (inp.y || 0) * 0.8 * turn * Math.sin(v.roll) * dt * 0;
+    v.pitch = Math.max(-1.45, Math.min(1.45, v.pitch));
+    v.speed -= Math.sin(v.pitch) * 9.8 * 0.6 * dt;
+    if (v.speed < d.minSpeed) { v.pitch -= (1 - v.speed / d.minSpeed) * 0.9 * dt; }
+  }
+  v.speed = Math.max(0, v.speed);
+  const cp = Math.cos(v.pitch), sink = (!onG && v.speed < d.minSpeed) ? -(1 - v.speed / d.minSpeed) * 18 : 0;
+  const vy = Math.sin(v.pitch) * v.speed + sink;
+  v.pos.x += Math.sin(v.yaw) * cp * v.speed * dt; v.pos.z += Math.cos(v.yaw) * cp * v.speed * dt; v.pos.y += vy * dt;
+  if (onG && vy <= 0) v.pos.y = g;
+  if (v.pos.y > 1500) { v.pos.y = 1500; v.pitch = Math.min(v.pitch, 0); }
+  const g2 = IE.planeGround(v);
+  if (v.pos.y < g2) {
+    const soft = v.pitch > -0.35 && vy > -10 && Math.abs(Math.sin(v.roll)) < 0.5 && Math.cos(v.roll) > 0;
+    if (!soft && !v.dead) v.health = 0;
+    v.pos.y = g2; v.pitch = Math.max(v.pitch, 0); v.roll = 0;
+  }
+  if (g2 < -0.3 && d.kind !== 'sea' && v.pos.y < 0.4) { v.health -= 400 * dt; v.speed *= 0.9; }
+  if (IE.pushOut(v.pos, Math.min(3, v.m.L * 0.2), v.pos.y, 2.5)) { if (v.speed > 14) v.health = 0; else v.speed *= -0.2; }
+  v.onGround = v.pos.y <= g2 + 0.1;
+  if (v.m.prop) v.m.prop.rotation.x += (0.2 + v.throttle) * dt * 50;
+  v.group.position.copy(v.pos); v.group.rotation.order = 'YXZ'; v.group.rotation.y = v.yaw; v.group.rotation.x = -v.pitch; v.group.rotation.z = v.roll;
 };
 
 // ---------- Helikopter ----------
@@ -313,7 +412,7 @@ IE.spawnNPC = function (scene, kind, x, z, opts) {
   else look = { pants: pedColors[(r() * 10) | 0], jacket: pedColors[(r() * 10) | 0], shirt: 0xeeeeee, skin: skins[(r() * 5) | 0], hair: [0x2a1a10, 0x111111, 0x7a5a30, 0xaaaaaa][(r() * 4) | 0], female: r() < 0.45 };
   const h = IE.makeHuman(look);
   if (opts.boss) h.group.scale.setScalar(1.12);
-  const y = IE.supportH(x, z, 999);
+  const y = opts.y !== undefined ? opts.y : IE.supportH(x, z, 999);
   const n = { kind, h, group: h.group, pos: new T.Vector3(x, y, z), yaw: r() * 6.28, health: kind === 'ped' ? 40 : (opts.boss ? 600 : kind === 'police' ? 80 : kind === 'soldier' ? 130 : 90),
     state: 'walk', timer: r() * 3, phase: r() * 6, dead: false, deadT: 0, shootT: 1 + r() * 2, boss: !!opts.boss, name: opts.name, city: opts.city, mission: !!opts.mission, speed: 0 };
   if (kind !== 'ped') IE.setGunLen(h, opts.boss ? 0.5 : kind === 'soldier' ? 0.8 : 0.28);

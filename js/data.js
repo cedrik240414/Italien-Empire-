@@ -77,7 +77,7 @@ IE.roadDefs = [
   ['mailand','verona'], ['verona','venedig'], ['verona','bologna'], ['mailand','bologna',[[10.3,44.8]]],
   ['bologna','florenz'], ['florenz','pisa'], ['pisa','genua',[[10.0,44.05]]], ['florenz','rom',[[11.9,43.0]]],
   ['bologna','ancona',[[12.5,44.0]]], ['ancona','pescara'], ['pescara','bari',[[15.4,41.7]]],
-  ['rom','pescara',[[13.4,42.2]]], ['rom','neapel',[[13.6,41.4]]], ['neapel','bari',[[15.4,41.1]]],
+  ['rom','pescara',[[13.4,42.2]]], ['rom','neapel',[[13.6,41.4]]], ['neapel','bari',[[15.1,41.5],[15.6,41.55]]], ['neapel','flughafen'],
   ['neapel','reggio',[[15.4,40.3],[16.15,39.3],[16.0,38.6]]],
   ['palermo','catania',[[14.2,37.7]]], ['catania','reggio',[[15.4,38.15]]], ['palermo','reggio',[[14.6,38.05]]]
 ];
@@ -118,7 +118,8 @@ IE.weapons = [
   { id: 'mitra',   name: 'Maschinenpistole',price: 4500,  dmg: 16, rate: 0.08, range: 110, spread: 0.03,  ammoPrice: 150, clip: 120,pellets: 1, auto: true },
   { id: 'pompa',   name: 'Schrotflinte',    price: 7500,  dmg: 18, rate: 0.8,  range: 45,  spread: 0.07,  ammoPrice: 180, clip: 24, pellets: 7, auto: false },
   { id: 'assalto', name: 'Sturmgewehr',     price: 16000, dmg: 30, rate: 0.11, range: 200, spread: 0.015, ammoPrice: 300, clip: 150,pellets: 1, auto: true },
-  { id: 'cecchino',name: 'Scharfschützengewehr', price: 35000, dmg: 160, rate: 1.1, range: 600, spread: 0, ammoPrice: 500, clip: 20, pellets: 1, auto: false, scope: true }
+  { id: 'cecchino',name: 'Scharfschützengewehr', price: 35000, dmg: 160, rate: 1.1, range: 600, spread: 0, ammoPrice: 500, clip: 20, pellets: 1, auto: false, scope: true },
+  { id: 'minigun', name: 'Minigun', price: 150000, dmg: 24, rate: 0.035, range: 160, spread: 0.03, ammoPrice: 900, clip: 600, pellets: 1, auto: true, spin: true }
 ];
 IE.weaponById = {}; IE.weapons.forEach(w => IE.weaponById[w.id] = w);
 
@@ -155,6 +156,20 @@ IE.base = { name: 'Base Militare Sardegna', lon: 9.02, lat: 40.62, r: 190, hw: 1
 (function () { const p = IE.geo(IE.base.lon, IE.base.lat); IE.base.x = p.x; IE.base.z = p.z; })();
 IE.carById = {}; IE.cars.forEach(c => IE.carById[c.id] = c);
 
+// Flughafen bei Neapel (Start der Story)
+IE.airport = { name: 'Aeroporto di Napoli', lon: 15.46, lat: 40.84, hw: 80, hd: 240, h: 14 };
+(function () { const p = IE.geo(IE.airport.lon, IE.airport.lat); IE.airport.x = p.x; IE.airport.z = p.z; })();
+IE.cityById.flughafen = { id: 'flughafen', name: 'Flughafen', x: IE.airport.x - IE.airport.hw - 30, z: IE.airport.z + 60, r: 20, base: IE.airport.h };
+IE.flatZones = [ { x: IE.base.x, z: IE.base.z, hw: IE.base.hw, hd: IE.base.hd, h: 12 }, { x: IE.airport.x, z: IE.airport.z, hw: IE.airport.hw + 10, hd: IE.airport.hd + 10, h: IE.airport.h } ];
+IE.planes = [
+  { id: 'piccolo',  name: 'Piccolo 172 (Propeller)', price: 0,       speed: 62,  minSpeed: 22, turn: 1.0, color: 0xf2f2ee, accent: 0xc8372d, kind: 'prop' },
+  { id: 'acrobata', name: 'Acrobata (Kunstflug)',    price: 180000,  speed: 85,  minSpeed: 24, turn: 1.8, color: 0xd12b2b, accent: 0xf2f2f2, kind: 'stunt' },
+  { id: 'idro',     name: 'Idrovolante (Wasserflugzeug)', price: 260000, speed: 70, minSpeed: 22, turn: 1.0, color: 0xf2c230, accent: 0x1b3d6e, kind: 'sea' },
+  { id: 'jet',      name: 'Jet Privato',             price: 1200000, speed: 150, minSpeed: 40, turn: 0.8, color: 0xf6f6f2, accent: 0x1b3d6e, kind: 'jet' },
+  { id: 'caccia',   name: 'Caccia (Kampfjet)',       price: 0,       speed: 190, minSpeed: 45, turn: 1.4, color: 0x7b8590, accent: 0x4a5236, kind: 'fighter', armed: true, military: true }
+];
+IE.planeById = {}; IE.planes.forEach(p => IE.planeById[p.id] = p);
+
 IE.helis = [
   { id: 'libellula', name: 'Libellula',  price: 60000,   speed: 55, climb: 18, color: 0x1e7fc8 },
   { id: 'aquila',    name: 'Aquila 109', price: 180000,  speed: 72, climb: 24, color: 0x222222 },
@@ -183,15 +198,15 @@ IE.chapters = [
 ];
 
 IE.missions = [
-  { ch: 0, title: 'Zurück in Neapel', city: 'neapel', dx: -20, dz: -60, reward: 2500,
+  { ch: 0, title: 'Zurück in Neapel', city: 'neapel', at: 'airport', reward: 2500,
     steps: [
       { t: 'talk', lines: [
-        ['Erzähler','Jack kommt nach fünf Jahren zurück nach Neapel. Er hat nur einen Koffer und einen kaputten Wagen.'],
+        ['Erzähler','Jack landet nach fünf Jahren am Flughafen von Neapel. Er hat nur einen Koffer – und draußen wartet ein kaputter Wagen.'],
         ['Marco','Du siehst beschissen aus.'],
         ['Jack','Du auch.'],
         ['Marco','Komm, steig ein. Rinaldi weiß schon, dass du zurück bist.'] ] },
       { t: 'enter', text: 'Steig in ein Auto (F / 🚗)' },
-      { t: 'goto', city: 'neapel', dx: -90, dz: 20, r: 14, vehicle: true, text: 'Fahr zu Marcos Werkstatt' },
+      { t: 'goto', city: 'neapel', dx: -90, dz: 20, r: 8, vehicle: true, inside: 'werkstatt', text: 'Fahr zu Marcos Werkstatt' },
       { t: 'talk', lines: [['Marco','Hier ist mein Laden. Und das hier ist ab heute auch deiner, Bruder.'],['Jack','Ich will eigentlich ein neues Leben, Marco.'],['Marco','Das wollen wir alle. Aber dafür brauchst du Geld.']] }
     ] },
   { ch: 0, title: 'Rinaldis Männer', city: 'neapel', dx: -90, dz: 20, reward: 4000,
@@ -210,7 +225,7 @@ IE.missions = [
     ] },
   { ch: 1, title: 'Der Kontakt aus Rom', city: 'rom', dx: -40, dz: -40, reward: 6000,
     steps: [
-      { t: 'goto', city: 'rom', dx: -40, dz: -40, r: 10, text: 'Triff Sofia in ihrem kleinen Büro in Rom' },
+      { t: 'goto', city: 'rom', dx: -40, dz: -40, r: 6, inside: 'buero', text: 'Triff Sofia in ihrem kleinen Büro in Rom' },
       { t: 'talk', lines: [['Sofia','Ihr wollt mehr Geld? Dann müsst ihr aufhören, wie Kleinganoven zu arbeiten.'],['Sofia','Ich kenne La Corona. Ich kenne ihre Konten, ihre Leute, ihre Fehler.'],['Erzähler','Sie zeigt ihnen eine Liste mit möglichen Auftraggebern. Die Crew ist komplett.']] }
     ] },
   { ch: 1, title: 'Das Lagerhaus', city: 'rom', dx: -40, dz: -40, reward: 15000,
@@ -238,9 +253,9 @@ IE.missions = [
   { ch: 2, title: 'Das Kunstgeschäft', city: 'florenz', dx: 30, dz: 30, reward: 60000,
     steps: [
       { t: 'talk', lines: [['Sofia','In Florenz soll ein wertvolles Gemälde zurückgeholt werden. Es hängt in einer privaten Kunstveranstaltung.']] },
-      { t: 'goto', city: 'florenz', dx: -30, dz: -50, r: 10, text: 'Geh zur Kunstveranstaltung' },
+      { t: 'goto', city: 'florenz', dx: -30, dz: -50, r: 6, inside: 'galerie', text: 'Geh zur Kunstveranstaltung' },
       { t: 'talk', lines: [['Erzähler','Dort trifft Jack Enzo Ricci, einen ehemaligen Freund seines Vaters.'],['Enzo','Dein Vater hat damals einen großen Fehler gemacht.'],['Jack','Welchen? Rede!'],['Erzähler','Doch Enzo verschwindet in der Menge.']] },
-      { t: 'collect', city: 'florenz', dx: -40, dz: -60, r: 5, text: 'Nimm das Gemälde' },
+      { t: 'collect', city: 'florenz', dx: -40, dz: -60, r: 2.5, inside: 'galerie', text: 'Nimm das Gemälde' },
       { t: 'kill', city: 'florenz', dx: -40, dz: -60, n: 5, text: 'Wehr die Sicherheitsleute ab' }
     ] },
   { ch: 2, title: 'Die Yacht in Venedig', city: 'venedig', dx: 0, dz: 0, reward: 45000,
@@ -259,7 +274,8 @@ IE.missions = [
   { ch: 3, title: 'Das Casino am Meer', city: 'sanremo', dx: 0, dz: 0, reward: 250000,
     steps: [
       { t: 'talk', lines: [['Sofia','Wir investieren in ein Casino-Projekt an der Küste von Sanremo.'],['Sofia','Ein rivalisierender Besitzer versucht, uns aus dem Geschäft zu drängen.']] },
-      { t: 'goto', city: 'sanremo', dx: 30, dz: 40, r: 15, text: 'Fahr zum Casino in Sanremo' },
+      { t: 'goto', city: 'sanremo', dx: 30, dz: 40, r: 6, inside: 'casino', text: 'Fahr zum Casino in Sanremo' },
+      { t: 'talk', lines: [['Sofia','Willkommen in unserem Casino. Und da kommen schon die Männer des Konkurrenten …']] },
       { t: 'kill', city: 'sanremo', dx: 30, dz: 40, n: 8, text: 'Verteidige das Casino' }
     ] },
   { ch: 3, title: 'Die Flucht aus Florenz', city: 'florenz', dx: 0, dz: 0, reward: 160000,
@@ -273,9 +289,9 @@ IE.missions = [
   { ch: 3, title: 'Die geheimen Konten', city: 'mailand', dx: 0, dz: 0, reward: 300000,
     steps: [
       { t: 'talk', lines: [['Sofia','Ich habe Finanzunterlagen gefunden, die La Corona schwer belasten. Sie liegen in einer Privatbank in Mailand.'],['Jack','Ich will die Unterlagen veröffentlichen.'],['Marco','Bist du verrückt? Damit können wir Vittorio erpressen!'],['Erzähler','Die beiden streiten sich zum ersten Mal ernsthaft.']] },
-      { t: 'goto', city: 'mailand', dx: 110, dz: -110, r: 12, text: 'Geh zur Privatbank' },
-      { t: 'kill', city: 'mailand', dx: 110, dz: -110, n: 7, text: 'Überwältige die Bankwachen' },
-      { t: 'collect', city: 'mailand', dx: 115, dz: -115, r: 5, text: 'Nimm die Finanzunterlagen' },
+      { t: 'goto', city: 'mailand', dx: 110, dz: -110, r: 6, inside: 'bank', text: 'Geh in die Privatbank' },
+      { t: 'kill', city: 'mailand', dx: 110, dz: -110, n: 6, inside: 'bank', text: 'Überwältige die Bankwachen' },
+      { t: 'collect', city: 'mailand', dx: 115, dz: -115, r: 2.5, inside: 'bank', text: 'Nimm die Finanzunterlagen aus dem Tresor' },
       { t: 'escape', stars: 3, text: 'Entkomme der Polizei' }
     ] },
   { ch: 3, title: 'Der Verrat in Palermo', city: 'palermo', dx: 0, dz: 0, reward: 280000,
@@ -293,7 +309,7 @@ IE.missions = [
     ] },
   { ch: 4, title: 'Das Geheimnis von Luca', city: 'neapel', dx: 0, dz: 0, reward: 750000,
     steps: [
-      { t: 'goto', city: 'neapel', dx: -150, dz: -140, r: 10, text: 'Fahr zur Villa der Crew' },
+      { t: 'goto', city: 'neapel', dx: -150, dz: -140, r: 6, inside: 'villa', text: 'Fahr zur Villa der Crew' },
       { t: 'talk', lines: [['Sofia','Jack... ich muss dir etwas sagen. Ich kannte Luca. Vor seinem Tod.'],['Sofia','Ich wusste, dass er in Gefahr war.'],['Jack','Und du hast mir nichts erzählt?!'],['Erzähler','Jack wird wütend und verlässt die Villa.']] }
     ] },
   { ch: 4, title: 'Der Maulwurf', city: 'genua', dx: 0, dz: 0, reward: 500000,
@@ -317,7 +333,7 @@ IE.missions = [
     ] },
   { ch: 4, title: 'Das Treffen mit Vittorio', city: 'palermo', dx: 0, dz: 0, reward: 3000000,
     steps: [
-      { t: 'goto', city: 'palermo', dx: 40, dz: -120, r: 12, text: 'Triff Vittorio in Palermo' },
+      { t: 'goto', city: 'palermo', dx: 40, dz: -120, r: 6, inside: 'villa', text: 'Triff Vittorio in seiner Villa in Palermo' },
       { t: 'talk', lines: [['Vittorio','Luca hat nicht nur gegen mich gearbeitet. Er hat Beweise gegen Hayes gesammelt.'],['Vittorio','Und dein Vater, Antonio Moretti, hatte vor Jahren einen Deal mit dem FIB abgeschlossen.'],['Jack','Hat mein Vater dich verraten?'],['Vittorio','Dein Vater hat versucht, uns alle zu retten.']] }
     ] },
   { ch: 4, title: 'Marcos Geheimnis', city: 'palermo', dx: 0, dz: 0, reward: 1500000,

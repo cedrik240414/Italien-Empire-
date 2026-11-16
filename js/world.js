@@ -80,8 +80,8 @@ function baseHeight(x, z) {
     if (d < v.r) { const t = 1 - d / v.r; h += v.h * Math.pow(t, 1.4) - (d < v.r * 0.08 ? (v.r * 0.08 - d) * 0.9 : 0); }
   }
   h *= 0.25 + 0.75 * ramp;
-  { const b = IE.base, d = Math.max(Math.abs(x - b.x) - b.hw, Math.abs(z - b.z) - b.hd, 0);
-    if (d < 140) h = h + (12 - h) * smooth(140, 10, d); }
+  for (const b of IE.flatZones) { const d = Math.max(Math.abs(x - b.x) - b.hw, Math.abs(z - b.z) - b.hd, 0);
+    if (d < 140) h = h + (b.h - h) * smooth(140, 10, d); }
   for (const c of IE.cities) {
     const d = Math.hypot(x - c.x, z - c.z);
     if (d < c.r + 150) { const t = smooth(c.r + 150, c.r + 15, d); h = h + (c.base - h) * t; }
@@ -402,6 +402,8 @@ IE.buildWorld = function (scene) {
 
   buildCities(scene);
   buildBase(scene);
+  buildAirport(scene);
+  buildInteriors(scene);
   buildWrecks(scene);
   buildNature(scene);
   buildClouds(scene);
@@ -451,9 +453,10 @@ function buildCities(scene) {
   }
   IE.shops.forEach(s => { if (s.fixed) return; const c = IE.cityById[s.city]; const p = IE.snapLand(c.x + s.dx, c.z + s.dz, c.x, c.z); s.x = p.x; s.z = p.z; reserve[s.city].push({ x: s.x, z: s.z, r: s.type === 'heli' ? 34 : 30 }); });
   IE.shops.forEach(s => { if (s.fixed) reserve[s.city].push({ x: s.x, z: s.z, r: 26 }); });
-  const resolvePt = (o, def) => { const c = IE.cityById[o.city || def]; const p = IE.snapLand(c.x + (o.dx || 0), c.z + (o.dz || 0), c.x, c.z); o.x = p.x; o.z = p.z; return o; };
+  const resolvePt = (o, def) => { if (o.at === 'airport') { o.x = IE.airport.spawn.x; o.z = IE.airport.spawn.z; return o; } const c = IE.cityById[o.city || def]; const p = IE.snapLand(c.x + (o.dx || 0), c.z + (o.dz || 0), c.x, c.z); o.x = p.x; o.z = p.z; return o; };
+  IE.airport.spawn = { x: IE.airport.x - 40, z: IE.airport.z + 40 };
   IE.missions.forEach(m => {
-    resolvePt(m, m.city); reserve[m.city].push({ x: m.x, z: m.z, r: 16 });
+    resolvePt(m, m.city); if (!m.at) reserve[m.city].push({ x: m.x, z: m.z, r: 16 });
     m.steps.forEach(s => {
       if (s.city) { resolvePt(s, s.city); reserve[s.city].push({ x: s.x, z: s.z, r: s.t === 'kill' ? 40 : 18 }); }
       if (s.cps) { const c = IE.cityById[s.city]; s.cpPos = s.cps.map(q => { const p = IE.snapLand(c.x + q[0], c.z + q[1], c.x, c.z); reserve[s.city].push({ x: p.x, z: p.z, r: 16 }); return p; }); }
@@ -839,10 +842,141 @@ function buildBase(scene) {
     tank: [{ x: B.x - 90, z: B.z - 20, rot: 0 }, { x: B.x - 45, z: B.z - 20, rot: 0 }, { x: B.x, z: B.z - 20, rot: 0 }],
     jeep: [{ x: B.x + 40, z: B.z - 45, rot: Math.PI / 2 }, { x: B.x + 40, z: B.z - 38, rot: Math.PI / 2 }, { x: X0 + 25, z: B.z - 6, rot: Math.PI / 2 }],
     heli: [{ x: B.x + 110, z: B.z + 10, y: y + 0.15 }],
+    jet: [{ x: B.x - B.hw * 0.85, z: B.z + B.hd * 0.55, rot: Math.PI / 2 }],
     soldiers: []
   };
   for (let i = 0; i < 14; i++) B.slots.soldiers.push({ x: B.x + (IE.hash(i, 11) - 0.5) * B.hw * 1.7, z: B.z + (IE.hash(i, 12) - 0.5) * B.hd * 1.5 });
   B.slots.soldiers.push({ x: X0 + 5, z: B.z - 8 }, { x: X0 + 5, z: B.z + 8 });
+}
+
+// ---------- Flughafen ----------
+function buildAirport(scene) {
+  const A = IE.airport, y = A.h, M = IE.mat;
+  const ground = new T.Mesh(new T.PlaneGeometry(A.hw * 2 + 20, A.hd * 2 + 20), new T.MeshLambertMaterial({ color: 0x8b9a6a, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
+  ground.rotation.x = -Math.PI / 2; ground.position.set(A.x, y + 0.04, A.z); ground.receiveShadow = true; scene.add(ground);
+  const rwTex = canvasTex(128, 1024, (c, w, h) => {
+    c.fillStyle = '#36383b'; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 2500; i++) { const v = 45 + Math.random() * 25; c.fillStyle = `rgb(${v},${v},${v})`; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+    c.fillStyle = '#f1f1ea'; for (let i = 60; i < h - 60; i += 36) c.fillRect(w / 2 - 2, i, 4, 20);
+    c.fillRect(4, 0, 4, h); c.fillRect(w - 8, 0, 4, h);
+    for (let k = 0; k < 8; k++) { c.fillRect(12 + k * 13, 8, 8, 36); c.fillRect(12 + k * 13, h - 44, 8, 36); }
+    c.font = 'bold 30px Arial'; c.textAlign = 'center'; c.fillText('18', w / 2, 80); c.save(); c.translate(w / 2, h - 80); c.rotate(Math.PI); c.fillText('36', 0, 0); c.restore();
+  });
+  const rx = A.x + 20, rlen = A.hd * 2 - 20;
+  const rw = new T.Mesh(new T.PlaneGeometry(30, rlen), new T.MeshLambertMaterial({ map: rwTex, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  rw.rotation.x = -Math.PI / 2; rw.position.set(rx, y + 0.08, A.z); rw.receiveShadow = true; scene.add(rw);
+  const apron = new T.Mesh(new T.PlaneGeometry(60, 200), new T.MeshLambertMaterial({ color: 0x6e6f70, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  apron.rotation.x = -Math.PI / 2; apron.position.set(A.x - 40, y + 0.08, A.z + 20); scene.add(apron);
+  // Randbefeuerung
+  const lm = new T.MeshBasicMaterial({ color: 0xffd27a });
+  for (let z = -rlen / 2; z <= rlen / 2; z += 30) for (const s of [-1, 1]) add(scene, new T.BoxGeometry(0.4, 0.3, 0.4), lm, rx + s * 16, y + 0.2, A.z + z, 0, false);
+  // Terminal (Glas) + Tower
+  const tx = A.x - 62, tz = A.z + 60;
+  add(scene, new T.BoxGeometry(14, 10, 70), new T.MeshLambertMaterial({ color: 0xe9e6de }), tx, y + 5, tz);
+  add(scene, new T.BoxGeometry(14.4, 6, 66), M.glass, tx + 0.2, y + 5, tz);
+  add(scene, new T.BoxGeometry(16, 0.8, 72), new T.MeshLambertMaterial({ color: 0x2f5f8a }), tx, y + 10.4, tz);
+  const sign = new T.Mesh(new T.PlaneGeometry(26, 4), new T.MeshBasicMaterial({ map: signTex('AEROPORTO', '#2f5f8a', '#ffffff') }));
+  sign.position.set(tx + 7.3, y + 12.8, tz); sign.rotation.y = Math.PI / 2; scene.add(sign);
+  IE.addBox(tx - 7, tz - 35, tx + 7, tz + 35, y + 10.8);
+  add(scene, new T.CylinderGeometry(2.5, 3, 26, 12), new T.MeshLambertMaterial({ color: 0xe9e6de }), tx, y + 13, tz - 60);
+  add(scene, new T.CylinderGeometry(5, 4, 5, 12), M.glass, tx, y + 28, tz - 60); add(scene, new T.CylinderGeometry(5.4, 5.4, 0.8, 12), M.dark, tx, y + 30.8, tz - 60);
+  IE.addBox(tx - 4, tz - 64, tx + 4, tz - 56, y + 31);
+  // Dein Hangar (offen zur Rollbahn)
+  const hx = A.x - 45, hz = A.z - 110, hm = new T.MeshLambertMaterial({ color: 0xb7bcc2, side: T.DoubleSide });
+  const hg = new T.CylinderGeometry(20, 20, 40, 24, 1, true, 0, Math.PI); hg.rotateZ(Math.PI / 2); hg.rotateY(Math.PI / 2);
+  const roof = add(scene, hg, hm, hx, y, hz); roof.rotation.y = Math.PI / 2;
+  const back = add(scene, new T.CircleGeometry(20, 24, 0, Math.PI), hm, hx - 20, y, hz); back.rotation.y = Math.PI / 2;
+  const floor = new T.Mesh(new T.PlaneGeometry(40, 40), new T.MeshLambertMaterial({ color: 0x9a9c9f, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.set(hx, y + 0.1, hz); scene.add(floor);
+  const hs = new T.Mesh(new T.PlaneGeometry(24, 4), new T.MeshBasicMaterial({ map: signTex('HANGAR MORETTI', '#1b1b1b', '#d9b45a') }));
+  hs.position.set(hx + 20.2, y + 22, hz); hs.rotation.y = Math.PI / 2; scene.add(hs);
+  for (const s of [-1, 1]) IE.addBox(hx - 20, hz + s * 20 - 0.5, hx + 20, hz + s * 20 + 0.5, y + 20);
+  IE.addBox(hx - 21, hz - 20, hx - 20, hz + 20, y + 20);
+  const shop = { type: 'plane', city: 'neapel', x: hx - 8, z: hz, mx: hx - 8, mz: hz, fixed: true };
+  shop.marker = marker(scene, shop.x, y, shop.z, 0xf2c230);
+  shop.spawn = { x: hx + 6, z: hz, rot: Math.PI / 2, y };
+  IE.shops.push(shop);
+  A.planeSlots = [{ x: A.x - 30, z: A.z + 120, rot: Math.PI / 2 }, { x: A.x - 30, z: A.z + 95, rot: Math.PI / 2 }];
+  A.takeoff = { x: rx, z: A.z + rlen / 2 - 30, rot: Math.PI };
+}
+
+// ---------- Innenräume ----------
+IE.interiors = {};
+function buildInteriors(scene) {
+  const types = ['armeria', 'autosalone', 'nautica', 'werkstatt', 'buero', 'galerie', 'bank', 'villa', 'casino'];
+  const pal = {
+    armeria:   { floor: 0x4a3c30, wall: 0x6e5a48, w: 22, d: 16, name: 'Armeria' },
+    autosalone:{ floor: 0xe8e8e8, wall: 0xf4f4f2, w: 36, d: 26, name: 'Autosalone' },
+    nautica:   { floor: 0xcfd9de, wall: 0xe8f0f4, w: 30, d: 22, name: 'Nautica' },
+    werkstatt: { floor: 0x5a5a58, wall: 0x8a8578, w: 28, d: 20, name: 'Marcos Werkstatt' },
+    buero:     { floor: 0x6b5644, wall: 0xd8d0c2, w: 18, d: 14, name: 'Sofias Büro' },
+    galerie:   { floor: 0xd9cfbf, wall: 0xf6f3ec, w: 30, d: 22, name: 'Galleria d\'Arte' },
+    bank:      { floor: 0xcfc6b4, wall: 0xe9e1cf, w: 30, d: 22, name: 'Banca Privata' },
+    villa:     { floor: 0x8a5a3a, wall: 0xefe4cf, w: 30, d: 24, name: 'Villa' },
+    casino:    { floor: 0x5a0f18, wall: 0x2a1a14, w: 36, d: 26, name: 'Casino' }
+  };
+  types.forEach((t, i) => {
+    const P = pal[t], ox = 2900 + (i % 3) * 80, oz = -200 + Math.floor(i / 3) * 80, y = 300, W = P.w, D = P.d, H = 6;
+    const fm = new T.MeshLambertMaterial({ color: P.floor }), wm = new T.MeshLambertMaterial({ color: P.wall });
+    add(scene, new T.BoxGeometry(W, 1, D), fm, ox, y - 0.5, oz, 0, false); IE.addBox(ox - W / 2, oz - D / 2, ox + W / 2, oz + D / 2, y, y - 1);
+    add(scene, new T.BoxGeometry(W, 0.4, D), wm, ox, y + H + 0.2, oz, 0, false); IE.addBox(ox - W / 2, oz - D / 2, ox + W / 2, oz + D / 2, y + H + 0.4, y + H);
+    const wall = (w, d, px, pz) => { add(scene, new T.BoxGeometry(w, H, d), wm, px, y + H / 2, pz, 0, false); IE.addBox(px - w / 2, pz - d / 2, px + w / 2, pz + d / 2, y + H, y - 1); };
+    wall(W, 0.4, ox, oz - D / 2); wall(0.4, D, ox - W / 2, oz); wall(0.4, D, ox + W / 2, oz);
+    wall(W / 2 - 1.5, 0.4, ox - W / 4 - 0.75, oz + D / 2); wall(W / 2 - 1.5, 0.4, ox + W / 4 + 0.75, oz + D / 2);
+    // Tür (dunkel) + Lampen
+    add(scene, new T.BoxGeometry(3, 3.2, 0.2), new T.MeshBasicMaterial({ color: 0x1a1410 }), ox, y + 1.6, oz + D / 2 + 0.25, 0, false);
+    const lampM = new T.MeshBasicMaterial({ color: 0xfff3d6 });
+    for (let lx = -W / 2 + 5; lx < W / 2; lx += 8) for (let lz = -D / 2 + 5; lz < D / 2; lz += 8) add(scene, new T.BoxGeometry(2.2, 0.1, 1), lampM, ox + lx, y + H - 0.05, oz + lz, 0, false);
+    const it = { type: t, name: P.name, x: ox, z: oz, y, W, D, door: { x: ox, z: oz + D / 2 - 1.8 }, counter: { x: ox, z: oz - D / 2 + 4 }, item: { x: ox + W / 2 - 4, z: oz - D / 2 + 3 }, spots: [] };
+    for (let k = 0; k < 8; k++) it.spots.push({ x: ox + (IE.hash(k, i) - 0.5) * (W - 6), z: oz + (IE.hash(k, i + 9) - 0.5) * (D - 8) - 1 });
+    const box = (w, h, d, c, px, pz, py) => { const m = add(scene, new T.BoxGeometry(w, h, d), typeof c === 'number' ? new T.MeshLambertMaterial({ color: c }) : c, ox + px, y + (py || 0) + h / 2, oz + pz, 0, false); IE.addBox(ox + px - w / 2, oz + pz - d / 2, ox + px + w / 2, oz + pz + d / 2, y + (py || 0) + h, y - 1); return m; };
+    const deco = (w, h, d, c, px, pz, py) => add(scene, new T.BoxGeometry(w, h, d), typeof c === 'number' ? new T.MeshLambertMaterial({ color: c }) : c, ox + px, y + (py || 0) + h / 2, oz + pz, 0, false);
+    const keeper = look => { const h = IE.makeHuman(look); h.group.position.set(ox, y, oz - D / 2 + 1.6); scene.add(h.group); };
+    if (t === 'armeria') {
+      box(10, 1.1, 1.2, 0x3a2a1e, 0, -D / 2 + 3); keeper({ pants: 0x222222, jacket: 0x5a4a3a, shirt: 0xdddddd, skin: 0xc8946c, hair: 0x222222 });
+      for (let k = 0; k < 6; k++) for (let r = 0; r < 3; r++) deco(1.6 - r * 0.3, 0.18, 0.12, 0x151515, -W / 2 + 3 + k * 3.2, -D / 2 + 0.35, 1.6 + r * 0.9);
+      for (const s of [-1, 1]) for (let r = 0; r < 4; r++) deco(0.12, 0.2, 2.2, 0x151515, s * (W / 2 - 0.4), -2 + r * 1.5, 2.2);
+      deco(W, 0.4, 0.05, 0xc8372d, 0, -D / 2 + 0.25, 4.5);
+    } else if (t === 'autosalone' || t === 'nautica') {
+      box(4, 1, 1.5, 0xffffff, 0, -D / 2 + 3); keeper({ pants: 0x1c2333, jacket: 0x1c2333, shirt: 0xffffff, skin: 0xe9c3a6, hair: 0x3a2a1a });
+      const items = t === 'autosalone' ? ['veloce', 'toro', 'spider'] : ['riva', 'jetski', 'offshore'];
+      items.forEach((id, k) => {
+        const m = t === 'autosalone' ? IE.makeCar(IE.carById[id].kind, IE.carById[id].color) : IE.makeBoat(IE.boatById[id]);
+        m.group.position.set(ox - W / 2 + 7 + k * ((W - 14) / 2), y + (t === 'nautica' ? 0.6 : 0), oz + 2); m.group.rotation.y = 0.6; scene.add(m.group);
+        const ped = new T.Mesh(new T.CylinderGeometry(3.6, 3.6, 0.15, 24), new T.MeshLambertMaterial({ color: 0x333333 })); ped.position.set(m.group.position.x, y + 0.07, m.group.position.z); scene.add(ped);
+        IE.addBox(m.group.position.x - 2.4, m.group.position.z - 2.4, m.group.position.x + 2.4, m.group.position.z + 2.4, y + 1.2, y - 1);
+      });
+    } else if (t === 'werkstatt') {
+      const car = IE.makeCar('sport', 0xf2c230); car.group.position.set(ox - 6, y + 1.8, oz - 2); scene.add(car.group);
+      for (const s of [-1, 1]) deco(0.3, 1.8, 0.3, 0xc8372d, -6 + s * 1.4, -2);
+      box(6, 1, 1, 0x7a2a1e, W / 2 - 4, -D / 2 + 1.5); for (let k = 0; k < 6; k++) deco(0.3, 0.6, 0.1, 0x999999, W / 2 - 6.5 + k, -D / 2 + 0.3, 2);
+      deco(4, 0.02, 3, 0x2a2a28, 5, 2, 0.01);
+    } else if (t === 'buero') {
+      box(3.6, 0.9, 1.6, 0x3a2a20, 0, -2); deco(0.9, 0.6, 0.06, new T.MeshBasicMaterial({ color: 0x3aa0ff }), -0.7, -2.5, 1.1); deco(0.9, 0.6, 0.06, new T.MeshBasicMaterial({ color: 0x48e07a }), 0.7, -2.5, 1.1);
+      const sof = IE.makeHuman(IE.chars.sofia); sof.group.position.set(ox, y, oz - 3.6); scene.add(sof.group);
+      box(4, 2.2, 0.6, 0x5a4434, -W / 2 + 2.5, -D / 2 + 0.4); deco(3, 1.6, 0.05, 0xf0f0e8, W / 2 - 3, -D / 2 + 0.3, 1.2);
+    } else if (t === 'galerie') {
+      const cols = [0xc8372d, 0x1b3d6e, 0xe9c27a, 0x2f9a5c, 0x6b4f8a, 0xd98a4f];
+      for (let k = 0; k < 6; k++) { const px = -W / 2 + 4 + k * ((W - 8) / 5); deco(2.6, 1.8, 0.1, 0x8a6a2a, px, -D / 2 + 0.3, 2); deco(2.2, 1.4, 0.12, cols[k], px, -D / 2 + 0.32, 2.2); }
+      for (const s of [-1, 1]) { box(1, 1.2, 1, 0xf6f3ec, s * 5, 1); deco(0.6, 0.9, 0.6, 0xd6b04a, s * 5, 1, 1.2); }
+    } else if (t === 'bank') {
+      for (let k = -1; k <= 1; k++) box(5, 1.2, 1, 0x8a6a4a, k * 7, -2);
+      const vault = new T.Mesh(new T.CylinderGeometry(2.4, 2.4, 0.5, 24), IE.mat.gold); vault.rotation.x = Math.PI / 2; vault.position.set(ox + W / 2 - 4, y + 2.6, oz - D / 2 + 0.4); scene.add(vault);
+      for (let k = 0; k < 4; k++) deco(0.5, 0.3, 0.4, IE.mat.gold, W / 2 - 5 + (k % 2) * 0.6, -D / 2 + 3, (k >> 1) * 0.3);
+    } else if (t === 'villa') {
+      box(5, 0.8, 2, 0xe9e1cc, -4, 2); box(2, 0.8, 4, 0xe9e1cc, -7.5, -0.5); deco(8, 0.02, 6, 0x7a1a24, -3, 0, 0.01);
+      deco(3, 0.6, 1.5, 0x3a2a20, -4, -1); const ch = new T.Mesh(new T.SphereGeometry(1, 12, 8), new T.MeshBasicMaterial({ color: 0xfff1c8 })); ch.position.set(ox, y + H - 1.5, oz); scene.add(ch);
+      for (let k = 0; k < 3; k++) deco(2.4, 1.6, 0.1, [0x8a6a2a, 0x4a6a8a, 0x6a2a2a][k], -6 + k * 6, -D / 2 + 0.3, 2.2);
+      box(2, 2.4, 0.6, 0x5a3a20, W / 2 - 2, -D / 2 + 0.4);
+    } else if (t === 'casino') {
+      for (let k = 0; k < 3; k++) { box(4, 0.9, 2.4, 0x1e6a3a, -10 + k * 10, -1); }
+      for (let k = 0; k < 8; k++) { box(1.2, 2, 0.9, 0x2a2a2a, -W / 2 + 2 + k * 2, -D / 2 + 1); deco(0.9, 0.6, 0.05, new T.MeshBasicMaterial({ color: [0xff3b30, 0xf2c230, 0x3aa0ff][k % 3] }), -W / 2 + 2 + k * 2, -D / 2 + 1.47, 1.1); }
+      box(8, 1.1, 1.2, 0x5a0f18, W / 2 - 6, 4);
+    }
+    marker(scene, it.door.x, y, it.door.z, 0x9fd3ff, 0.9);
+    if (t === 'armeria' || t === 'autosalone' || t === 'nautica') marker(scene, it.counter.x, y, it.counter.z + 1.8, 0xf2c230, 0.9);
+    IE.interiors[t] = it;
+  });
 }
 
 // ---------- Schiffswracks ----------

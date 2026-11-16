@@ -53,8 +53,9 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 #weapon .n { font-size: 20px; font-weight: 600; letter-spacing: 0.05em; }
 #weapon .a { font-size: 26px; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
 #stars { top: calc(122px + env(safe-area-inset-top, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); font-size: 28px; letter-spacing: 2px; color: rgba(255,255,255,0.18); text-shadow: 0 2px 0 #000; }
-#stars .on { color: #f4f4f4; } #stars.flash .on { animation: fl .5s steps(2) infinite; }
-@keyframes fl { 50% { color: rgba(255,255,255,0.25); } }
+#stars .on { color: #f4f4f4; }
+#stars span { display: inline-block; } #stars.flash .on { animation: fl .5s steps(2) infinite; }
+@keyframes fl { 50% { color: rgba(255,255,255,0.45); } }
 #mini { left: calc(16px + env(safe-area-inset-left, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: 210px; height: 210px; }
 #mini canvas { width: 100%; height: 100%; display: block; }
 body.touch #mini { bottom: auto; top: calc(12px + env(safe-area-inset-top, 0px)); width: 170px; height: 170px; }
@@ -98,8 +99,28 @@ body.touch #speed { bottom: auto; top: calc(160px + env(safe-area-inset-top, 0px
 #dialog .txt { font-size: 18px; line-height: 1.45; margin-top: 2px; }
 #dialog .nx { font-family: var(--f-hud); font-size: 14px; letter-spacing: 0.2em; color: var(--muted); text-align: right; text-transform: uppercase; margin-top: 6px; }
 #toast { left: 50%; top: 21%; transform: translateX(-50%); font-family: var(--f-hud); font-size: 22px; background: rgba(13,15,19,0.8); padding: 8px 16px; border-left: 3px solid var(--rosso); }
+#fade { inset: 0; background: #000; opacity: 1; transition: opacity .4s; z-index: 15; }
 #dmg { inset: 0; box-shadow: inset 0 0 120px rgba(200,20,20,0.0); transition: box-shadow 0.3s; }
 #lockhint { left: 50%; top: 60%; transform: translateX(-50%); font-family: var(--f-hud); font-size: 18px; letter-spacing: 0.1em; background: rgba(13,15,19,0.7); padding: 6px 14px; }
+
+/* Waffenrad */
+#wheelBtn { pointer-events: auto; left: calc(18px + env(safe-area-inset-left, 0px)); top: calc(110px + env(safe-area-inset-top, 0px)); width: 86px; height: 86px; border-radius: 50%; border: 2px solid rgba(217,180,90,0.75); background: rgba(13,15,19,0.65); color: var(--paper); display: grid; place-items: center; align-content: center; gap: 0; font-family: var(--f-hud); font-size: 15px; font-weight: 700; z-index: 7; }
+#wheelBtn svg { width: 54px; height: 27px; color: var(--gold); }
+body.touch #wheelBtn { top: calc(232px + env(safe-area-inset-top, 0px)); }
+#wheel { position: fixed; inset: 0; z-index: 25; background: radial-gradient(circle, rgba(5,6,8,0.35), rgba(5,6,8,0.75)); --wr: min(34vh, 38vw, 230px); }
+#wheelRing { position: absolute; inset: 0; }
+#wheelRing::before { content: ""; position: absolute; left: 50%; top: 50%; width: calc(var(--wr) * 2 + 120px); height: calc(var(--wr) * 2 + 120px); transform: translate(-50%, -50%); border-radius: 50%; border: 50px solid rgba(13,15,19,0.55); box-sizing: border-box; }
+.wslot { position: absolute; transform: translate(-50%, -50%); width: 112px; height: 92px; border-radius: 14px; border: 2px solid rgba(243,234,216,0.35); background: rgba(23,27,34,0.92); color: var(--paper); display: grid; place-items: center; align-content: center; gap: 2px; padding: 4px; }
+.wslot svg { color: var(--paper); }
+.wslot .wn { font-size: 14px; font-weight: 600; letter-spacing: 0.02em; line-height: 1.05; text-align: center; }
+.wslot .wa { font-size: 13px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.wslot.cur { border-color: var(--gold); background: rgba(217,180,90,0.25); }
+.wslot:hover:not(:disabled), .wslot:focus-visible { border-color: var(--gold); transform: translate(-50%, -50%) scale(1.06); }
+.wslot.locked { opacity: 0.45; }
+.wslot.locked .wa { color: var(--muted); font-size: 11px; }
+#wheelInfo { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; font-family: var(--f-hud); font-size: 17px; color: var(--muted); max-width: 150px; pointer-events: none; }
+#wheelInfo b { color: var(--paper); font-size: 22px; }
+@media (max-width: 560px) { .wslot { width: 84px; height: 74px; } .wslot svg { width: 46px; height: 23px; } .wslot .wn { font-size: 12px; } }
 
 /* Modale Menüs */
 .modal { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: rgba(5,6,8,0.6); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -174,12 +195,12 @@ body.touch.playing #touch { display: block; }
       <div><b>Shift</b> Sprinten · Heli runter</div><div><b>Leertaste</b> Springen · Handbremse · Heli hoch</div>
       <div><b>F</b> Ein-/Aussteigen</div><div><b>E</b> Shop / Mission starten</div>
       <div><b>Q · 1–6 · Mausrad</b> Waffe wechseln</div><div><b>M</b> Karte (Wegpunkt setzen)</div>
-      <div><b>C</b> Charakter wechseln</div><div><b>V</b> Ego-Sicht / normale Sicht</div><div><b>Shift (im Wasser)</b> Abtauchen · Leertaste auftauchen</div><div><b>Esc / P</b> Menü</div>
+      <div><b>C</b> Charakter wechseln</div><div><b>V</b> Ego-Sicht / normale Sicht</div><div><b>Tab</b> Waffenrad (oder Kreis links antippen)</div><div><b>Flugzeug</b> Leertaste Gas · Shift weniger Gas · W/S Nase hoch/runter · A/D Kurve</div><div><b>E an Läden</b> Hineingehen · drinnen an der Theke einkaufen</div><div><b>Shift (im Wasser)</b> Abtauchen · Leertaste auftauchen</div><div><b>Esc / P</b> Menü</div>
     </div>
     <div class="keys" id="keysTouch" hidden>
       <div><b>Linke Seite</b> Joystick: Laufen / Fahren</div><div><b>Rechte Seite</b> Wischen: Kamera</div>
       <div><b>FEUER</b> Schießen (mit Zielhilfe)</div><div><b>EIN/AUS</b> Fahrzeug</div>
-      <div><b>E</b> Shop / Mission</div><div><b>HOCH / RUNTER</b> Springen · Heli</div><div><b>TAUCHEN / AUF</b> Unter Wasser schwimmen</div><div><b>SICHT</b> Ego-Sicht umschalten</div>
+      <div><b>E</b> Shop / Mission</div><div><b>HOCH / RUNTER</b> Springen · Heli</div><div><b>TAUCHEN / AUF</b> Unter Wasser schwimmen</div><div><b>SICHT</b> Ego-Sicht umschalten</div><div><b>Kreis links</b> Waffenrad</div><div><b>Flugzeug</b> GAS +/− für Schub, Joystick hoch = Nase hoch</div>
     </div>
   </div>
 </div>
@@ -189,6 +210,7 @@ body.touch.playing #touch { display: block; }
   <div class="hud" id="money"><span id="moneyV">€ 0</span><span class="gain" id="moneyG"></span></div>
   <div class="hud" id="weapon"><div class="n" id="wName"></div><div class="a" id="wAmmo"></div></div>
   <div class="hud" id="stars"></div>
+  <button class="hud" id="wheelBtn" aria-label="Waffenrad öffnen"></button>
   <div class="hud" id="mini"><canvas id="miniC" width="420" height="420"></canvas></div>
   <div class="hud" id="bars"><div class="bar"><i id="hpB"></i></div><div class="bar ar"><i id="arB"></i></div><div class="bar o2" id="o2W" hidden><i id="o2B"></i></div></div>
   <button class="hud" id="hudMap">KARTE · M</button>
@@ -201,6 +223,7 @@ body.touch.playing #touch { display: block; }
   <div class="hud" id="scope" hidden></div>
   <div class="hud" id="under" hidden></div>
   <div class="hud" id="dmg"></div>
+  <div class="hud" id="fade" hidden></div>
   <div class="hud" id="toast" hidden></div>
   <div class="hud" id="banner" hidden></div>
   <div class="hud" id="lockhint" hidden>Klicke ins Bild, um zu steuern</div>
@@ -220,6 +243,7 @@ body.touch.playing #touch { display: block; }
   <div class="ttop"><button class="tb sm" id="tMap">KARTE</button><button class="tb sm" id="tView">SICHT</button><button class="tb sm" id="tChar">CREW</button><button class="tb sm" id="tMenu">MENÜ</button></div>
 </div>
 
+<div id="wheel" hidden><div id="wheelRing"></div><div id="wheelInfo"></div></div>
 <div class="modal" id="shopModal" hidden><div class="panel"><header><h2 id="shopT">Laden</h2><div style="display:flex;gap:14px;align-items:center"><span class="cash" id="shopCash"></span><button class="x" data-close>✕</button></div></header><div class="rows" id="shopRows"></div><div class="hint" id="shopHint"></div></div></div>
 <div class="modal" id="mapModal" hidden><div class="panel"><header><h2>Italia</h2><div style="display:flex;gap:14px;align-items:center"><span class="st maphelp">Tippen: Wegpunkt · Ziehen: verschieben</span><button class="x" id="mapOut" aria-label="Herauszoomen">−</button><span id="mapZoom" class="st maphelp">1.0×</span><button class="x" id="mapIn" aria-label="Hineinzoomen">+</button><button class="x" id="mapMe">Ich</button><button class="x" data-close>✕</button></div></header><canvas id="bigmap"></canvas></div></div>
 <div class="modal" id="charModal" hidden><div class="panel"><header><h2>Die Crew</h2><button class="x" data-close>✕</button></header><div class="chars" id="charList"></div><div class="hint">Beim Wechsel landest du in der Heimatstadt des Charakters. Während einer Mission nicht möglich.</div></div></div>
