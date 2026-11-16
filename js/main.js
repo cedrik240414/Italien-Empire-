@@ -192,7 +192,7 @@ function gunIcon(id) { return `<svg viewBox="0 0 80 40" width="64" height="32" f
 function openWheel() {
   if (P.veh) { toast('Im Fahrzeug nicht möglich'); return; }
   const ring = $('wheelRing'); ring.innerHTML = '';
-  const list = IE.weapons, n = list.length;
+  const list = IE.weapons.filter(w => S.weapons[w.id] !== undefined), n = list.length;
   list.forEach((w, i) => {
     const own = S.weapons[w.id] !== undefined, a = -Math.PI / 2 + i / n * Math.PI * 2;
     const b = document.createElement('button'); b.className = 'wslot' + (S.cur === w.id ? ' cur' : '') + (own ? '' : ' locked');
@@ -203,7 +203,7 @@ function openWheel() {
     b.addEventListener('click', e => { e.stopPropagation(); S.cur = w.id; updateGunModel(); closeModals(); sfx('beep', 0.5); });
     ring.appendChild(b);
   });
-  $('wheelInfo').innerHTML = `<b>${curWeapon().name}</b><br>Waffe wählen`;
+  $('wheelInfo').innerHTML = `<b>${curWeapon().name}</b><br>${n < IE.weapons.length ? 'Weitere Waffen gibt es in der Armeria' : 'Waffe wählen'}`;
   $('wheel').hidden = false; if (locked) document.exitPointerLock();
 }
 function updateWheelBtn() {
@@ -229,6 +229,13 @@ function placePlayer(x, z) {
 function cityOf(x, z) { let best = null, bd = 1e9; for (const c of IE.cities) { const d = Math.hypot(x - c.x, z - c.z); if (d < bd) { bd = d; best = c; } } return { c: best, d: bd }; }
 
 // ---------- Effekte ----------
+const bubbleGeo = new T.SphereGeometry(0.09, 6, 4), bubbleMat = new T.MeshBasicMaterial({ color: 0xcff6ff, transparent: true, opacity: 0.7 });
+function bubble(x, y, z) {
+  for (let i = 0; i < 3; i++) {
+    const m = new T.Mesh(bubbleGeo, bubbleMat); m.position.set(x + (Math.random() - 0.5) * 0.3, y + i * 0.15, z + (Math.random() - 0.5) * 0.3); m.scale.setScalar(0.6 + Math.random()); scene.add(m);
+    effects.push({ o: m, t: 0, life: 4, upd(e, d) { m.position.y += d * (1.4 + i * 0.2); m.position.x += Math.sin(e.t * 6 + i) * d * 0.2; if (m.position.y > -0.1) e.t = e.life; }, kill() { scene.remove(m); } });
+  }
+}
 const tracerMat = new T.LineBasicMaterial({ color: 0xffe9a8, transparent: true, opacity: 0.9 });
 function tracer(a, b) {
   const g = new T.BufferGeometry().setFromPoints([a, b]); const l = new T.Line(g, tracerMat); scene.add(l);
@@ -471,17 +478,29 @@ function updatePlayer(dt) {
   let dx = f.x * my + r.x * mx, dz = f.z * my + r.z * mx; const ml = Math.hypot(dx, dz);
   const aiming = inp.aim || P.aimT > 0 || inp.fire;
   P.aimT -= dt;
-  const speed = (P.swim ? (P.under ? 3.6 : 2.8) : inp.sprint ? 7.8 : 4.6) * (aiming && !inp.sprint ? 0.75 : 1) * (S.cur === 'minigun' ? 0.72 : 1);
+  const speed = P.swim ? (P.under ? (inp.sprint && !inp.hold.down ? 5.4 : 4) : (inp.sprint ? 5 : 3.4)) : (inp.sprint ? 7.8 : 4.6) * (aiming && !inp.sprint ? 0.75 : 1) * (S.cur === 'minigun' ? 0.72 : 1);
   if (ml > 0.05) { dx /= Math.max(ml, 1); dz /= Math.max(ml, 1); P.pos.x += dx * speed * dt; P.pos.z += dz * speed * dt; }
-  if (aiming) P.yaw = cam.yaw; else if (ml > 0.1) P.yaw += angDiff(P.yaw, Math.atan2(dx, dz)) * Math.min(1, dt * 10);
+  if (aiming && !P.swim) P.yaw = cam.yaw; else if (ml > 0.1) P.yaw += angDiff(P.yaw, Math.atan2(dx, dz)) * Math.min(1, dt * 10);
   IE.pushOut(P.pos, 0.4, P.pos.y, 1.8);
   const g = IE.supportH(P.pos.x, P.pos.z, P.pos.y);
   P.swim = g < -1.3 && P.pos.y < -0.8;
   if (P.swim) {
     const up = ctrl && inp.hold.space, dn = ctrl && inp.hold.down;
-    const vy = dn ? -3.4 : up ? 3.4 : 0;
+    let vy = dn ? -3.6 : up ? 3.6 : 0;
+    // unter Wasser: in Blickrichtung tauchen (Kamera nach unten = abwärts)
+    if (P.under && !up && !dn && my > 0.1) vy = -Math.sin(cam.pitch) * my * speed * 1.2;
     P.pos.y = clamp(P.pos.y + vy * dt, g + 0.5, -1.25); P.vy = 0; P.onGround = true;
-    P.under = P.pos.y < -2.3;
+    P.under = P.pos.y < -2.0;
+    // an Steg / Mauer aus dem Wasser klettern
+    if (!P.under && ml > 0.1) {
+      const ax = P.pos.x + dx / Math.max(ml, 1) * 0.9, az = P.pos.z + dz / Math.max(ml, 1) * 0.9;
+      for (const b of IE.collAt(ax, az)) if (b.t === 'box' && b.top > -0.8 && b.top < 2.6 && ax >= b.minx - 0.5 && ax <= b.maxx + 0.5 && az >= b.minz - 0.5 && az <= b.maxz + 0.5) {
+        P.pos.set(Math.max(b.minx + 0.3, Math.min(b.maxx - 0.3, ax)), b.top, Math.max(b.minz + 0.3, Math.min(b.maxz - 0.3, az))); P.swim = false; toast('Hochgeklettert', 0.8); break;
+      }
+      const gh = IE.groundH(ax, az); if (P.swim && gh > -1.25 && gh < 1.8) { P.pos.set(ax, gh, az); P.swim = false; }
+    }
+    // Blasen
+    if (P.under) { P.bubT = (P.bubT || 0) - dt; if (P.bubT <= 0) { P.bubT = 0.35; bubble(P.pos.x + Math.sin(P.yaw) * 1.2, P.pos.y + 1.3, P.pos.z + Math.cos(P.yaw) * 1.2); } }
   } else {
     P.under = false;
     if (ctrl && pressed.has('space') && P.onGround) { P.vy = 7.5; P.onGround = false; }
@@ -490,10 +509,19 @@ function updatePlayer(dt) {
     else if (P.pos.y - g > 0.3) P.onGround = false;
     if (!P.onGround && g < -1.3 && P.pos.y < -1.25) { P.pos.y = -1.25; P.vy = 0; }
   }
-  P.phase += dt * (ml > 0.05 ? speed * 2.1 : 0);
-  IE.animHuman(P.h, P.phase, ml > 0.05 ? (inp.sprint ? 0.9 : 0.6) * Math.min(1, ml) : 0, aiming && S.cur !== 'faust', false);
-  if (!P.onGround) { P.h.legL.rotation.x = 0.5; P.h.legR.rotation.x = -0.3; }
-  P.h.group.position.copy(P.pos); P.h.group.rotation.set(P.under ? 1.25 : P.swim ? 0.3 : 0, P.yaw, 0);
+  P.phase += dt * (P.swim ? (ml > 0.05 ? 4 + speed : 2.5) : ml > 0.05 ? speed * 2.1 : 0);
+  IE.animHuman(P.h, P.phase, ml > 0.05 ? (inp.sprint ? 0.9 : 0.6) * Math.min(1, ml) : 0, aiming && S.cur !== 'faust' && !P.swim, false);
+  if (!P.onGround && !P.swim) { P.h.legL.rotation.x = 0.5; P.h.legR.rotation.x = -0.3; }
+  P.h.group.position.copy(P.pos);
+  const swimMove = P.swim && ml > 0.05;
+  if (P.swim) {
+    // Kraulen: Arme kreisen, Beine schlagen
+    if (swimMove || P.under) { P.h.armL.rotation.x = -P.phase; P.h.armR.rotation.x = -P.phase + Math.PI; P.h.legL.rotation.x = Math.sin(P.phase * 2) * 0.35; P.h.legR.rotation.x = -Math.sin(P.phase * 2) * 0.35; }
+    else { P.h.armL.rotation.x = -1.4 + Math.sin(P.phase) * 0.4; P.h.armR.rotation.x = -1.4 - Math.sin(P.phase) * 0.4; P.h.armL.rotation.z = -0.5; P.h.armR.rotation.z = 0.5; P.h.legL.rotation.x = Math.sin(P.phase) * 0.3; P.h.legR.rotation.x = -Math.sin(P.phase) * 0.3; }
+    if (swimMove || P.under) { P.h.armL.rotation.z = 0; P.h.armR.rotation.z = 0; }
+  } else { P.h.armL.rotation.z = 0; P.h.armR.rotation.z = 0; }
+  P.h.group.rotation.set(P.under ? 1.35 : swimMove ? 1.2 : P.swim ? 0.25 : 0, P.yaw, 0);
+  if (swimMove && !P.under) P.h.group.position.y += 0.85;
   if (P.under) { P.h.group.position.y += 0.9; P.o2 -= dt / 45; if (P.o2 <= 0) { P.o2 = 0; hurtPlayer(dt * 10); } }
   else P.o2 = Math.min(1, P.o2 + dt * 0.4);
   // von Autos überfahren
@@ -639,7 +667,7 @@ function baseAndHarbor() {
   const A = IE.airport;
   if (Math.hypot(pp.x - A.x, pp.z - A.z) < 700) for (const id of S.planes) {
     if (IE.vehicles.some(v => v.type === 'plane' && v.def.id === id)) continue;
-    const slot = A.planeSlots.concat([{ x: A.x - 30, z: A.z + 70, rot: Math.PI / 2 }, { x: A.x - 30, z: A.z + 45, rot: Math.PI / 2 }, { x: A.x - 30, z: A.z + 145, rot: Math.PI / 2 }]).find(sl => !IE.vehicles.some(v => Math.hypot(v.pos.x - sl.x, v.pos.z - sl.z) < 9));
+    const slot = A.planeSlots.concat([{ x: A.x - 30, z: A.z + 69, rot: Math.PI / 2 }, { x: A.x - 30, z: A.z + 138, rot: Math.PI / 2 }, { x: A.x - 5, z: A.z + 138, rot: Math.PI / 2 }]).find(sl => !IE.vehicles.some(v => Math.hypot(v.pos.x - sl.x, v.pos.z - sl.z) < 9));
     if (!slot) break; const v = IE.spawnPlane(scene, id, slot.x, slot.z, slot.rot); v.owned = true;
   }
   // Gekaufte Boote liegen im nächsten Hafen

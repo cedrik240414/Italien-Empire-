@@ -896,7 +896,7 @@ function buildAirport(scene) {
   shop.marker = marker(scene, shop.x, y, shop.z, 0xf2c230);
   shop.spawn = { x: hx + 6, z: hz, rot: Math.PI / 2, y };
   IE.shops.push(shop);
-  A.planeSlots = [{ x: A.x - 30, z: A.z + 120, rot: Math.PI / 2 }, { x: A.x - 30, z: A.z + 95, rot: Math.PI / 2 }];
+  A.planeSlots = [{ x: A.x - 30, z: A.z + 115, rot: Math.PI / 2 }, { x: A.x - 30, z: A.z + 92, rot: Math.PI / 2 }];
   A.takeoff = { x: rx, z: A.z + rlen / 2 - 30, rot: Math.PI };
 }
 
@@ -1016,12 +1016,12 @@ function buildNature(scene) {
     if (IE.nearRoad(x, z)) continue;
     let inCity = false; for (const c of IE.cities) if (Math.hypot(x - c.x, z - c.z) < c.r + 25) { inCity = true; break; }
     if (inCity) continue;
-    if (Math.abs(x - IE.base.x) < IE.base.hw + 40 && Math.abs(z - IE.base.z) < IE.base.hd + 40) continue;
+    if (IE.flatZones.some(f => Math.abs(x - f.x) < f.hw + 70 && Math.abs(z - f.z) < f.hd + 70)) continue;
     const n = fbm(x * 0.01 + 50, z * 0.01, 2); if (n < 0.42) continue;
     // Gruppen
     const cnt = 1 + (rnd() * 6 | 0);
     for (let i = 0; i < cnt; i++) {
-      const px = x + (rnd() - 0.5) * 30, pz = z + (rnd() - 0.5) * 30, ph = rawH(px, pz); if (ph < 2) continue;
+      const px = x + (rnd() - 0.5) * 30, pz = z + (rnd() - 0.5) * 30, ph = rawH(px, pz); if (ph < 2 || IE.nearRoad(px, pz)) continue;
       const s = 0.7 + rnd() * 0.7;
       const tusc = z > -900 && z < -100 && x > -800 && x < 300; // grob Toskana/Umbrien
       if (ph > 55) round.push({ x: px, z: pz, y: ph, s: s * 1.1, dark: true });
