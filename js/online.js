@@ -26,15 +26,16 @@ O.init = function () {
 // ---------- Lobby ----------
 const CODE_CHARS = 'abcdefghjkmnpqrstuvwxyz23456789';
 O.newCode = () => { let c = ''; for (let i = 0; i < 5; i++) c += CODE_CHARS[(Math.random() * CODE_CHARS.length) | 0]; return c; };
-O.join = async function (isPublic, code) {
+O.join = async function (isPublic, code, title) {
   O.isPublic = isPublic; O.code = isPublic ? '' : code;
-  O.lobby = isPublic ? 'oeffentlich' : 'privat-' + code;
+  O.lobby = isPublic ? code : 'privat-' + code; O.title = isPublic ? (title || 'Öffentliche Lobby') : 'Private Lobby';
+  lobbyRoom.presence({ lb: isPublic ? O.lobby : null, lt: isPublic ? O.title.slice(0, 40) : null, nm: (window.IEaccount && IEaccount.nick) || '' }).catch(() => { });
   room = await lobbyRoom.join(O.lobby);
   O.room = room; O.active = true;
   room.onPeers(onPeers, e => G().toast('Online-Verbindung beendet (' + e.code + ')', 4));
   room.on('hit', onHit); room.on('kill', onKill); room.on('job', onJob); room.on('jobstep', onJobStep); room.on('jobkill', onJobKill);
   room.onConnection(c => { O.connected = c; updateBadge(); });
-  await loadStats();
+  await loadStats(); dirty = true; flushStats();
   updateBadge();
 };
 O.leave = async function () { try { if (room) await room.leave(); } catch (e) { } location.reload(); };
@@ -228,11 +229,23 @@ function saveStats() {
 }
 async function flushStats() {
   if (saving || !dirty) return; saving = true; dirty = false;
-  try { await db.collection('leaderboard').doc(O.myId).set({ kills: O.kills, deaths: O.deaths, jobs: O.jobs, money: Math.round(G().S.money), nick: ((window.IEaccount && IEaccount.nick) || '').slice(0, 16), updated: Date.now() }); }
+  try { await db.collection('leaderboard').doc(O.myId).set({ kills: O.kills, deaths: O.deaths, jobs: O.jobs, money: Math.round(O.active ? G().S.money : (O.boardMoney || 0)), nick: ((window.IEaccount && IEaccount.nick) || '').slice(0, 16), updated: Date.now() }); }
   catch (e) { if (e && e.code === 'permission_denied') G().toast('Rangliste: nur Mitwirkende können Punkte speichern', 3); }
   saving = false; if (dirty) saveStats();
 }
 O.flushStats = flushStats;
+// Nach der Anmeldung in der Rangliste eintragen (auch ohne Online-Spiel)
+O.touchBoard = async function () {
+  await O.init(); if (!db || !O.myId) return;
+  await loadStats();
+  try { const s = await db.collection('leaderboard').doc(O.myId).get(); const slug = (window.IEaccount && IEaccount.slug) || '';
+    let mo = 25000; try { const sv = JSON.parse(localStorage.getItem('italienEmpire_online_v1' + (slug ? '_' + slug : '')) || 'null'); if (sv && sv.money) mo = sv.money; } catch (e) { }
+    O.boardMoney = s.exists ? Math.max(s.data().money || 0, mo) : mo;
+    const nick = ((window.IEaccount && IEaccount.nick) || '').slice(0, 16);
+    if (!s.exists || s.data().nick !== nick) { dirty = true; await flushStats(); }
+  } catch (e) { }
+  if (lobbyRoom) lobbyRoom.presence({ nm: (window.IEaccount && IEaccount.nick) || '' }).catch(() => { });
+};
 let boardSort = 'kills';
 O.openBoard = async function () {
   $('boardModal').hidden = false; const list = $('boardList');
@@ -267,11 +280,11 @@ function feedTick(dt) { let ch = false; for (let i = feed.length - 1; i >= 0; i-
 function updateBadge() {
   const n = O.peers.size + 1;
   $('onBadge').hidden = !O.active;
-  $('onBadge').textContent = `ONLINE · ${O.isPublic ? 'Öffentliche Lobby' : 'Privat · Code ' + O.code.toUpperCase()} · ${n} Spieler${O.connected === false ? ' · verbinde …' : ''}`;
+  $('onBadge').textContent = `ONLINE · ${O.isPublic ? O.title : 'Privat · Code ' + O.code.toUpperCase()} · ${n} Spieler${O.connected === false ? ' · verbinde …' : ''}`;
 }
 O.renderPause = function () {
   const box = $('onPause'); box.hidden = !O.active; if (!O.active) return;
-  $('onLobbyTxt').textContent = O.isPublic ? 'Öffentliche Lobby' : 'Private Lobby · Code ' + O.code.toUpperCase();
+  $('onLobbyTxt').textContent = O.isPublic ? O.title + ' (öffentlich)' : 'Private Lobby · Code ' + O.code.toUpperCase();
   const names = ['Du'].concat([...O.peers.values()].map(r => r.name));
   $('onPlayers').textContent = names.join(' · ');
   $('onStats').textContent = `Abschüsse ${O.kills} · Tode ${O.deaths} · Crew-Aufträge ${O.jobs}`;
@@ -290,15 +303,55 @@ $('onBoard2').addEventListener('click', () => { G().closeModals(); O.openBoard()
 
 // ---------- Titelbildschirm ----------
 function tStatus(t) { $('onStatus').textContent = t; }
-async function goOnline(isPublic, code) {
+async function goOnline(isPublic, code, title) {
   tStatus('Verbinde …');
   const ok = await O.init();
   if (!ok) { tStatus('Online ist hier nicht verfügbar. Öffne das Spiel auf claude.ai, während du angemeldet bist.'); return; }
   G().startGame(false, 'online');
-  try { await O.join(isPublic, code); G().banner('Online', isPublic ? 'Öffentliche Lobby' : 'Private Lobby', isPublic ? 'Viel Glück da draußen' : 'Code: ' + code.toUpperCase() + ' – gib ihn deinen Freunden', 6); }
+  try { await O.join(isPublic, code, title); G().banner('Online', isPublic ? (title || 'Öffentliche Lobby') : 'Private Lobby', isPublic ? 'Viel Glück da draußen' : 'Code: ' + code.toUpperCase() + ' – gib ihn deinen Freunden', 6); }
   catch (e) { G().toast('Lobby konnte nicht betreten werden (' + (e && e.code || 'Fehler') + ')', 5); }
 }
-$('bOnPub').addEventListener('click', () => goOnline(true));
+// ---------- Lobby-Browser ----------
+const FIXED_LOBBIES = [{ id: 'pub-italia-1', t: 'Italia 1' }, { id: 'pub-italia-2', t: 'Italia 2' }, { id: 'pub-italia-3', t: 'Italia 3' }];
+const MAX_PLAYERS = 16;
+function lobbyList() {
+  const map = new Map(FIXED_LOBBIES.map(l => [l.id, { id: l.id, t: l.t, n: 0, names: [] }]));
+  if (lobbyRoom) for (const p of lobbyRoom.peers()) {
+    const pr = p.presence || {}; if (typeof pr.lb !== 'string' || !/^pub-[a-z0-9-]{1,40}$/.test(pr.lb)) continue;
+    if (!map.has(pr.lb)) map.set(pr.lb, { id: pr.lb, t: typeof pr.lt === 'string' ? pr.lt.slice(0, 40) : pr.lb, n: 0, names: [] });
+    const l = map.get(pr.lb); l.n++; if (pr.nm) l.names.push(String(pr.nm).slice(0, 16));
+  }
+  return [...map.values()].sort((a, b) => b.n - a.n || a.t.localeCompare(b.t));
+}
+function renderLobbies() {
+  if ($('lobbyModal').hidden) return;
+  const el = $('lobbyRows'); el.innerHTML = '';
+  let total = 0;
+  for (const l of lobbyList()) {
+    total += l.n;
+    const row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = '<div><div class="nm"></div><div class="st"></div></div><div class="acts"><button class="buy">Beitreten</button></div>';
+    row.querySelector('.nm').textContent = l.t;
+    row.querySelector('.st').textContent = `${l.n} / ${MAX_PLAYERS} Spieler` + (l.names.length ? ' · ' + l.names.slice(0, 6).join(', ') + (l.names.length > 6 ? ' …' : '') : '');
+    const b = row.querySelector('button'); b.disabled = l.n >= MAX_PLAYERS; if (l.n >= MAX_PLAYERS) b.textContent = 'Voll';
+    b.addEventListener('click', () => { $('lobbyModal').hidden = true; goOnline(true, l.id, l.t); });
+    el.appendChild(row);
+  }
+  $('lobbyTotal').textContent = total ? `${total} Spieler online` : 'Gerade spielt niemand online – starte eine Lobby!';
+}
+O.openLobbies = async function () {
+  $('lobbyModal').hidden = false; $('lobbyRows').innerHTML = '<div class="hint">Suche Lobbys …</div>';
+  const ok = await O.init();
+  if (!ok) { $('lobbyRows').innerHTML = '<div class="hint">Online ist hier nicht verfügbar. Öffne das Spiel auf claude.ai, während du angemeldet bist.</div>'; $('lobbyTotal').textContent = ''; return; }
+  if (!O._lobbyWatch) O._lobbyWatch = lobbyRoom.onPeers(() => renderLobbies());
+  renderLobbies();
+};
+const CITY_NAMES = ['Roma', 'Napoli', 'Milano', 'Firenze', 'Venezia', 'Palermo', 'Torino', 'Genova', 'Bari', 'Bologna'];
+$('lobbyNew').addEventListener('click', () => {
+  const t = 'Lobby ' + CITY_NAMES[(Math.random() * CITY_NAMES.length) | 0] + ' ' + (100 + ((Math.random() * 900) | 0));
+  $('lobbyModal').hidden = true; goOnline(true, 'pub-' + t.toLowerCase().replace(/[^a-z0-9]+/g, '-'), t);
+});
+$('bOnPub').addEventListener('click', () => O.openLobbies());
 $('bOnNew').addEventListener('click', () => goOnline(false, O.newCode()));
 $('bOnJoin').addEventListener('click', () => {
   const c = ($('onCode').value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -306,5 +359,10 @@ $('bOnJoin').addEventListener('click', () => {
   goOnline(false, c);
 });
 $('bBoard').addEventListener('click', () => O.openBoard());
-O.init().then(ok => { if (!ok) tStatus('Online-Modus und Rangliste funktionieren nur auf claude.ai mit Anmeldung.'); else tStatus('Bereit. Wähle eine Lobby.'); });
+O.init().then(ok => {
+  if (!ok) { tStatus('Online-Modus und Rangliste funktionieren nur auf claude.ai mit Anmeldung.'); return; }
+  tStatus('Bereit. Wähle eine Lobby.');
+  const upd = () => { const n = lobbyList().reduce((a, l) => a + l.n, 0); tStatus(n ? `Bereit · ${n} Spieler gerade online` : 'Bereit. Wähle eine Lobby.'); renderLobbies(); };
+  lobbyRoom.onPeers(upd);
+});
 })();

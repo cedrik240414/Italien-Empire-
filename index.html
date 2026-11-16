@@ -123,7 +123,7 @@ body.touch #wheelBtn { top: calc(232px + env(safe-area-inset-top, 0px)); }
 @media (max-width: 560px) { .wslot { width: 84px; height: 74px; } .wslot svg { width: 46px; height: 23px; } .wslot .wn { font-size: 12px; } }
 
 /* Modale Menüs */
-.modal { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: rgba(5,6,8,0.6); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(5,6,8,0.6); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .panel { width: min(720px, 100%); max-height: 86vh; overflow-y: auto; touch-action: pan-y; background: var(--ink-2); border: 1px solid rgba(217,180,90,0.35); box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
 .panel header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 18px 22px 12px; border-bottom: 1px solid rgba(243,234,216,0.12); position: sticky; top: 0; background: var(--ink-2); }
 .panel header h2 { margin: 0; font-family: var(--f-display); font-size: 34px; font-weight: 700; font-style: italic; color: var(--gold); }
@@ -240,7 +240,7 @@ body.touch.playing #touch { display: block; }
     <div class="btns"><button class="btn" id="bNew">Neues Spiel</button><button class="btn ghost" id="bCont" hidden>Weiterspielen</button></div>
     <div class="sect">Online</div>
     <div class="onlinebox">
-      <div class="btns"><button class="btn" id="bOnPub">Öffentliche Lobby</button><button class="btn ghost" id="bOnNew">Private Lobby erstellen</button></div>
+      <div class="btns"><button class="btn" id="bOnPub">Öffentliche Lobbys</button><button class="btn ghost" id="bOnNew">Private Lobby erstellen</button></div>
       <div class="btns"><input id="onCode" maxlength="8" placeholder="Lobby-Code" autocomplete="off" aria-label="Lobby-Code"><button class="btn ghost" id="bOnJoin">Private Lobby beitreten</button><button class="btn ghost" id="bBoard">Rangliste</button></div>
       <div class="onstatus" id="onStatus">Online wird geprüft …</div>
       <div class="onhint">Online gibt es mehr Häuser, ihr könnt euch gegenseitig abschießen oder zusammen Crew-Aufträge machen. In der öffentlichen Lobby sind Cheats aus.</div>
@@ -312,6 +312,9 @@ body.touch.playing #touch { display: block; }
 </div>
 
 <div id="wheel" hidden><div id="wheelRing"></div><div id="wheelInfo"></div></div>
+<div class="modal" id="lobbyModal" hidden><div class="panel"><header><h2>Öffentliche Lobbys</h2><button class="x" data-close>✕</button></header>
+  <div class="rows" id="lobbyRows"></div>
+  <div class="hint" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><span id="lobbyTotal"></span><button class="btn ghost" id="lobbyNew" style="font-size:17px;padding:8px 16px">Neue öffentliche Lobby</button></div></div></div>
 <div class="modal" id="boardModal" hidden><div class="panel"><header><h2>Rangliste</h2><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="x" data-sort="kills">Abschüsse</button><button class="x" data-sort="money">Geld</button><button class="x" data-sort="jobs">Aufträge</button><button class="x" data-close>✕</button></div></header>
   <div class="brow bhead"><span class="rk">#</span><span class="nm">Spieler</span><span class="v">Abschüsse</span><span class="v">Tode</span><span class="v">Aufträge</span><span class="v">Geld</span></div>
   <div id="boardList"></div></div></div>
@@ -335,9 +338,9 @@ body.touch.playing #touch { display: block; }
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/data.js?v=9"></script>
-<script src="js/world.js?v=9"></script>
-<script src="js/entities.js?v=9"></script>
-<script src="js/main.js?v=9"></script>
-<script src="js/online.js?v=9"></script>
-<script src="js/account.js?v=9"></script>
+<script src="js/data.js?v=10"></script>
+<script src="js/world.js?v=10"></script>
+<script src="js/entities.js?v=10"></script>
+<script src="js/main.js?v=10"></script>
+<script src="js/online.js?v=10"></script>
+<script src="js/account.js?v=10"></script>

@@ -42,6 +42,7 @@ function done(nick) {
   if (window.IEgame && IEgame.setAccount) IEgame.setAccount(A.slug, nick);
   $('login').hidden = true;
   $('lgWho').textContent = nick; $('acctBar').hidden = false;
+  if (window.IEonline && IEonline.touchBoard) IEonline.touchBoard();
 }
 async function login() {
   const nick = $('lgName').value.trim(), pw = $('lgPw').value;

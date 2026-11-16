@@ -205,8 +205,8 @@ let missionBeam, waypoint = null, wpBeam;
 const effects = [];
 const pickups = [];
 
-function uiOpen() { return ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal'].some(id => !$(id).hidden); }
-function closeModals() { ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal'].forEach(id => $(id).hidden = true); }
+function uiOpen() { return ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal'].some(id => !$(id).hidden); }
+function closeModals() { ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal'].forEach(id => $(id).hidden = true); }
 
 // ---------- Waffenrad ----------
 const GUN_SVG = {
