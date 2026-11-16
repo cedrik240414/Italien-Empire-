@@ -12,10 +12,12 @@ const G = () => window.IEgame;
 O.init = function () {
   if (O._init) return O._init;
   O._init = (async () => {
-    if (!window.claude || typeof window.claude.use !== 'function') { O.avail = false; return false; }
-    try { lobbyRoom = await window.claude.use('room'); } catch (e) { lobbyRoom = null; }
-    try { db = await window.claude.use('db'); } catch (e) { db = null; }
-    try { user = await window.claude.use('user'); } catch (e) { user = null; }
+    const C = (window.claude && typeof window.claude.use === 'function') ? window.claude : window.IECF;
+    O.viaServer = C === window.IECF && !!C;
+    if (!C) { O.avail = false; return false; }
+    try { lobbyRoom = await C.use('room'); } catch (e) { lobbyRoom = null; }
+    try { db = await C.use('db'); } catch (e) { db = null; }
+    try { user = await C.use('user'); } catch (e) { user = null; }
     if (user) { try { O.myId = await user.id(); } catch (e) { } }
     O.avail = !!lobbyRoom; O.hasDb = !!db;
     return O.avail;
@@ -236,7 +238,7 @@ async function flushStats() {
 O.flushStats = flushStats;
 // Nach der Anmeldung in der Rangliste eintragen (auch ohne Online-Spiel)
 O.touchBoard = async function () {
-  await O.init(); if (!db || !O.myId) return;
+  await O.init(); if (user) { try { O.myId = await user.id(); } catch (e) { } } if (!db || !O.myId) return;
   await loadStats();
   try { const s = await db.collection('leaderboard').doc(O.myId).get(); const slug = (window.IEaccount && IEaccount.slug) || '';
     let mo = 25000; try { const sv = JSON.parse(localStorage.getItem('italienEmpire_online_v1' + (slug ? '_' + slug : '')) || 'null'); if (sv && sv.money) mo = sv.money; } catch (e) { }
@@ -252,7 +254,7 @@ O.openBoard = async function () {
   $('boardModal').hidden = false; const list = $('boardList');
   document.querySelectorAll('[data-sort]').forEach(b => b.classList.toggle('cur', b.dataset.sort === boardSort));
   await O.init();
-  if (!db) { list.innerHTML = '<div class="hint">Die Rangliste ist nur verfügbar, wenn das Spiel auf claude.ai geöffnet ist und du angemeldet bist.</div>'; return; }
+  if (!db) { list.innerHTML = '<div class="hint">Die Rangliste ist hier noch nicht eingerichtet (Online-Server fehlt).</div>'; return; }
   list.innerHTML = '<div class="hint">Lade Rangliste …</div>';
   const timer = setTimeout(() => { list.innerHTML = '<div class="hint">Die Rangliste ist gerade nicht erreichbar.</div>'; }, 10000);
   try {
@@ -307,7 +309,7 @@ function tStatus(t) { $('onStatus').textContent = t; }
 async function goOnline(isPublic, code, title) {
   tStatus('Verbinde …');
   const ok = await O.init();
-  if (!ok) { tStatus('Online ist hier nicht verfügbar. Öffne das Spiel auf claude.ai, während du angemeldet bist.'); return; }
+  if (!ok) { tStatus('Online ist hier noch nicht eingerichtet (Online-Server fehlt). Auf claude.ai funktioniert es immer.'); return; }
   G().startGame(false, 'online');
   try { await O.join(isPublic, code, title); G().banner('Online', isPublic ? (title || 'Öffentliche Lobby') : 'Private Lobby', isPublic ? 'Viel Glück da draußen' : 'Code: ' + code.toUpperCase() + ' – gib ihn deinen Freunden', 6); }
   catch (e) { G().toast('Lobby konnte nicht betreten werden (' + (e && e.code || 'Fehler') + ')', 5); }
@@ -344,7 +346,7 @@ O.openLobbies = async function () {
   document.body.classList.add('modalopen');
   $('lobbyModal').hidden = false; $('lobbyRows').innerHTML = '<div class="hint">Suche Lobbys …</div>';
   const ok = await O.init();
-  if (!ok) { $('lobbyRows').innerHTML = '<div class="hint">Online ist hier nicht verfügbar. Öffne das Spiel auf claude.ai, während du angemeldet bist.</div>'; $('lobbyTotal').textContent = ''; return; }
+  if (!ok) { $('lobbyRows').innerHTML = '<div class="hint">Online ist hier noch nicht eingerichtet (Online-Server fehlt). Auf claude.ai funktioniert es immer.</div>'; $('lobbyTotal').textContent = ''; return; }
   if (!O._lobbyWatch) O._lobbyWatch = lobbyRoom.onPeers(() => renderLobbies());
   renderLobbies();
 };
@@ -362,7 +364,7 @@ $('bOnJoin').addEventListener('click', () => {
 });
 $('bBoard').addEventListener('click', () => O.openBoard());
 O.init().then(ok => {
-  if (!ok) { tStatus('Online-Modus und Rangliste funktionieren nur auf claude.ai mit Anmeldung.'); return; }
+  if (!ok) { tStatus('Online ist hier noch nicht eingerichtet (Online-Server fehlt). Auf claude.ai funktioniert es immer.'); return; }
   tStatus('Bereit. Wähle eine Lobby.');
   const upd = () => { const n = lobbyList().reduce((a, l) => a + l.n, 0); tStatus(n ? `Bereit · ${n} Spieler gerade online` : 'Bereit. Wähle eine Lobby.'); renderLobbies(); };
   lobbyRoom.onPeers(upd);

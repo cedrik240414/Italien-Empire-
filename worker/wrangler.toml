@@ -1,0 +1,13 @@
+# Online-Server für Italien Empire (Cloudflare Worker + Durable Objects)
+name = "italien-empire-online"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "Hub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Hub"]

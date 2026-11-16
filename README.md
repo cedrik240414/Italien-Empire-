@@ -14,8 +14,16 @@ Organisatoren Italiens auf und geraten zwischen La Corona, das FIB und eine gehe
 3. Bei **Branch** den Branch mit dem Spiel wählen (z. B. `main` oder `claude/gallant-davinci-ykn0eh`) und Ordner **/ (root)** → **Save**.
 4. Nach 1–2 Minuten ist das Spiel unter der Adresse oben erreichbar.
 
-Hinweis: Auf GitHub Pages funktionieren Story, Shops, Fahrzeuge, Anmeldung (lokal im Browser gespeichert) und Cheats.
-Online-Lobbys und die gemeinsame Rangliste brauchen einen Server und laufen nur in der claude.ai-Version.
+### Online-Server bei Cloudflare (für Lobbys und Rangliste auf GitHub Pages)
+1. Bei Cloudflare einen API-Token mit der Berechtigung **Workers Scripts: Edit** erstellen
+   (Vorlage „Edit Cloudflare Workers“). Einmal im Cloudflare-Dashboard **Workers & Pages** öffnen, damit die workers.dev-Adresse angelegt ist.
+2. Im Repository: **Settings → Secrets and variables → Actions → New repository secret**
+   Name `CLOUDFLARE_API_TOKEN`, Wert = der Token. (Optional `CLOUDFLARE_ACCOUNT_ID`, falls es mehrere Konten gibt.)
+3. **Actions → „Online-Server (Cloudflare) einrichten“ → Run workflow**.
+   Der Workflow lädt `worker/` zu Cloudflare hoch und trägt die Server-Adresse in `js/server-config.js` ein.
+4. Danach haben Lobbys, PvP, Crew-Aufträge und Rangliste auch auf GitHub Pages funktioniert.
+
+Den Token niemals in Dateien, Issues oder Chats schreiben – nur als Secret.
 
 `index.html` über einen Webserver öffnen (z. B. `python3 -m http.server` und dann http://localhost:8000).
 Funktioniert mit Maus/Tastatur und mit Touch (iPad/Handy).
