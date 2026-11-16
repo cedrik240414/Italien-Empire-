@@ -21,7 +21,7 @@ const opts = (() => { try { return JSON.parse(localStorage.getItem('italienEmpir
 opts.gfx = opts.gfx || (isTouch ? 'mittel' : 'hoch'); opts.fp = !!opts.fp; opts.sens = opts.sens || 1; if (opts.snd === undefined) opts.snd = true;
 const saveOpts = () => { try { localStorage.setItem('italienEmpire_opts', JSON.stringify(opts)); } catch (e) { } };
 
-const S = { money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], up: {}, mission: 0, char: 'jack', armor: 0, done: false };
+const S = { money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], up: {}, skins: [], skin: '', mission: 0, char: 'jack', armor: 0, done: false };
 function saveGame() { store.set(S); }
 
 // ---------- Renderer ----------
@@ -217,8 +217,8 @@ let missionBeam, waypoint = null, wpBeam;
 const effects = [];
 const pickups = [];
 
-function uiOpen() { return ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal', 'adminModal', 'upModal'].some(id => !$(id).hidden); }
-function closeModals() { document.body.classList.remove('modalopen'); ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal', 'adminModal', 'upModal'].forEach(id => $(id).hidden = true); }
+function uiOpen() { return ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal', 'adminModal', 'upModal', 'skinModal'].some(id => !$(id).hidden); }
+function closeModals() { document.body.classList.remove('modalopen'); ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal', 'adminModal', 'upModal', 'skinModal'].forEach(id => $(id).hidden = true); }
 
 // ---------- Waffenrad ----------
 const GUN_SVG = {
@@ -259,7 +259,8 @@ document.querySelectorAll('.modal').forEach(m => m.addEventListener('pointerdown
 // ---------- Spieler ----------
 function buildPlayerModel() {
   if (P.h) scene.remove(P.h.group);
-  P.h = IE.makeHuman(IE.chars[S.char]); scene.add(P.h.group);
+  const sk = S.skin && IE.skinById[S.skin];
+  P.h = IE.makeHuman(sk ? sk.look : IE.chars[S.char]); scene.add(P.h.group);
   updateGunModel();
 }
 function updateGunModel() { const w = IE.weaponById[S.cur]; IE.setGunLen(P.h, !w || w.id === 'faust' ? 0 : w.id === 'pistola' ? 0.28 : w.id === 'mitra' ? 0.45 : w.id === 'cecchino' ? 1.1 : w.id === 'minigun' ? 1.0 : 0.8, w && w.id === 'minigun' ? 2.6 : 1); }
@@ -316,6 +317,47 @@ const upCost = u => Math.round(u.base * Math.pow(u.grow, upLvl(u.id)) / 100) * 1
 const moneyMult = () => 1 + 0.25 * upLvl('geld');
 const maxHP = () => 100 + 20 * upLvl('leben');
 const dmgMult = () => 1 + 0.1 * upLvl('schaden');
+// ---------- Kleiderschrank (Skins) ----------
+const skinShots = {};
+let skinR = null;
+function skinShot(sk) {
+  if (skinShots[sk.id]) return skinShots[sk.id];
+  try {
+    if (!skinR) {
+      const r = new T.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); r.setSize(120, 150); r.outputEncoding = T.sRGBEncoding;
+      const sc = new T.Scene(); sc.add(new T.HemisphereLight(0xffffff, 0x666666, 1.0)); const dl = new T.DirectionalLight(0xffffff, 0.9); dl.position.set(1, 2, 3); sc.add(dl);
+      const cm = new T.PerspectiveCamera(32, 120 / 150, 0.1, 20); cm.position.set(0, 1.35, 4.2); cm.lookAt(0, 1.05, 0);
+      skinR = { r, sc, cm };
+    }
+    const h = IE.makeHuman(sk.look); h.group.rotation.y = 0.45; IE.animHuman(h, 0.6, 0.25, false, false); skinR.sc.add(h.group);
+    skinR.r.render(skinR.sc, skinR.cm); skinShots[sk.id] = skinR.r.domElement.toDataURL('image/png');
+    skinR.sc.remove(h.group);
+  } catch (e) { skinShots[sk.id] = ''; }
+  return skinShots[sk.id];
+}
+const isAdm = () => !!(window.IEaccount && IEaccount.admin);
+const ownsSkin = sk => sk.price === 0 && !sk.admin || (S.skins || []).includes(sk.id) || isAdm();
+function openSkins() {
+  closeModals(); $('skinModal').hidden = false; if (locked) document.exitPointerLock();
+  $('skinCash').textContent = fmt(S.money);
+  const el = $('skinGrid'); el.innerHTML = '';
+  const cur = S.skin || S.char;
+  for (const sk of IE.skins) {
+    if (sk.admin && !isAdm()) continue;
+    const own = ownsSkin(sk), card = document.createElement('button'); card.className = 'skin' + (cur === sk.id ? ' cur' : '') + (own ? '' : ' locked');
+    card.innerHTML = '<img alt=""><span class="sn"></span><span class="sp"></span>';
+    card.querySelector('img').src = skinShot(sk);
+    card.querySelector('.sn').textContent = sk.name;
+    card.querySelector('.sp').textContent = cur === sk.id ? 'Angezogen' : own ? 'Anziehen' : fmt(sk.price);
+    card.onclick = () => {
+      if (!own) { if (S.money < sk.price) { toast('Zu wenig Geld für ' + sk.name, 2); return; } S.money -= sk.price; S.skins = (S.skins || []).concat(sk.id); sfx('cash'); }
+      if (['jack', 'marco', 'sofia'].includes(sk.id)) { S.skin = ''; S.char = sk.id; } else S.skin = sk.id;
+      buildPlayerModel(); saveGame(); openSkins(); toast(sk.name + ' angezogen', 1.5);
+    };
+    el.appendChild(card);
+  }
+  $('skinCount').textContent = `${IE.skins.filter(s => !s.admin || isAdm()).filter(ownsSkin).length} von ${IE.skins.filter(s => !s.admin || isAdm()).length} Skins freigeschaltet`;
+}
 function openUpgrades() {
   closeModals(); $('upModal').hidden = false; if (locked) document.exitPointerLock();
   const el = $('upRows'); el.innerHTML = ''; $('upCash').textContent = fmt(S.money);
@@ -1433,7 +1475,7 @@ function switchChar(id) {
   if (mission.active) { toast('Während einer Mission nicht möglich'); return; }
   if (id === S.char) { closeModals(); return; }
   if (P.veh) { P.veh.driver = null; P.veh = null; $('speed').hidden = true; engineSound(null); }
-  S.char = id; buildPlayerModel();
+  S.char = id; S.skin = ''; buildPlayerModel();
   const c = IE.cityById[IE.chars[id].home]; placePlayer(c.cx + 30, c.cz + 55); game.wanted = 0;
   closeModals(); banner('Charakter', IE.chars[id].name, IE.cityById[IE.chars[id].home].name, 2.5); saveGame();
 }
@@ -1448,6 +1490,7 @@ function openPause() {
   $('optSnd').textContent = opts.snd ? 'An' : 'Aus'; $('optSens').value = opts.sens; $('optView').textContent = opts.fp ? 'Ego-Sicht' : 'Normal';
 }
 $('pUp').addEventListener('click', () => openUpgrades());
+$('pSkins').addEventListener('click', () => openSkins());
 $('optGfx').addEventListener('click', () => { opts.gfx = { hoch: 'mittel', mittel: 'niedrig', niedrig: 'hoch' }[opts.gfx]; saveOpts(); applyGfx(); });
 $('optSnd').addEventListener('click', () => { opts.snd = !opts.snd; saveOpts(); $('optSnd').textContent = opts.snd ? 'An' : 'Aus'; if (!opts.snd && AU.master) AU.master.gain.value = 0; else if (AU.master) AU.master.gain.value = 0.5; else audioInit(); });
 $('optView').addEventListener('click', () => { opts.fp = !opts.fp; saveOpts(); $('optView').textContent = opts.fp ? 'Ego-Sicht' : 'Normal'; });
@@ -1731,6 +1774,6 @@ function boot() {
 $('bNew').addEventListener('click', () => startGame(false));
 $('bCont').addEventListener('click', () => startGame(true));
 function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = 'italienEmpire_v1' + ACC; $('bCont').hidden = !store.get(); }
-window.IEgame = { setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
+window.IEgame = { openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
 boot();
 })();

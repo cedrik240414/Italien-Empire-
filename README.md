@@ -60,6 +60,9 @@ Beim Start meldet man sich mit Spielername und Passwort an (oder erstellt ein Ko
 - Flugmodus mit einstellbarem Tempo (bis über 2000 km/h) und die begehbare **Flug-Yacht Imperatore** (64 m, mit Deck, Pool und Kommandobrücke).
 - Konten liegen auf dem Server: Spielernamen sind eindeutig, Passwörter nur als Hash gespeichert.
 
+## Skins
+Kleiderschrank im Menü mit 40 Skins (Typ im Anzug, FIB-Mitarbeiter, maskierter Verbrecher, Mafia-Boss, Ninja, Astronaut, König, …). Viele gratis, andere für Spielgeld, ein Admin-Skin nur für Admins. Online sehen alle anderen Spieler deinen Skin.
+
 ## Upgrades
 Im Menü unter „Upgrades“ unendlich oft kaufbar: Geld-Multiplikator, Lebensenergie, Waffenschaden, Lauftempo, Panzerung.
 Besiegte Figuren lassen Geld fallen.

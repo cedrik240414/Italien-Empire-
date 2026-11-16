@@ -72,9 +72,11 @@ function ensurePeer(p) {
   r.pr = pr; r.guest = p.guest;
   const by = p.by || (typeof pr.uid === 'string' ? pr.uid : null);
   if (by !== r.by || (pr.nm && pr.nm !== r.name)) { r.by = by; resolveNames(); }
-  if (r.char !== pr.c) {
+  const skin = typeof pr.sk === 'string' && IE.skinById[pr.sk] && (!IE.skinById[pr.sk].admin || pr.adm) ? IE.skinById[pr.sk] : null;
+  const lookKey = skin ? 's:' + skin.id : 'c:' + pr.c;
+  if (r.char !== lookKey) {
     if (r.h) scene.remove(r.h.group);
-    r.h = IE.makeHuman(IE.chars[pr.c] || IE.chars.jack); IE.setGunLen(r.h, 0.3); scene.add(r.h.group); r.char = pr.c;
+    r.h = IE.makeHuman(skin ? skin.look : (IE.chars[pr.c] || IE.chars.jack)); IE.setGunLen(r.h, 0.3); scene.add(r.h.group); r.char = lookKey;
   }
   const key = pr.v ? pr.v.t + ':' + pr.v.id : '';
   if (key !== r.vehKey) {
@@ -115,7 +117,7 @@ const r2 = v => Math.round(v * 100) / 100;
 function sendPresence() {
   const g = G(), P = g.P, v = P.veh;
   const pr = { x: r2(P.pos.x), y: r2(P.pos.y), z: r2(P.pos.z), yaw: r2(P.yaw), c: g.S.char, hp: Math.round(P.health), dead: g.game.dead ? 1 : 0,
-    sw: P.under ? 2 : P.swim ? 1 : 0, uid: O.myId || '', nm: (window.IEaccount && IEaccount.nick) || '', k: O.kills, d: O.deaths, pa: O.passive ? 1 : 0, w: g.S.cur };
+    sw: P.under ? 2 : P.swim ? 1 : 0, sk: g.S.skin || '', uid: O.myId || '', nm: (window.IEaccount && IEaccount.nick) || '', k: O.kills, d: O.deaths, pa: O.passive ? 1 : 0, w: g.S.cur };
   const ship = IE.vehicles.find(q => q.type === 'airship' && q.mine && !q.removeMe);
   pr.ship = ship ? { x: r2(ship.pos.x), y: r2(ship.pos.y), z: r2(ship.pos.z), yaw: r2(ship.yaw) } : null;
   pr.v = v && v.type !== 'airship' ? { t: v.type, id: v.def.id, yaw: r2(v.yaw), p: r2(v.pitch || 0), r: r2(v.roll || 0), col: v.m.bodyMat ? v.m.bodyMat.color.getHex() : undefined } : null;

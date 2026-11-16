@@ -375,3 +375,50 @@ IE.coopJobs = [
       { t: 'goto', city: 'palermo', dx: 150, dz: 90, r: 30, text: 'Trefft euch in Palermo' },
       { t: 'kill', city: 'palermo', dx: 150, dz: 90, n: 14, text: 'Vernichtet Vittorios Armee', boss: 'Vittorios Leibwächter' } ] }
 ];
+
+// ===== SKINS (Kleiderschrank) =====
+// price 0 = gratis, admin = nur für Admins
+const SK = { light: 0xe9c3a6, mid: 0xd8a47f, tan: 0xc8946c, dark: 0x8a5a3a, pale: 0xf0d8c4 };
+IE.skins = [
+  { id: 'jack', name: 'Jack Moretti', cat: 'Crew', price: 0, look: IE.chars.jack },
+  { id: 'marco', name: 'Marco Bellini', cat: 'Crew', price: 0, look: IE.chars.marco },
+  { id: 'sofia', name: 'Sofia Romano', cat: 'Crew', price: 0, look: IE.chars.sofia },
+  { id: 'anzug', name: 'Typ im Anzug', cat: 'Business', price: 0, look: { pants: 0x1a1a1f, jacket: 0x1a1a1f, shirt: 0xf4f4f4, tie: 0xb3202a, skin: SK.mid, hair: 0x2a1a10 } },
+  { id: 'banker', name: 'Banker', cat: 'Business', price: 15000, look: { pants: 0x1f2c48, jacket: 0x1f2c48, shirt: 0xdfe8f5, tie: 0x3a6fb0, skin: SK.light, hair: 0x6b5a48, glasses: 'nerd' } },
+  { id: 'smoking', name: 'Smoking', cat: 'Business', price: 40000, look: { pants: 0x0d0d0f, jacket: 0x0d0d0f, shirt: 0xffffff, bow: 0x0d0d0f, skin: SK.mid, hair: 0x111111, shoes: 0x050505 } },
+  { id: 'fib', name: 'FIB-Mitarbeiter', cat: 'Behörden', price: 0, look: { pants: 0x2a2f38, jacket: 0x1d2a44, shirt: 0xd8dde6, skin: SK.light, hair: 0x3a2a1a, hat: 'cap', hatColor: 0x1d2a44, back: 'FIB', backColor: '#f2c230' } },
+  { id: 'fib_agent', name: 'FIB-Agent im Anzug', cat: 'Behörden', price: 25000, look: { pants: 0x111114, jacket: 0x111114, shirt: 0xffffff, tie: 0x111114, skin: SK.tan, hair: 0x111111, glasses: 'sun', back: 'FIB', backColor: '#f2c230' } },
+  { id: 'polizia', name: 'Polizist', cat: 'Behörden', price: 10000, look: { pants: 0x1a2340, jacket: 0x1a2340, shirt: 0xd8dce6, skin: SK.mid, hair: 0x111111, hat: 'pilot', hatColor: 0x1a2340, back: 'POLIZIA', backColor: '#ffffff' } },
+  { id: 'carabiniere', name: 'Carabiniere', cat: 'Behörden', price: 30000, look: { pants: 0x101012, jacket: 0x101012, shirt: 0xffffff, stripe: 0xc8202a, skin: SK.light, hair: 0x111111, hat: 'pilot', hatColor: 0x101012, beard: 0x2a1a10 } },
+  { id: 'soldat', name: 'Soldat', cat: 'Behörden', price: 20000, look: { pants: 0x4b5233, jacket: 0x59613d, shirt: 0x3e4429, skin: SK.tan, hair: 0x2a2a1a, hat: 'helmet', hatColor: 0x4f5636, pack: true } },
+  { id: 'maskiert', name: 'Maskierter Verbrecher', cat: 'Unterwelt', price: 0, look: { pants: 0x111111, jacket: 0x1b1b1b, shirt: 0x2a2a2a, skin: SK.mid, hair: 0x111111, mask: 'ski', maskColor: 0x121212, hands: 0x111111 } },
+  { id: 'bankraeuber', name: 'Bankräuber', cat: 'Unterwelt', price: 12000, look: { pants: 0x2b3440, jacket: 0x3d4652, shirt: 0x3d4652, skin: SK.light, hair: 0x111111, mask: 'ski', maskColor: 0x8a1c22, hands: 0x111111, pack: true, packColor: 0x1b1b1b } },
+  { id: 'clown', name: 'Clown-Gangster', cat: 'Unterwelt', price: 35000, look: { pants: 0x6b2a8a, jacket: 0x2a7a3a, shirt: 0xf2c230, skin: SK.light, hair: 0xd85a1a, mask: 'face', maskColor: 0xf6f6f6, hands: 0xf6f6f6 } },
+  { id: 'mafiaboss', name: 'Mafia-Boss', cat: 'Unterwelt', price: 75000, look: { pants: 0x3a3a40, jacket: 0x3a3a40, shirt: 0x111111, tie: 0xf4f4f4, skin: SK.tan, hair: 0x6b6b6b, hat: 'fedora', hatColor: 0x2a2a2e, chain: true } },
+  { id: 'don', name: 'Don im weißen Anzug', cat: 'Unterwelt', price: 150000, look: { pants: 0xf2efe6, jacket: 0xf2efe6, shirt: 0x111111, tie: 0xb3202a, skin: SK.tan, hair: 0x8a8a8a, hat: 'fedora', hatColor: 0xf2efe6, beard: 0x8a8a8a, shoes: 0xf2efe6 } },
+  { id: 'killer', name: 'Auftragskiller', cat: 'Unterwelt', price: 60000, look: { pants: 0x0d0d0f, jacket: 0x0d0d0f, shirt: 0x0d0d0f, tie: 0x0d0d0f, skin: SK.pale, hair: 0x050505, hairStyle: 'none', glasses: 'sun', hands: 0x0d0d0f } },
+  { id: 'hacker', name: 'Hacker', cat: 'Unterwelt', price: 18000, look: { pants: 0x1b1f2a, jacket: 0x111111, shirt: 0x1fae5a, skin: SK.light, hair: 0x111111, mask: 'half', maskColor: 0x111111, glasses: 'visor' } },
+  { id: 'ninja', name: 'Ninja', cat: 'Unterwelt', price: 90000, look: { pants: 0x0b0b0d, jacket: 0x0b0b0d, shirt: 0x0b0b0d, skin: SK.light, hair: 0x0b0b0d, mask: 'ski', maskColor: 0x0b0b0d, hands: 0x0b0b0d, shoes: 0x0b0b0d } },
+  { id: 'rapper', name: 'Rapper', cat: 'Stadt', price: 22000, look: { pants: 0x1b1b1b, jacket: 0x111111, shirt: 0x111111, skin: SK.dark, hair: 0x111111, hat: 'cap', hatColor: 0xb3202a, chain: true, glasses: 'sun' } },
+  { id: 'tourist', name: 'Tourist', cat: 'Stadt', price: 0, look: { pants: 0xd8c4a0, jacket: 0xe8762a, shirt: 0xf2d24a, skin: SK.pale, hair: 0xb89a6a, hat: 'cap', hatColor: 0xf4f4f4, glasses: 'sun', pack: true, packColor: 0x3a6fb0 } },
+  { id: 'calcio', name: 'Fußballer Azzurro', cat: 'Stadt', price: 8000, look: { pants: 0xf4f4f4, jacket: 0x1f5fb8, shirt: 0x1f5fb8, sleeves: 0x1f5fb8, skin: SK.mid, hair: 0x2a1a10, back: '10', backColor: '#ffffff', shoes: 0xf4f4f4 } },
+  { id: 'koch', name: 'Pizzabäcker', cat: 'Berufe', price: 0, look: { pants: 0x3a3a3a, jacket: 0xf6f6f6, shirt: 0xf6f6f6, skin: SK.mid, hair: 0x2a1a10, hat: 'chef', beard: 0x2a1a10 } },
+  { id: 'gondoliere', name: 'Gondoliere', cat: 'Berufe', price: 5000, look: { pants: 0x111111, jacket: 0xf6f6f6, shirt: 0xc8202a, sleeves: 0xf6f6f6, skin: SK.tan, hair: 0x2a1a10, hat: 'straw', hatColor: 0xe8d38a } },
+  { id: 'mechaniker', name: 'Mechaniker', cat: 'Berufe', price: 4000, look: { pants: 0x2a4a7a, jacket: 0x2a4a7a, shirt: 0x2a4a7a, skin: SK.tan, hair: 0x2a1a10, hat: 'cap', hatColor: 0xb3202a, hands: 0x2a2a2a } },
+  { id: 'arzt', name: 'Arzt', cat: 'Berufe', price: 9000, look: { pants: 0x3a5a8a, jacket: 0xf6f6f6, shirt: 0x7fb0d8, skin: SK.light, hair: 0x6b5a48, glasses: 'nerd', back: 'MEDICO', backColor: '#c8202a' } },
+  { id: 'pilot', name: 'Pilot', cat: 'Berufe', price: 14000, look: { pants: 0x111a2a, jacket: 0xf4f4f4, shirt: 0xf4f4f4, tie: 0x111a2a, sleeves: 0xf4f4f4, skin: SK.mid, hair: 0x2a1a10, hat: 'pilot', hatColor: 0x111a2a, glasses: 'sun' } },
+  { id: 'feuerwehr', name: 'Feuerwehrmann', cat: 'Berufe', price: 16000, look: { pants: 0x2a2a2a, jacket: 0xb3202a, shirt: 0xf2c230, skin: SK.mid, hair: 0x2a1a10, hat: 'helmet', hatColor: 0xf2c230, back: 'VVF', backColor: '#f2c230' } },
+  { id: 'bau', name: 'Bauarbeiter', cat: 'Berufe', price: 3000, look: { pants: 0x2a4a7a, jacket: 0xf28a1a, shirt: 0xf2d24a, skin: SK.tan, hair: 0x2a1a10, hat: 'hard', hatColor: 0xf2c230, beard: 0x3a2a1a } },
+  { id: 'rennfahrer', name: 'Rennfahrer', cat: 'Sport', price: 45000, look: { pants: 0xc8101a, jacket: 0xc8101a, shirt: 0xf2c230, sleeves: 0xc8101a, skin: SK.light, hair: 0x2a1a10, hat: 'helmet', hatColor: 0xc8101a, glasses: 'visor', hands: 0x111111 } },
+  { id: 'taucher', name: 'Taucher', cat: 'Sport', price: 12000, look: { pants: 0x0d1b2a, jacket: 0x0d1b2a, shirt: 0x1f6fb8, skin: SK.light, hair: 0x2a1a10, glasses: 'goggles', hands: 0x0d1b2a, shoes: 0x1f6fb8, pack: true, packColor: 0xf2c230 } },
+  { id: 'cowboy', name: 'Cowboy', cat: 'Spaß', price: 28000, look: { pants: 0x2a3a5a, jacket: 0x7a4a2a, shirt: 0xd8c4a0, skin: SK.tan, hair: 0x3a2a1a, hat: 'cowboy', hatColor: 0x6b4422, beard: 0x3a2a1a, shoes: 0x4a2a1a } },
+  { id: 'astronaut', name: 'Astronaut', cat: 'Spaß', price: 120000, look: { pants: 0xeeeeee, jacket: 0xeeeeee, shirt: 0xd8d8d8, skin: SK.light, hair: 0x2a1a10, hat: 'space', hands: 0xeeeeee, shoes: 0xdddddd, pack: true, packColor: 0xdddddd, back: 'ASI', backColor: '#1f5fb8' } },
+  { id: 'zombie', name: 'Zombie', cat: 'Spaß', price: 33000, look: { pants: 0x3a3a2a, jacket: 0x5a5a4a, shirt: 0x7a2a2a, skin: 0x7fa06a, hair: 0x2a2a1a, hairStyle: 'mohawk' } },
+  { id: 'punk', name: 'Punk', cat: 'Spaß', price: 11000, look: { pants: 0x2a2a2a, jacket: 0x111111, shirt: 0xc8202a, skin: SK.pale, hair: 0x2fc85a, hairStyle: 'mohawk', chain: true } },
+  { id: 'koenig', name: 'König', cat: 'Luxus', price: 500000, look: { pants: 0x4a1a6a, jacket: 0x6a2a8a, shirt: 0xf2c230, skin: SK.mid, hair: 0x2a1a10, hat: 'crown', chain: true, beard: 0x2a1a10, shoes: 0xe8c040 } },
+  { id: 'gold', name: 'Goldener Anzug', cat: 'Luxus', price: 1000000, look: { pants: 0xd6b04a, jacket: 0xd6b04a, shirt: 0x111111, tie: 0xd6b04a, skin: SK.mid, hair: 0x111111, glasses: 'sun', chain: true, shoes: 0xd6b04a } },
+  { id: 'diva', name: 'Diva', cat: 'Luxus', price: 80000, look: { pants: 0xb3202a, jacket: 0xb3202a, shirt: 0xb3202a, skin: SK.light, hair: 0xe8c48a, female: true, glasses: 'sun', chain: true, shoes: 0xb3202a } },
+  { id: 'agentin', name: 'Geheimagentin', cat: 'Luxus', price: 55000, look: { pants: 0x111111, jacket: 0x111111, shirt: 0x111111, skin: SK.light, hair: 0x3a1a10, female: true, glasses: 'sun', hands: 0x111111 } },
+  { id: 'admin', name: '★ Admin-Imperator', cat: 'Admin', price: 0, admin: true, look: { pants: 0x111111, jacket: 0xd6b04a, shirt: 0x111111, tie: 0xc8202a, skin: SK.mid, hair: 0x111111, hat: 'crown', glasses: 'sun', chain: true, back: 'ADMIN', backColor: '#111111', shoes: 0xd6b04a } }
+];
+IE.skinById = {}; IE.skins.forEach(s => IE.skinById[s.id] = s);

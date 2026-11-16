@@ -7,25 +7,70 @@ const matCache = {};
 const mc = c => matCache[c] || (matCache[c] = lam(c));
 
 // ---------- Mensch ----------
+const backTexCache = {};
+function backTex(text, color) {
+  const k = text + color; if (backTexCache[k]) return backTexCache[k];
+  const c = document.createElement('canvas'); c.width = 128; c.height = 64; const g = c.getContext('2d');
+  g.fillStyle = color || '#f2c230'; g.font = 'bold 40px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 64, 34);
+  return backTexCache[k] = new T.CanvasTexture(c);
+}
+// o: pants, jacket, shirt, skin, hair, female, shoes, hands, sleeves,
+//    tie, bow, mask ('ski'|'face'|'half'), maskColor, hat ('cap'|'fedora'|'helmet'|'beanie'|'chef'|'crown'|'cowboy'|'pilot'|'straw'|'hard'|'space'),
+//    hatColor, glasses ('sun'|'nerd'|'visor'|'goggles'), beard, back (Text), backColor, chain, pack, packColor, hairStyle ('none'|'long'|'mohawk'), stripe
 IE.makeHuman = function (o) {
   const g = new T.Group();
   const box = (w, h, d, c, parent, x, y, z) => { const m = new T.Mesh(new T.BoxGeometry(w, h, d), mc(c)); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; };
   const pivot = (x, y, z) => { const p = new T.Group(); p.position.set(x, y, z); g.add(p); return p; };
+  const shoes = o.shoes !== undefined ? o.shoes : 0x1a1a1a, hands = o.hands !== undefined ? o.hands : o.skin;
   const legL = pivot(-0.11, 0.92, 0), legR = pivot(0.11, 0.92, 0);
   box(0.17, 0.88, 0.2, o.pants, legL, 0, -0.44, 0); box(0.17, 0.88, 0.2, o.pants, legR, 0, -0.44, 0);
-  box(0.18, 0.1, 0.28, 0x1a1a1a, legL, 0, -0.87, 0.04); box(0.18, 0.1, 0.28, 0x1a1a1a, legR, 0, -0.87, 0.04);
+  box(0.18, 0.1, 0.28, shoes, legL, 0, -0.87, 0.04); box(0.18, 0.1, 0.28, shoes, legR, 0, -0.87, 0.04);
+  if (o.stripe) { box(0.02, 0.86, 0.06, o.stripe, legL, -0.09, -0.44, 0); box(0.02, 0.86, 0.06, o.stripe, legR, 0.09, -0.44, 0); }
   const torso = box(o.female ? 0.42 : 0.48, 0.64, 0.26, o.jacket, g, 0, 1.24, 0);
   box(o.female ? 0.2 : 0.22, 0.5, 0.02, o.shirt, g, 0, 1.28, 0.135);
+  if (o.tie !== undefined) box(0.06, 0.38, 0.015, o.tie, g, 0, 1.3, 0.148);
+  if (o.bow !== undefined) box(0.14, 0.05, 0.02, o.bow, g, 0, 1.52, 0.15);
+  if (o.chain) { box(0.2, 0.025, 0.02, 0xe8c040, g, 0, 1.43, 0.15); box(0.06, 0.07, 0.02, 0xe8c040, g, 0, 1.38, 0.155); }
+  if (o.back) { const pl = new T.Mesh(new T.PlaneGeometry(0.4, 0.2), new T.MeshBasicMaterial({ map: backTex(o.back, o.backColor), transparent: true })); pl.position.set(0, 1.36, -0.132); pl.rotation.y = Math.PI; g.add(pl); }
+  if (o.pack) box(0.34, 0.42, 0.14, o.packColor !== undefined ? o.packColor : 0x3a4a2a, g, 0, 1.24, -0.2);
   box(0.1, 0.1, 0.1, o.skin, g, 0, 1.6, 0);
   const head = new T.Group(); head.position.set(0, 1.76, 0); g.add(head);
   box(0.24, 0.27, 0.25, o.skin, head, 0, 0, 0);
-  box(0.26, 0.09, 0.27, o.hair, head, 0, 0.14, -0.01);
-  box(0.26, 0.2, 0.06, o.hair, head, 0, 0.04, -0.13);
-  if (o.female) box(0.26, 0.42, 0.08, o.hair, head, 0, -0.12, -0.14);
+  const hs = o.hairStyle || (o.female ? 'long' : 'short');
+  if (hs !== 'none' && o.hat !== 'helmet' && o.hat !== 'space') {
+    if (hs === 'mohawk') box(0.06, 0.12, 0.26, o.hair, head, 0, 0.18, -0.01);
+    else { box(0.26, 0.09, 0.27, o.hair, head, 0, 0.14, -0.01); box(0.26, 0.2, 0.06, o.hair, head, 0, 0.04, -0.13); }
+    if (hs === 'long') box(0.26, 0.42, 0.08, o.hair, head, 0, -0.12, -0.14);
+  }
   box(0.04, 0.03, 0.01, 0x111111, head, -0.06, 0.03, 0.126); box(0.04, 0.03, 0.01, 0x111111, head, 0.06, 0.03, 0.126);
+  if (o.beard !== undefined) { box(0.24, 0.1, 0.04, o.beard, head, 0, -0.09, 0.125); box(0.1, 0.03, 0.02, o.beard, head, 0, -0.02, 0.135); }
+  // Masken
+  const mk = o.maskColor !== undefined ? o.maskColor : 0x151515;
+  if (o.mask === 'ski') { box(0.265, 0.3, 0.27, mk, head, 0, 0.005, 0); box(0.17, 0.045, 0.01, o.skin, head, 0, 0.03, 0.137); box(0.06, 0.03, 0.01, 0x111111, head, -0.05, 0.03, 0.139); box(0.06, 0.03, 0.01, 0x111111, head, 0.05, 0.03, 0.139); }
+  else if (o.mask === 'face') { box(0.22, 0.25, 0.02, mk, head, 0, 0, 0.13); box(0.05, 0.035, 0.01, 0x111111, head, -0.06, 0.04, 0.142); box(0.05, 0.035, 0.01, 0x111111, head, 0.06, 0.04, 0.142); box(0.1, 0.025, 0.01, 0xc8372d, head, 0, -0.07, 0.142); }
+  else if (o.mask === 'half') box(0.25, 0.12, 0.02, mk, head, 0, -0.07, 0.13);
+  // Brillen
+  if (o.glasses === 'sun') { box(0.22, 0.05, 0.02, 0x0a0a0a, head, 0, 0.03, 0.135); }
+  else if (o.glasses === 'nerd') { box(0.08, 0.06, 0.015, 0x222222, head, -0.06, 0.03, 0.133); box(0.08, 0.06, 0.015, 0x222222, head, 0.06, 0.03, 0.133); }
+  else if (o.glasses === 'visor') box(0.26, 0.07, 0.03, 0x33c8ff, head, 0, 0.03, 0.135);
+  else if (o.glasses === 'goggles') { box(0.25, 0.08, 0.04, 0x1b1b1b, head, 0, 0.03, 0.135); box(0.08, 0.05, 0.01, 0x7fd8ff, head, -0.06, 0.03, 0.157); box(0.08, 0.05, 0.01, 0x7fd8ff, head, 0.06, 0.03, 0.157); }
+  // Hüte & Helme
+  const hc = o.hatColor !== undefined ? o.hatColor : 0x222222;
+  const cyl = (rt, rb, h, c, y, z) => { const m = new T.Mesh(new T.CylinderGeometry(rt, rb, h, 14), mc(c)); m.position.set(0, y, z || 0); m.castShadow = true; head.add(m); return m; };
+  if (o.hat === 'cap') { box(0.27, 0.08, 0.28, hc, head, 0, 0.17, 0); box(0.22, 0.02, 0.12, hc, head, 0, 0.14, 0.18); }
+  else if (o.hat === 'pilot') { box(0.28, 0.08, 0.29, hc, head, 0, 0.17, 0); box(0.24, 0.02, 0.1, 0x111111, head, 0, 0.13, 0.17); box(0.06, 0.04, 0.01, 0xe8c040, head, 0, 0.18, 0.146); }
+  else if (o.hat === 'fedora') { cyl(0.2, 0.2, 0.02, hc, 0.15); cyl(0.12, 0.14, 0.13, hc, 0.22); cyl(0.142, 0.142, 0.03, 0x111111, 0.18); }
+  else if (o.hat === 'cowboy') { cyl(0.28, 0.28, 0.02, hc, 0.15); cyl(0.12, 0.14, 0.14, hc, 0.23); }
+  else if (o.hat === 'straw') { cyl(0.24, 0.24, 0.02, hc, 0.15); cyl(0.13, 0.13, 0.08, hc, 0.2); cyl(0.135, 0.135, 0.025, 0x1b3d6e, 0.18); }
+  else if (o.hat === 'beanie') { const m = new T.Mesh(new T.SphereGeometry(0.15, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), mc(hc)); m.position.y = 0.09; m.scale.set(1, 0.9, 1); head.add(m); }
+  else if (o.hat === 'helmet' || o.hat === 'hard') { const m = new T.Mesh(new T.SphereGeometry(o.hat === 'hard' ? 0.17 : 0.18, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), mc(hc)); m.position.y = 0.06; head.add(m); if (o.hat === 'hard') box(0.36, 0.02, 0.36, hc, head, 0, 0.07, 0); else box(0.3, 0.04, 0.05, hc, head, 0, 0.06, 0.15); }
+  else if (o.hat === 'space') { const m = new T.Mesh(new T.SphereGeometry(0.22, 16, 12), new T.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.3, roughness: 0.3 })); m.position.y = 0.03; head.add(m); box(0.26, 0.16, 0.05, 0xd6a53a, head, 0, 0.03, 0.19); }
+  else if (o.hat === 'chef') { cyl(0.13, 0.12, 0.18, 0xf6f6f6, 0.25); const m = new T.Mesh(new T.SphereGeometry(0.16, 12, 8), mc(0xf6f6f6)); m.position.y = 0.36; m.scale.y = 0.7; head.add(m); }
+  else if (o.hat === 'crown') { cyl(0.14, 0.14, 0.1, 0xe8c040, 0.19); for (let i = 0; i < 5; i++) { const sp = new T.Mesh(new T.ConeGeometry(0.03, 0.08, 4), mc(0xe8c040)); const a = i / 5 * Math.PI * 2; sp.position.set(Math.cos(a) * 0.12, 0.28, Math.sin(a) * 0.12); head.add(sp); } box(0.04, 0.04, 0.01, 0xc8372d, head, 0, 0.19, 0.142); }
   const armL = pivot(-0.31, 1.52, 0), armR = pivot(0.31, 1.52, 0);
-  box(0.13, 0.6, 0.15, o.jacket, armL, 0, -0.3, 0); box(0.13, 0.6, 0.15, o.jacket, armR, 0, -0.3, 0);
-  box(0.11, 0.11, 0.11, o.skin, armL, 0, -0.64, 0); box(0.11, 0.11, 0.11, o.skin, armR, 0, -0.64, 0);
+  const sleeve = o.sleeves !== undefined ? o.sleeves : o.jacket;
+  box(0.13, 0.6, 0.15, sleeve, armL, 0, -0.3, 0); box(0.13, 0.6, 0.15, sleeve, armR, 0, -0.3, 0);
+  box(0.11, 0.11, 0.11, hands, armL, 0, -0.64, 0); box(0.11, 0.11, 0.11, hands, armR, 0, -0.64, 0);
   const gun = new T.Group(); gun.position.set(0, -0.66, 0.08); armR.add(gun);
   const gunMesh = box(0.06, 0.1, 0.3, 0x111111, gun, 0, 0, 0.1); gun.visible = false;
   return { group: g, legL, legR, armL, armR, head, gun, gunMesh, torso };
