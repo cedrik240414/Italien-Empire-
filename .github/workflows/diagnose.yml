@@ -1,0 +1,14 @@
+name: Server-Diagnose
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Konten in der Rangliste
+        run: |
+          curl -sS "https://italien-empire-online.cedrikve.workers.dev/" ; echo
+          curl -sS "https://italien-empire-online.cedrikve.workers.dev/board?sort=money&limit=300" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const d=JSON.parse(s);console.log('Anzahl:',d.docs.length);for(const x of d.docs)console.log(JSON.stringify({id:x.id,nick:x.data.nick,admin:x.data.admin}))})"
+          curl -sS "https://italien-empire-online.cedrikve.workers.dev/board/crimhotdog24"; echo
