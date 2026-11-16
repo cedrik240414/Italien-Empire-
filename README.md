@@ -64,14 +64,8 @@ Beim Start meldet man sich mit Spielername und Passwort an (oder erstellt ein Ko
 Im Menü unter „Upgrades“ unendlich oft kaufbar: Geld-Multiplikator, Lebensenergie, Waffenschaden, Lauftempo, Panzerung.
 Besiegte Figuren lassen Geld fallen.
 
-## Cheat-Codes (Knöpfe schnell nacheinander)
-E E ZIELEN SPRUNG RENNEN = Helikopter · ZIELEN ZIELEN E E SPRUNG = alle Waffen · WAFFE WAFFE E ZIELEN = Minigun ·
-SPRUNG SPRUNG E RENNEN = Supersportwagen · RENNEN SPRUNG RENNEN SPRUNG E = Panzer · E ZIELEN E ZIELEN SPRUNG = Kampfjet ·
-RENNEN RENNEN E E = Gesundheit · E SPRUNG E SPRUNG ZIELEN = Fahndung weg · ZIELEN SPRUNG ZIELEN SPRUNG RENNEN = 5 Sterne ·
-SPRUNG ZIELEN RENNEN E SPRUNG = Geld · SPRUNG×4 = Supersprung · RENNEN RENNEN RENNEN E = superschnell ·
-WAFFE E WAFFE E = unendlich Munition · ZIELEN WAFFE ZIELEN WAFFE = explosive Kugeln · SPRUNG E SPRUNG E SPRUNG = Mond-Schwerkraft ·
-RENNEN E ZIELEN WAFFE = nie gesucht · SPRUNG RENNEN SPRUNG RENNEN SPRUNG = Flugmodus · ZIELEN ZIELEN ZIELEN E = Privatjet ·
-E E E RENNEN RENNEN = Geld-Multiplikator +1. In der öffentlichen Lobby sind Cheats aus (außer für Admins).
+## Cheat-Codes
+Es gibt geheime Cheat-Codes (Knopf-Kombinationen). Admins sehen die Liste im Menü.
 
 ## Steuerung (Tastatur)
 WASD laufen/fahren · Maus Kamera · Linksklick schießen · Rechtsklick zielen · Shift sprinten/Heli runter ·

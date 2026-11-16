@@ -1442,6 +1442,7 @@ function switchChar(id) {
 function openPause() {
   $('cheatList').innerHTML = CHEATS.map(c => `<div class="cheat"><span class="seq">${c.seq.map(x => `<b>${x}</b>`).join('')}</span><span>${c.name}${c.toggle ? (game.ch[c.toggle] ? ' · <b style="color:var(--verde)">an</b>' : ' · aus') : ''}</span></div>`).join('');
   $('pAdmin').hidden = !(window.IEaccount && IEaccount.admin);
+  $('cheatBox').hidden = !(window.IEaccount && IEaccount.admin);
   $('pauseModal').hidden = false; if (window.IEonline) IEonline.renderPause(); if (locked) document.exitPointerLock();
   $('progTxt').textContent = `Story: ${Math.min(S.mission, IE.missions.length)} / ${IE.missions.length} Missionen`;
   $('optSnd').textContent = opts.snd ? 'An' : 'Aus'; $('optSens').value = opts.sens; $('optView').textContent = opts.fp ? 'Ego-Sicht' : 'Normal';
