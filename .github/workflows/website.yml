@@ -27,17 +27,29 @@ jobs:
           node-version: 20
 
       - name: Online-Server bei Cloudflare hochladen (wenn Token hinterlegt)
+        continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_ACCOUNT_SECRET: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
             echo "::warning::Kein Secret CLOUDFLARE_API_TOKEN – Website wird ohne Online-Modus veröffentlicht."
             exit 0
           fi
+          API=https://api.cloudflare.com/client/v4
+          # Konto-Nummer bestimmen (Konto-Tokens dürfen /memberships nicht abfragen)
+          ACC="$CF_ACCOUNT_SECRET"
+          if [ -z "$ACC" ]; then
+            curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$API/accounts" > accounts.json
+            ACC=$(node -e "const d=require('./accounts.json'); if(!d.success){console.error('Cloudflare:', JSON.stringify(d.errors)); process.exit(0)} console.log((d.result[0]||{}).id||'')")
+          fi
+          if [ -z "$ACC" ]; then echo "::error::Konto-Nummer nicht gefunden – Token prüfen oder Secret CLOUDFLARE_ACCOUNT_ID anlegen."; exit 1; fi
+          echo "Konto gefunden."
+          curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$API/accounts/$ACC/tokens/verify" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const d=JSON.parse(s);console.log('Token-Prüfung:', d.success ? (d.result&&d.result.status) : JSON.stringify(d.errors))}catch(e){console.log('Token-Prüfung: keine Antwort')}})"
+          export CLOUDFLARE_ACCOUNT_ID="$ACC"
           cd worker
           set -o pipefail
-          npx --yes wrangler@3 deploy 2>&1 | tee ../deploy.log
+          npx --yes wrangler@4 deploy 2>&1 | tee ../deploy.log
           URL=$(grep -oE 'https://[A-Za-z0-9.-]+\.workers\.dev' ../deploy.log | head -1)
           if [ -z "$URL" ]; then echo "::error::Keine workers.dev-Adresse gefunden – siehe Log oben."; exit 1; fi
           echo "Online-Server: $URL"
