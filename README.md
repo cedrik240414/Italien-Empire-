@@ -9,18 +9,17 @@ Organisatoren Italiens auf und geraten zwischen La Corona, das FIB und eine gehe
 (nachdem Pages wie unten eingeschaltet ist)
 
 ### GitHub Pages einschalten (einmalig)
-1. Im Repository auf **Settings** → links **Pages**.
-2. Bei **Build and deployment** → **Source**: „Deploy from a branch“.
-3. Bei **Branch** den Branch mit dem Spiel wählen (z. B. `main` oder `claude/gallant-davinci-ykn0eh`) und Ordner **/ (root)** → **Save**.
-4. Nach 1–2 Minuten ist das Spiel unter der Adresse oben erreichbar.
+1. Im Repository auf **Settings** → links **Pages** → **Source: GitHub Actions**.
+2. Der Workflow „Website veröffentlichen“ läuft bei jedem Hochladen und stellt das Spiel online
+   (oder unter **Actions** → „Website veröffentlichen“ → **Run workflow**).
 
 ### Online-Server bei Cloudflare (für Lobbys und Rangliste auf GitHub Pages)
 1. Bei Cloudflare einen API-Token mit der Berechtigung **Workers Scripts: Edit** erstellen
    (Vorlage „Edit Cloudflare Workers“). Einmal im Cloudflare-Dashboard **Workers & Pages** öffnen, damit die workers.dev-Adresse angelegt ist.
 2. Im Repository: **Settings → Secrets and variables → Actions → New repository secret**
    Name `CLOUDFLARE_API_TOKEN`, Wert = der Token. (Optional `CLOUDFLARE_ACCOUNT_ID`, falls es mehrere Konten gibt.)
-3. **Actions → „Online-Server (Cloudflare) einrichten“ → Run workflow**.
-   Der Workflow lädt `worker/` zu Cloudflare hoch und trägt die Server-Adresse in `js/server-config.js` ein.
+3. **Actions → „Website veröffentlichen“ → Run workflow**.
+   Der Workflow lädt `worker/` zu Cloudflare hoch und trägt die Server-Adresse automatisch ins Spiel ein.
 4. Danach haben Lobbys, PvP, Crew-Aufträge und Rangliste auch auf GitHub Pages funktioniert.
 
 Den Token niemals in Dateien, Issues oder Chats schreiben – nur als Secret.
