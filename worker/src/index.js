@@ -5,7 +5,8 @@
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
 const H = { ...CORS, 'content-type': 'application/json; charset=utf-8' };
 const ROOM_RE = /^[a-z0-9][a-z0-9_.-]{0,47}$/;
-const SUPER_ADMIN = 'crimhotdog24'; // "Crim Hotdog24" – kann nicht entfernt oder gebannt werden
+const SUPER_ADMINS = ['crim', 'crimhotdog24']; // "Crim" / "Crim Hotdog24" – können nicht entfernt oder gebannt werden
+const isSuper = slug => SUPER_ADMINS.includes(slug);
 const j = (o, status) => new Response(JSON.stringify(o), { status: status || 200, headers: H });
 const slugOf = n => String(n || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]/g, '').slice(0, 16);
 async function sha(s) { const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(d)].map(x => x.toString(16).padStart(2, '0')).join(''); }
@@ -43,7 +44,7 @@ export class Hub {
     const a = await this.state.storage.get('a:' + s.slug); if (!a) return null;
     return a;
   }
-  pubAcc(a) { return { nick: a.nick, slug: a.slug, admin: !!a.admin || a.slug === SUPER_ADMIN, superAdmin: a.slug === SUPER_ADMIN, banned: !!a.banned }; }
+  pubAcc(a) { return { nick: a.nick, slug: a.slug, admin: !!a.admin || isSuper(a.slug), superAdmin: isSuper(a.slug), banned: !!a.banned }; }
   async newSession(a) {
     const token = rnd(32); await this.state.storage.put('s:' + token, { slug: a.slug, exp: Date.now() + 1000 * 60 * 60 * 24 * 60 });
     return token;
@@ -59,7 +60,7 @@ export class Hub {
       if (!/^[0-9a-f]{64}$/.test(String(b.ph || ''))) return j({ error: 'bad_password' }, 400);
       if (await st.get('a:' + slug)) return j({ error: 'taken' }, 409);
       const salt = rnd(16);
-      const a = { nick, slug, salt, h: await sha(b.ph + ':' + salt), admin: slug === SUPER_ADMIN, banned: false, grant: 0, created: Date.now() };
+      const a = { nick, slug, salt, h: await sha(b.ph + ':' + salt), admin: isSuper(slug), banned: false, grant: 0, created: Date.now() };
       await st.put('a:' + slug, a);
       return j({ token: await this.newSession(a), ...this.pubAcc(a) });
     }
@@ -67,7 +68,7 @@ export class Hub {
       const a = await st.get('a:' + slugOf(b.nick));
       if (!a) return j({ error: 'unknown' }, 404);
       if ((await sha(String(b.ph || '') + ':' + a.salt)) !== a.h) return j({ error: 'wrong_password' }, 403);
-      if (a.banned && a.slug !== SUPER_ADMIN) return j({ error: 'banned' }, 403);
+      if (a.banned && !isSuper(a.slug)) return j({ error: 'banned' }, 403);
       return j({ token: await this.newSession(a), ...this.pubAcc(a) });
     }
     const me = await this.session(token);
@@ -77,8 +78,8 @@ export class Hub {
     if (action === 'claim') { const g = me.grant || 0; if (g) { me.grant = 0; await st.put('a:' + me.slug, me); } return j({ grant: g }); }
     if (action === 'logout') { await st.delete('s:' + token); return j({ ok: true }); }
     // ---- Admin ----
-    const isAdmin = me.admin || me.slug === SUPER_ADMIN;
-    if (!isAdmin || (me.banned && me.slug !== SUPER_ADMIN)) return j({ error: 'not_admin' }, 403);
+    const isAdmin = me.admin || isSuper(me.slug);
+    if (!isAdmin || (me.banned && !isSuper(me.slug))) return j({ error: 'not_admin' }, 403);
     if (action === 'list') {
       const accs = [...(await st.list({ prefix: 'a:' })).values()];
       const board = await st.list({ prefix: 'p:' });
@@ -86,11 +87,11 @@ export class Hub {
     }
     if (action === 'act') {
       const t = await st.get('a:' + slugOf(b.target)); if (!t) return j({ error: 'unknown_target' }, 404);
-      const isSuper = t.slug === SUPER_ADMIN;
+      const sup = isSuper(t.slug);
       if (b.what === 'money') { const amt = Math.round(+b.amount || 0); if (!(amt > 0 && amt <= 1e9)) return j({ error: 'bad_amount' }, 400); t.grant = Math.min(1e12, (t.grant || 0) + amt); }
       else if (b.what === 'admin') t.admin = true;
-      else if (b.what === 'unadmin') { if (isSuper) return j({ error: 'super_admin' }, 403); t.admin = false; }
-      else if (b.what === 'ban') { if (isSuper || t.slug === me.slug) return j({ error: 'super_admin' }, 403); t.banned = true; }
+      else if (b.what === 'unadmin') { if (sup) return j({ error: 'super_admin' }, 403); t.admin = false; }
+      else if (b.what === 'ban') { if (sup || t.slug === me.slug) return j({ error: 'super_admin' }, 403); t.banned = true; }
       else if (b.what === 'unban') t.banned = false;
       else return j({ error: 'bad_action' }, 400);
       await st.put('a:' + t.slug, t);
@@ -108,7 +109,7 @@ export class Hub {
       const sort = ['kills', 'money', 'jobs', 'deaths'].includes(q) ? q : 'kills', lim = Math.min(300, Math.max(1, +url.searchParams.get('limit') || 30));
       const accs = await st.list({ prefix: 'a:' });
       const all = [...(await st.list({ prefix: 'p:' })).values()].filter(v => { const a = accs.get('a:' + v.id); return a && !a.banned; })
-        .map(v => { const a = accs.get('a:' + v.id); return { ...v, nick: a.nick, admin: !!a.admin || a.slug === SUPER_ADMIN }; });
+        .map(v => { const a = accs.get('a:' + v.id); return { ...v, nick: a.nick, admin: !!a.admin || isSuper(a.slug) }; });
       all.sort((a, b) => (b[sort] || 0) - (a[sort] || 0));
       return j({ docs: all.slice(0, lim).map(v => ({ id: v.id, data: pub(v) })) });
     }

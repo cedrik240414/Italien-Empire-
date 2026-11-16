@@ -62,7 +62,7 @@ const CLAIM_KEY = () => 'italienEmpire_claimed_' + (myId || 'x');
 async function claudeAdminInit() {
   await init();
   try { if (window.claude && claude.use) cUser = await claude.use('user'); } catch (e) { }
-  if (cUser) { try { if (await cUser.isOwner()) { A.admin = true; A.claudeAdmin = true; showAdminUI(); IEgame.toast('★ Du bist Admin (Besitzer des Spiels)', 3); } } catch (e) { } }
+  if (cUser) { try { if (await cUser.isOwner() || await cUser.canEdit()) { A.admin = true; A.claudeAdmin = true; showAdminUI(); IEgame.toast('★ Du bist Admin (Besitzer des Spiels)', 3); } } catch (e) { } }
   if (!db || !myId) return;
   try {
     db.collection('admin').doc('bans').onSnapshot(sn => {

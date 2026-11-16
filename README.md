@@ -55,7 +55,7 @@ Beim Start meldet man sich mit Spielername und Passwort an (oder erstellt ein Ko
 - Mitspieler brauchen das geteilte Spiel mit der Rolle „Mitwirkende“, damit Treffer, Aufträge und Ranglisten-Einträge zählen
 
 ## Admin (GitHub-Pages-Version mit Online-Server)
-- Der Spieler **Crim Hotdog24** ist Haupt-Admin (kann nicht entfernt oder gebannt werden).
+- Die Spieler **Crim** und **Crim Hotdog24** sind Haupt-Admins (können nicht entfernt oder gebannt werden).
 - Admin-Panel (Startbildschirm oder Menü): Spielern (oder sich selbst) Geld schenken, Admin geben/entfernen, bannen/entbannen.
 - Flugmodus mit einstellbarem Tempo (bis über 2000 km/h) und die begehbare **Flug-Yacht Imperatore** (64 m, mit Deck, Pool und Kommandobrücke).
 - Konten liegen auf dem Server: Spielernamen sind eindeutig, Passwörter nur als Hash gespeichert.
