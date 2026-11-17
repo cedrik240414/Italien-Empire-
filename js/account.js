@@ -73,21 +73,27 @@ async function claudeAdminInit() {
       cGrants = (sn.exists && sn.data().list) || [];
       let claimed = []; try { claimed = JSON.parse(localStorage.getItem(CLAIM_KEY()) || '[]'); } catch (e) { }
       for (const g of cGrants) if (g.to === myId && !claimed.includes(g.id)) {
-        claimed.push(g.id); IEgame.addMoney(Math.max(0, Math.min(1e9, +g.amt || 0)), true); IEgame.banner('Geschenk', 'Ein Admin schenkt dir', IEgame.fmt(+g.amt || 0), 4); IEgame.saveGame && IEgame.saveGame();
+        claimed.push(g.id); applyGrant(Math.max(-1e12, Math.min(1e9, Math.round(+g.amt || 0))));
       }
       try { localStorage.setItem(CLAIM_KEY(), JSON.stringify(claimed)); } catch (e) { }
     }, () => { });
   } catch (e) { }
+}
+function applyGrant(g) {
+  const G = IEgame; if (!g) return;
+  if (g > 0) { G.addMoney(g, true); G.banner('Geschenk', 'Ein Admin schenkt dir', G.fmt(g), 4); }
+  else { const take = Math.min(G.S.money, -g); G.S.money = Math.max(0, G.S.money + g); G.banner('Geld weg', 'Ein Admin hat dir Geld abgenommen', '− ' + G.fmt(take), 4); G.sfx && G.sfx('fail'); }
+  G.saveGame && G.saveGame();
 }
 async function claudeList() {
   const snap = await db.collection('leaderboard').limit(300).get();
   return snap.docs.map(d => { const v = d.data(); return { nick: v.nick || 'Spieler', slug: d.id, kills: v.kills || 0, money: v.money || 0, admin: d.id === myId, superAdmin: d.id === myId, banned: cBans.includes(d.id), grant: 0, claude: true }; });
 }
 async function claudeAct(target, what, amount) {
-  if (what === 'money') {
+  if (what === 'money' || what === 'take') {
     const ref = db.collection('admin').doc('grants'), cur = await ref.get();
     const list = ((cur.exists && cur.data().list) || []).slice(-200);
-    list.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), to: target, amt: Math.round(amount) });
+    list.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), to: target, amt: what === 'take' ? -Math.round(amount) : Math.round(amount) });
     await ref.set({ list });
   } else if (what === 'ban' || what === 'unban') {
     const ref = db.collection('admin').doc('bans'), cur = await ref.get();
@@ -164,7 +170,7 @@ function startPoll() {
       const me = await SRV().me();
       if (me.banned && !me.superAdmin) { A.onBanned(); return; }
       if (me.admin !== A.admin) { A.admin = me.admin; showAdminUI(); IEgame.toast(A.admin ? 'Du bist jetzt Admin!' : 'Deine Admin-Rechte wurden entfernt', 4); }
-      if (me.grant > 0) { const c = await SRV().claim(); if (c.grant > 0) { IEgame.addMoney(c.grant, true); IEgame.banner('Geschenk', 'Ein Admin schenkt dir', IEgame.fmt(c.grant), 4); IEgame.saveGame && IEgame.saveGame(); } }
+      if (me.grant) { const c = await SRV().claim(); if (c.grant) applyGrant(c.grant); }
     } catch (e) { if (e && e.status === 401) { try { localStorage.removeItem(TOKEN_KEY); } catch (er) { } } }
   };
   tick(); pollT = setInterval(tick, 15000);
@@ -198,9 +204,9 @@ function drawAdminList() {
   if (!list.length) { el.innerHTML = '<div class="hint">Keine Spieler gefunden.</div>'; return; }
   for (const p of list) {
     const row = document.createElement('div'); row.className = 'row adrow';
-    row.innerHTML = `<div><div class="nm"></div><div class="st"></div></div><div class="acts"><input type="number" min="1" step="1000" value="100000" aria-label="Betrag"><button class="buy" data-a="money">Geld geben</button><button data-a="adm"></button><button data-a="ban"></button></div>`;
+    row.innerHTML = `<div><div class="nm"></div><div class="st"></div></div><div class="acts"><input type="number" min="1" step="1000" value="100000" aria-label="Betrag"><button class="buy" data-a="money">Geld geben</button><button data-a="take" style="border-color:var(--rosso);color:var(--rosso)">Geld nehmen</button><button data-a="adm"></button><button data-a="ban"></button></div>`;
     row.querySelector('.nm').textContent = p.nick + (p.slug === A.slug ? ' (du)' : '') + (p.superAdmin ? ' ★ Haupt-Admin' : p.admin ? ' ★ Admin' : '') + (p.banned ? ' · GEBANNT' : '');
-    row.querySelector('.st').textContent = `Abschüsse ${p.kills} · Geld ${IEgame.fmt(p.money)}${p.grant ? ' · wartet auf ' + IEgame.fmt(p.grant) : ''}`;
+    row.querySelector('.st').textContent = `Abschüsse ${p.kills} · Geld ${IEgame.fmt(p.money)}${p.grant > 0 ? ' · wartet auf ' + IEgame.fmt(p.grant) : p.grant < 0 ? ' · Abzug wartet: ' + IEgame.fmt(-p.grant) : ''}`;
     const bAdm = row.querySelector('[data-a=adm]'), bBan = row.querySelector('[data-a=ban]');
     bAdm.textContent = p.admin ? 'Admin entfernen' : 'Admin geben'; bAdm.disabled = p.superAdmin || !!p.claude;
     if (p.claude) bAdm.title = 'In der claude.ai-Version: über das Teilen-Menü als „Bearbeiten“ freigeben';
@@ -209,10 +215,11 @@ function drawAdminList() {
     const act = async (what, amount) => {
       try { if (SRV()) await SRV().act(p.slug, what, amount); else await claudeAct(p.slug, what, amount); IEgame.toast('Erledigt: ' + p.nick, 2);
         if (what === 'ban' && window.IEonline && IEonline.adminKick) IEonline.adminKick(p.slug);
-        if (what === 'money' && p.slug === A.slug) A.refresh();
+        if ((what === 'money' || what === 'take') && p.slug === A.slug) A.refresh();
         await renderAdminList(); }
       catch (e) { IEgame.toast('Fehler: ' + (e.code === 'super_admin' ? 'Der Haupt-Admin kann nicht verändert werden' : e.code === 'claude_admin' ? 'Admin-Rechte vergibst du hier über das Teilen-Menü' : e.code || 'Server'), 3); }
     };
+    row.querySelector('[data-a=take]').onclick = () => { const v = Math.round(+row.querySelector('input').value || 0); if (v > 0) act('take', Math.min(v, 1e12)); };
     row.querySelector('[data-a=money]').onclick = () => { const v = Math.round(+row.querySelector('input').value || 0); if (v > 0) act('money', Math.min(v, 1e9)); };
     bAdm.onclick = () => act(p.admin ? 'unadmin' : 'admin');
     bBan.onclick = () => act(p.banned ? 'unban' : 'ban');

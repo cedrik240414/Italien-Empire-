@@ -89,6 +89,7 @@ export class Hub {
       const t = await st.get('a:' + slugOf(b.target)); if (!t) return j({ error: 'unknown_target' }, 404);
       const sup = isSuper(t.slug);
       if (b.what === 'money') { const amt = Math.round(+b.amount || 0); if (!(amt > 0 && amt <= 1e9)) return j({ error: 'bad_amount' }, 400); t.grant = Math.min(1e12, (t.grant || 0) + amt); }
+      else if (b.what === 'take') { const amt = Math.round(+b.amount || 0); if (!(amt > 0 && amt <= 1e12)) return j({ error: 'bad_amount' }, 400); t.grant = Math.max(-1e12, (t.grant || 0) - amt); }
       else if (b.what === 'admin') t.admin = true;
       else if (b.what === 'unadmin') { if (sup) return j({ error: 'super_admin' }, 403); t.admin = false; }
       else if (b.what === 'ban') { if (sup || t.slug === me.slug) return j({ error: 'super_admin' }, 403); t.banned = true; }

@@ -21,7 +21,7 @@ const opts = (() => { try { return JSON.parse(localStorage.getItem('italienEmpir
 opts.gfx = opts.gfx || (isTouch ? 'mittel' : 'hoch'); opts.fp = !!opts.fp; opts.sens = opts.sens || 1; if (opts.snd === undefined) opts.snd = true;
 const saveOpts = () => { try { localStorage.setItem('italienEmpire_opts', JSON.stringify(opts)); } catch (e) { } };
 
-const S = { money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], up: {}, skins: [], skin: '', mission: 0, char: 'jack', armor: 0, done: false };
+const S = { cheat250: false, money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], up: {}, skins: [], skin: '', mission: 0, char: 'jack', armor: 0, done: false };
 function saveGame() { store.set(S); }
 
 // ---------- Renderer ----------
@@ -182,7 +182,7 @@ const CHEATS = [
   { seq: ['RENNEN', 'RENNEN', 'E', 'E'], name: 'Gesundheit & Weste', f() { P.health = maxHP(); S.armor = 100; P.o2 = 1; } },
   { seq: ['E', 'SPRUNG', 'E', 'SPRUNG', 'ZIELEN'], name: 'Fahndung gelöscht', f() { game.wanted = 0; for (const v of IE.vehicles) if (v.police && v !== P.veh) v.removeMe = true; for (const n of IE.npcs) if (n.kind === 'police') n.remove = true; } },
   { seq: ['ZIELEN', 'SPRUNG', 'ZIELEN', 'SPRUNG', 'RENNEN'], name: '5 Sterne', f() { setWanted(5); } },
-  { seq: ['SPRUNG', 'ZIELEN', 'RENNEN', 'E', 'SPRUNG'], name: '+ 250.000 €', f() { addMoney(250000); } },
+  { seq: ['SPRUNG', 'ZIELEN', 'RENNEN', 'E', 'SPRUNG'], name: '+ 250.000 € (nur einmal)', f() { if (S.cheat250) { toast('Diesen Code kann man nur einmal benutzen', 2.5); sfx('fail'); return false; } S.cheat250 = true; addMoney(250000); saveGame(); } },
   { seq: ['SPRUNG', 'SPRUNG', 'SPRUNG', 'SPRUNG'], name: 'Supersprung', toggle: 'jump' },
   { seq: ['RENNEN', 'RENNEN', 'RENNEN', 'E'], name: 'Superschnell laufen', toggle: 'run' },
   { seq: ['WAFFE', 'E', 'WAFFE', 'E'], name: 'Unendlich Munition', toggle: 'ammo' },
@@ -210,7 +210,7 @@ function cheatInput(sym) {
 function runCheat(c) {
   if (game.state !== 'play') { toast('Starte zuerst ein Spiel', 2); return; }
   if (c.toggle) { game.ch[c.toggle] = !game.ch[c.toggle]; if (game.ch[c.toggle] && c.on) c.on(); if (!game.ch[c.toggle] && c.off) c.off(); sfx('pass'); if (c.toggle !== 'zombies') banner('Cheat ' + (game.ch[c.toggle] ? 'an' : 'aus'), c.name, '', 2.5); return; }
-  c.f(); sfx('pass'); banner('Cheat aktiviert', c.name, '', 2.5);
+  if (c.f() === false) return; sfx('pass'); banner('Cheat aktiviert', c.name, '', 2.5);
 }
 
 // ---------- Spielzustand ----------
