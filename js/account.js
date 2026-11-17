@@ -181,6 +181,7 @@ async function openAdmin() {
   $('adGod').textContent = g.game.ch && g.game.ch.god ? 'Unsterblich: An' : 'Unsterblich: Aus';
   $('adSpeed').value = g.P.flySpeed || 120; $('adSpeedV').textContent = Math.round(($('adSpeed').value) * 3.6) + ' km/h';
   drawAdminCheats();
+  drawAdminTp();
   await renderAdminList();
 }
 let adminCache = [];
@@ -223,6 +224,19 @@ $('adFly').addEventListener('click', () => { const g = IEgame; g.setFly(!g.P.fly
 $('adGod').addEventListener('click', () => { const g = IEgame; g.game.ch = g.game.ch || {}; g.game.ch.god = !g.game.ch.god; if (g.game.ch.god) g.hurtPlayer(0); $('adGod').textContent = g.game.ch.god ? 'Unsterblich: An' : 'Unsterblich: Aus'; g.toast(g.game.ch.god ? '★ Unsterblich' : 'Unsterblich aus', 2); });
 $('adSpeed').addEventListener('input', () => { const v = +$('adSpeed').value; $('adSpeedV').textContent = Math.round(v * 3.6) + ' km/h'; IEgame.P.flySpeed = v; });
 $('adYacht').addEventListener('click', () => { if (IEgame.game.state !== 'play') { IEgame.toast('Starte zuerst ein Spiel', 2); return; } IEgame.spawnAirship(); IEgame.closeModals(); });
+function drawAdminTp() {
+  const g = IEgame, box = $('adTp'), O = window.IEonline; box.innerHTML = '';
+  const peers = O && O.active ? [...O.peers.values()].filter(r => r.pr && typeof r.pr.x === 'number') : [];
+  if (!peers.length) { box.innerHTML = '<span class="hint" style="padding:0">' + (O && O.active ? 'Gerade ist niemand sonst in deiner Lobby.' : 'Geh in den Online-Modus, um dich zu Spielern zu teleportieren.') + '</span>'; return; }
+  for (const r of peers) {
+    const b = document.createElement('button'); b.className = 'btn'; b.style.cssText = 'font-size:15px;padding:6px 12px';
+    const d = Math.round(Math.hypot(r.pos.x - g.P.pos.x, r.pos.z - g.P.pos.z));
+    b.textContent = '➜ ' + (r.name || 'Spieler') + ' · ' + (d >= 1000 ? (d / 1000).toFixed(1) + ' km' : d + ' m') + (r.pr.dead ? ' (tot)' : '');
+    b.addEventListener('click', () => { const x = r.pos.x, y = r.pos.y, z = r.pos.z;
+      g.closeModals(); g.teleportTo(x, y, z); g.toast('Teleportiert zu ' + (r.name || 'Spieler'), 2); });
+    box.appendChild(b);
+  }
+}
 function drawAdminCheats() {
   const g = IEgame, box = $('adCheats'); box.innerHTML = '';
   for (const c of g.CHEATS) {

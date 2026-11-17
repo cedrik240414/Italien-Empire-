@@ -1297,6 +1297,15 @@ function exitInterior() {
   const o = P.interior; if (!o) return; P.interior = null;
   placePlayer(o.outX, o.outZ); fade();
 }
+function teleportTo(x, y, z) {
+  if (game.state !== 'play') return;
+  if (P.interior) P.interior = null;
+  leaveVehicle(); if (P.h) P.h.group.visible = true;
+  const ox = x + 2.5, oz = z + 2.5, g = IE.supportH(ox, oz, y + 2);
+  if (y - g > 4) { P.pos.set(ox, y, oz); P.vy = 0; if (!P.fly) setFly(true, P.flySpeed || 120); }
+  else placePlayer(ox, oz);
+  fade();
+}
 function fade() { const f = $('fade'); f.hidden = false; f.style.opacity = 1; setTimeout(() => { f.style.opacity = 0; }, 60); setTimeout(() => { f.hidden = true; }, 500); }
 const SHOP_ROOM = { weapon: 'armeria', car: 'autosalone', boat: 'nautica' };
 
@@ -1835,6 +1844,6 @@ function boot() {
 $('bNew').addEventListener('click', () => startGame(false));
 $('bCont').addEventListener('click', () => startGame(true));
 function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = 'italienEmpire_v1' + ACC; $('bCont').hidden = !store.get(); }
-window.IEgame = { CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
+window.IEgame = { teleportTo, CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
 boot();
 })();
