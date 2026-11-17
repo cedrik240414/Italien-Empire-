@@ -112,7 +112,18 @@ IE.shops = [
   { type: 'heli',   city: 'reggio',  dx: 60,  dz: 50 },
   { type: 'luxury', city: 'neapel',  dx: -160, dz: -70 },
   { type: 'luxury', city: 'mailand', dx: 130, dz: 130 },
-  { type: 'luxury', city: 'rom',     dx: 160, dz: -60 }
+  { type: 'luxury', city: 'rom',     dx: 160, dz: -60 },
+  // eigene Geschäfte (kaufen -> passives Einkommen)
+  { type: 'biz', id: 'b_nap_pizza',  biz: 'pizzeria',   city: 'neapel',  dx: 120,  dz: 120 },
+  { type: 'biz', id: 'b_nap_rist',   biz: 'ristorante', city: 'neapel',  dx: -40,  dz: 150 },
+  { type: 'biz', id: 'b_rom_rist',   biz: 'ristorante', city: 'rom',     dx: -40,  dz: -150 },
+  { type: 'biz', id: 'b_rom_hotel',  biz: 'hotel',      city: 'rom',     dx: 60,   dz: -150 },
+  { type: 'biz', id: 'b_mil_club',   biz: 'nightclub',  city: 'mailand', dx: -160, dz: -40 },
+  { type: 'biz', id: 'b_flo_gelato', biz: 'gelateria',  city: 'florenz', dx: -60,  dz: -80 },
+  { type: 'biz', id: 'b_pal_werk',   biz: 'werkstatt',  city: 'palermo', dx: -120, dz: -60 },
+  { type: 'biz', id: 'b_bol_pizza',  biz: 'pizzeria',   city: 'bologna', dx: -60,  dz: -60 },
+  { type: 'biz', id: 'b_ven_hotel',  biz: 'hotel',      city: 'venedig', dx: 60,   dz: -60 },
+  { type: 'biz', id: 'b_gen_rist',   biz: 'ristorante', city: 'genua',   dx: 60,   dz: 60 }
 ];
 
 IE.weapons = [
@@ -157,6 +168,14 @@ IE.cars = [
   { id: 'jeep',     name: 'Militärjeep',     price: 0, speed: 44, accel: 18, grip: 2.5, color: 0x4f5a34, kind: 'suv', military: true },
   { id: 'panzer',   name: 'Carro Armato (Panzer)', price: 0, speed: 17, accel: 7, grip: 2.6, color: 0x55603a, kind: 'tank', military: true }
 ];
+IE.bizDefs = {
+  pizzeria:   { name: 'Pizzeria',          price: 150000,  inc: 3000,  color: 0x2e8b57, sign: '#2e8b57' },
+  gelateria:  { name: 'Gelateria',         price: 120000,  inc: 2400,  color: 0xf2a6c8, sign: '#d0569a' },
+  ristorante: { name: 'Ristorante',        price: 400000,  inc: 7000,  color: 0x8a2a1e, sign: '#8a2a1e' },
+  werkstatt:  { name: 'Autowerkstatt',     price: 500000,  inc: 8500,  color: 0x3a6fb0, sign: '#1f4fb0' },
+  nightclub:  { name: 'Nachtclub',         price: 1200000, inc: 20000, color: 0x5a1a7a, sign: '#7a2aa8' },
+  hotel:      { name: 'Hotel',             price: 3000000, inc: 45000, color: 0xd9b45a, sign: '#b8902e' }
+};
 IE.carColors = [0xd33a2c, 0x2a3b5c, 0xe8e4da, 0x1a1a1a, 0x7c8a8e, 0x3e6b8a, 0xa8382c, 0xf0d24a, 0x5b6a3a, 0x2e6b4f, 0xc77d2e, 0x9fc3c9];
 
 IE.boats = [
@@ -194,9 +213,16 @@ IE.villas = [
   { id: 'v5', name: 'Villa del Golfo',  x: 630, z: 121, side: 'n', price: 6500000 },
   { id: 'v6', name: 'Villa Imperiale',  x: 705, z: 117, side: 'n', price: 9500000, big: true }
 ];
-for (const v of IE.villas) v.s = v.big ? 2 : 1.6;
+IE.villas.push(
+  { id: 'm1', name: 'Villa Lago di Como',     x: -926,  z: -1720, h: 45, side: 'n', price: 28000000, mega: true },
+  { id: 'm2', name: 'Tenuta Toscana',         x: -416,  z: -440,  h: 7,  side: 'n', price: 22000000, mega: true },
+  { id: 'm3', name: 'Villa Calabria',         x: 1290,  z: 1128,  h: 10, side: 'n', price: 35000000, mega: true },
+  { id: 'm4', name: 'Palazzo Taormina',       x: 557,   z: 1652,  h: 33, side: 'n', price: 30000000, mega: true },
+  { id: 'm5', name: 'Villa Portofino',        x: -773,  z: -1116, h: 19, side: 'n', price: 40000000, mega: true },
+  { id: 'm6', name: 'Villa sul Garda',        x: -303,  z: -1232, h: 7,  side: 'n', price: 25000000, mega: true });
+for (const v of IE.villas) v.s = v.mega ? 3 : v.big ? 2 : 1.6;
 for (let i = 7; i < IE.villaRoad.length; i++) { const a = IE.villaRoad[i - 1], b = IE.villaRoad[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 3, hd: Math.abs(b[1] - a[1]) / 2 + 6, h: IE.villaRoadH, f: 16, small: true }); }
-for (const v of IE.villas) IE.flatZones.push({ x: v.x, z: v.z + 1.25 * v.s, hw: 10 * v.s + 3, hd: 9.25 * v.s + 3, h: IE.villaRoadH + 1.5, f: 20, small: true });
+for (const v of IE.villas) IE.flatZones.push({ x: v.x, z: v.z + (v.mega ? 3 : 1.25 * v.s), hw: v.mega ? 62 : 10 * v.s + 3, hd: v.mega ? 36 : 9.25 * v.s + 3, h: v.h !== undefined ? v.h : IE.villaRoadH + 1.5, f: v.mega ? 30 : 20, small: true });
 IE.planes = [
   { id: 'piccolo',  name: 'Piccolo 172 (Propeller)', price: 0,       speed: 62,  minSpeed: 22, turn: 1.0, color: 0xf2f2ee, accent: 0xc8372d, kind: 'prop' },
   { id: 'acrobata', name: 'Acrobata (Kunstflug)',    price: 180000,  speed: 85,  minSpeed: 24, turn: 1.8, color: 0xd12b2b, accent: 0xf2f2f2, kind: 'stunt' },
@@ -207,7 +233,7 @@ IE.planes = [
   { id: 'freccia',  name: 'Freccia Tricolore (Kunstflug-Jet)', price: 780000, speed: 140, minSpeed: 38, turn: 1.9, color: 0x1f4fb0, accent: 0xf2f2f2, kind: 'fighter' },
   { id: 'anfibio',  name: 'Anfibio Grande',          price: 420000,  speed: 82,  minSpeed: 26, turn: 0.9, color: 0xc8372d, accent: 0xf2f2ee, kind: 'sea' },
   { id: 'jetxl',    name: 'Jet Executive XL',        price: 2400000, speed: 175, minSpeed: 45, turn: 0.85, color: 0x1a1a1a, accent: 0xd9b45a, kind: 'jet' },
-  { id: 'caccia',   name: 'Caccia (Kampfjet)',       price: 0,       speed: 190, minSpeed: 45, turn: 1.4, color: 0x7b8590, accent: 0x4a5236, kind: 'fighter', armed: true, military: true }
+  { id: 'caccia',   name: 'Caccia (Kampfjet)',       price: 3500000,       speed: 190, minSpeed: 45, turn: 1.4, color: 0x7b8590, accent: 0x4a5236, kind: 'fighter', armed: true, military: true }
 ];
 IE.planeById = {}; IE.planes.forEach(p => IE.planeById[p.id] = p);
 

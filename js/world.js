@@ -739,6 +739,29 @@ function buildShops(scene) {
                 bx + ext * (Math.abs(az) > 0.7 ? bw / (2 * ext) : bd / (2 * ext)), bz + ext * (Math.abs(az) > 0.7 ? bd / (2 * ext) : bw / (2 * ext)), y + bh);
       s.marker = marker(scene, s.x, y, s.z, lux ? 0xd6b04a : s.type === 'car' ? 0x3aa0ff : 0xff4a3a);
       s.spawn = { x: s.x - az * 9, z: s.z + ax * 9, rot: rot + Math.PI / 2 };
+    } else if (s.type === 'biz') {
+      const D = IE.bizDefs[s.biz], big = s.biz === 'hotel', bw = big ? 22 : 16, bd = big ? 16 : 12, bh = big ? 18 : 7;
+      const bx = s.x + ax * (bd / 2 + 5), bz = s.z + az * (bd / 2 + 5), rot = Math.atan2(ax, az);
+      add(scene, new T.BoxGeometry(bw, bh, bd), new T.MeshLambertMaterial({ color: 0xf1e7d4 }), bx, y + bh / 2 - 0.3, bz, rot);
+      add(scene, new T.BoxGeometry(bw + 0.4, 0.5, bd + 0.4), new T.MeshLambertMaterial({ color: D.color }), bx, y + bh - 0.05, bz, rot);
+      // Markise + Fenster
+      add(scene, new T.BoxGeometry(bw - 1, 0.25, 2.4), new T.MeshLambertMaterial({ color: D.color }), bx - ax * (bd / 2 + 1.1), y + 3.3, bz - az * (bd / 2 + 1.1), rot);
+      add(scene, new T.BoxGeometry(bw - 3, 2.2, 0.2), IE.mat.glass, bx - ax * (bd / 2 + 0.05), y + 1.6, bz - az * (bd / 2 + 0.05), rot);
+      if (big) for (let f = 1; f < 5; f++) add(scene, new T.BoxGeometry(bw - 2, 1.6, 0.2), IE.mat.glass, bx - ax * (bd / 2 + 0.05), y + 3.5 + f * 3.2, bz - az * (bd / 2 + 0.05), rot);
+      const sg = new T.Mesh(new T.PlaneGeometry(bw * 0.75, bw * 0.75 / 4), new T.MeshBasicMaterial({ map: signTex(D.name.toUpperCase(), D.sign, '#ffffff') }));
+      sg.position.set(bx - ax * (bd / 2 + 0.12), y + (big ? bh - 2 : 5), bz - az * (bd / 2 + 0.12)); sg.rotation.y = rot + Math.PI; scene.add(sg);
+      // Tische draußen (Gastro)
+      if (['pizzeria', 'ristorante', 'gelateria'].includes(s.biz)) for (const k of [-1, 1]) {
+        const tx = s.x + az * k * 5 + ax * 1.5, tz = s.z - ax * k * 5 + az * 1.5;
+        add(scene, new T.CylinderGeometry(0.7, 0.7, 0.08, 12), IE.mat.white, tx, y + 0.8, tz, 0, false);
+        add(scene, new T.CylinderGeometry(0.06, 0.06, 0.8, 6), IE.mat.dark, tx, y + 0.4, tz, 0, false);
+        add(scene, new T.ConeGeometry(1.6, 0.8, 10), new T.MeshLambertMaterial({ color: D.color }), tx, y + 2.6, tz, 0, false);
+        add(scene, new T.CylinderGeometry(0.05, 0.05, 2.4, 6), IE.mat.white, tx, y + 1.4, tz, 0, false);
+      }
+      const ext = Math.max(bw, bd) / 2;
+      IE.addBox(bx - ext * (Math.abs(az) > 0.7 ? bw / (2 * ext) : bd / (2 * ext)), bz - ext * (Math.abs(az) > 0.7 ? bd / (2 * ext) : bw / (2 * ext)),
+                bx + ext * (Math.abs(az) > 0.7 ? bw / (2 * ext) : bd / (2 * ext)), bz + ext * (Math.abs(az) > 0.7 ? bd / (2 * ext) : bw / (2 * ext)), y + bh);
+      s.marker = marker(scene, s.x, y, s.z, 0x48e07a);
     } else if (s.type === 'boat') {
       buildHarbor(scene, s);
       continue;

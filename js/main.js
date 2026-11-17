@@ -21,7 +21,7 @@ const opts = (() => { try { return JSON.parse(localStorage.getItem('italienEmpir
 opts.gfx = opts.gfx || (isTouch ? 'mittel' : 'hoch'); opts.fp = !!opts.fp; opts.sens = opts.sens || 1; if (opts.snd === undefined) opts.snd = true;
 const saveOpts = () => { try { localStorage.setItem('italienEmpire_opts', JSON.stringify(opts)); } catch (e) { } };
 
-const S = { cheat250: false, villas: [], money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], up: {}, skins: [], skin: '', mission: 0, char: 'jack', armor: 0, done: false };
+const S = { cheat250: false, villas: [], biz: {}, guards: 0, guardsOn: true, money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], up: {}, skins: [], skin: '', mission: 0, char: 'jack', armor: 0, done: false };
 function saveGame() { store.set(S); }
 
 // ---------- Renderer ----------
@@ -503,7 +503,7 @@ function playerShoot(dt) {
     d.x += (Math.random() - 0.5) * sp * 2; d.y += (Math.random() - 0.5) * sp * 2; d.z += (Math.random() - 0.5) * sp * 2; d.normalize();
     let bestT = IE.rayBoxes(ray.o, d, w.range + skip), hitN = null, hitV = null, head = false;
     for (const n of IE.npcs) {
-      if (n.dead) continue;
+      if (n.dead || n.kind === 'guard') continue;
       for (const [hy, r, hd] of [[1.2, 0.42, false], [1.76, 0.2, true]]) {
         const cx = n.pos.x - ray.o.x, cy = n.pos.y + hy - ray.o.y, cz = n.pos.z - ray.o.z;
         const tc = cx * d.x + cy * d.y + cz * d.z; if (tc < skip || tc > bestT) continue;
@@ -793,6 +793,7 @@ function updatePlayer(dt) {
 function npcUpdate(n, dt) {
   const dp = n.pos.distanceTo(P.pos);
   if (n.dead) { n.deadT += dt; if (n.zombify && game.ch.zombies && n.deadT > n.zombify) { n.zombify = 0; n.remove = true; IE.spawnNPC(scene, 'zombie', n.pos.x, n.pos.z); } if (n.deadT > 25 || (dp > 200 && !n.mission)) n.remove = true; return; }
+  if (n.kind === 'guard') { if (IE.guardUpdate) IE.guardUpdate(n, dt); return; }
   if (dp > (n.keep ? 900 : 330) && !n.mission) { n.remove = true; return; }
   if (dp > 260) { n.group.visible = false; return; } n.group.visible = true;
   let mvx = 0, mvz = 0, spd = 0, aim = false;
@@ -1364,7 +1365,7 @@ function renderShop() {
     row('Erste-Hilfe-Set', `Gesundheit ${Math.round(P.health)} / ${maxHP()}`, [{ t: 'Kaufen · € 500', buy: true, dis: S.money < 500 || P.health >= maxHP(), f: () => { S.money -= 500; P.health = maxHP(); sfx('cash'); } }]);
   } else if (s.type === 'plane') {
     $('shopT').textContent = 'Hangar Moretti · Flughafen'; $('shopHint').textContent = 'Steuerung: Leertaste / GAS + = Schub, Shift / GAS − = weniger Schub. Joystick bzw. W/S = Nase hoch/runter, A/D = Kurve. Zum Starten auf die Startbahn rollen, Vollgas geben und ab Abhebegeschwindigkeit hochziehen.';
-    for (const pl of IE.planes.filter(p => !p.military)) {
+    for (const pl of IE.planes.filter(p => !p.military || p.price > 0 || S.planes.includes(p.id))) {
       const own = S.planes.includes(pl.id);
       row(pl.name, `Höchstgeschwindigkeit ${Math.round(pl.speed * 3.6)} km/h · Abheben ab ${Math.round(pl.minSpeed * 3.6)} km/h${pl.kind === 'sea' ? ' · landet auch auf Wasser' : ''}`, own ?
         [{ t: 'Auswählen', buy: true, f: () => { spawnOwnedPlane(pl.id, s); closeModals(); } }] :
@@ -1387,9 +1388,22 @@ function renderShop() {
         [{ t: 'Abholen', buy: true, f: () => { spawnOwnedCar(c.id, s); closeModals(); } }] :
         [{ t: 'Kaufen · ' + fmt(c.price), buy: true, dis: S.money < c.price, f: () => { S.money -= c.price; S.cars.push(c.id); sfx('cash'); spawnOwnedCar(c.id, s); closeModals(); toast(c.name + ' gekauft!'); } }], c.color);
     }
+  } else if (s.type === 'biz') {
+    const D = IE.bizDefs[s.biz]; S.biz = S.biz || {}; const b = S.biz[s.id];
+    $('shopT').textContent = D.name + ' · ' + city;
+    const inc = lv => Math.round(D.inc * (1 + 0.5 * (lv - 1)));
+    if (!b) {
+      $('shopHint').textContent = 'Eigene Geschäfte bringen dir Geld, solange du spielst. Die Einnahmen sammeln sich in der Kasse (bis zu 2 Stunden) – komm vorbei und leere sie.';
+      row('Geschäft kaufen', `Einnahmen ca. ${fmt(inc(1))} pro Minute`, [{ t: 'Kaufen · ' + fmt(D.price), buy: true, dis: S.money < D.price, f: () => { S.money -= D.price; S.biz[s.id] = { lv: 1, cash: 0 }; sfx('cash'); toast('Glückwunsch – das ' + D.name + ' gehört jetzt dir!', 3); } }], D.color);
+    } else {
+      $('shopHint').textContent = 'Dein Geschäft verdient ' + fmt(inc(b.lv)) + ' pro Minute, solange du spielst. Die Kasse fasst bis zu 2 Stunden Einnahmen.';
+      row('Kasse', `${fmt(Math.floor(b.cash))} warten auf dich`, [{ t: 'Kasse leeren', buy: true, dis: b.cash < 1, f: () => { addMoney(Math.floor(b.cash)); b.cash = 0; sfx('cash'); } }], D.color);
+      const upc = Math.round(D.price * 0.5 * b.lv);
+      row('Ausbau · Stufe ' + b.lv + (b.lv >= 5 ? ' (Maximum)' : ''), b.lv >= 5 ? `Einnahmen ${fmt(inc(b.lv))} pro Minute` : `Nächste Stufe: ${fmt(inc(b.lv + 1))} pro Minute`, b.lv >= 5 ? [] : [{ t: 'Ausbauen · ' + fmt(upc), buy: true, dis: S.money < upc, f: () => { S.money -= upc; b.lv++; sfx('cash'); } }]);
+    }
   } else {
     $('shopT').textContent = 'Eliporto · ' + city; $('shopHint').textContent = 'Gekaufte Helikopter kannst du an jedem Helikopterplatz spawnen. HOCH/RUNTER (Leertaste/Shift) zum Steigen und Sinken.';
-    for (const h of IE.helis.filter(h => !h.military)) {
+    for (const h of IE.helis.filter(h => !h.military || S.helis.includes(h.id))) {
       const own = S.helis.includes(h.id);
       row(h.name, `Höchstgeschwindigkeit ${Math.round(h.speed * 3.6)} km/h · Steigrate ${h.climb} m/s`, own ?
         [{ t: 'Spawnen', buy: true, f: () => { spawnOwnedHeli(h.id, s); closeModals(); } }] :
@@ -1442,8 +1456,8 @@ function buildMapCanvas() {
 }
 const w2m = (x, z) => ({ x: (x - IE.grid.x0) * MAP.s, y: (z - IE.grid.z0) * MAP.s });
 function icon(g, x, y, kind, size) {
-  const col = { luxury: '#d6b04a', race: '#ff4fd8', villa: '#d9b45a', villaOwn: '#48e07a', gas: '#ff9a3c', plane: '#f2c230', weapon: '#e94b3c', car: '#3aa0ff', heli: '#48e07a', boat: '#35d6e8', base: '#a9c25a', wreck: '#f2c94c', wreckGot: '#6b6b6b', mission: '#f2c230', wp: '#ff5fd2', target: '#f2c230' }[kind];
-  const ch = { luxury: '€', race: 'R', villa: 'V', villaOwn: '⌂', gas: 'T', plane: '✈', weapon: 'W', car: 'A', heli: 'H', boat: 'B', base: '✪', wreck: '$', wreckGot: '$', mission: 'M', wp: '•', target: '★' }[kind];
+  const col = { biz: '#48e07a', bizOwn: '#48e07a', luxury: '#d6b04a', race: '#ff4fd8', villa: '#d9b45a', villaOwn: '#48e07a', gas: '#ff9a3c', plane: '#f2c230', weapon: '#e94b3c', car: '#3aa0ff', heli: '#48e07a', boat: '#35d6e8', base: '#a9c25a', wreck: '#f2c94c', wreckGot: '#6b6b6b', mission: '#f2c230', wp: '#ff5fd2', target: '#f2c230' }[kind];
+  const ch = { biz: '♦', bizOwn: '♦', luxury: '€', race: 'R', villa: 'V', villaOwn: '⌂', gas: 'T', plane: '✈', weapon: 'W', car: 'A', heli: 'H', boat: 'B', base: '✪', wreck: '$', wreckGot: '$', mission: 'M', wp: '•', target: '★' }[kind];
   g.fillStyle = '#111'; g.beginPath(); g.arc(x, y, size, 0, 7); g.fill(); g.strokeStyle = col; g.lineWidth = Math.max(1.5, size * 0.22); g.stroke();
   g.fillStyle = col; g.font = `bold ${size * 1.15}px Barlow Condensed, Arial`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(ch, x, y + 0.5);
 }
@@ -1480,7 +1494,7 @@ function drawMini() {
   { const p = toScr(IE.base.x, IE.base.z); if (p) icon(g, p.x, p.y, 'base', 15); }
   if (IE.mapPOIs) for (const o of IE.mapPOIs()) { const p = toScr(o.x, o.z); if (p) icon(g, p.x, p.y, o.kind, 11); }
   for (const w of IE.wrecks) { const p = toScr(w.x, w.z); if (p) icon(g, p.x, p.y, w.got ? 'wreckGot' : 'wreck', 11); }
-  for (const n of IE.npcs) if (!n.dead && (n.kind !== 'ped')) { const p = toScr(n.pos.x, n.pos.z); if (p) { g.fillStyle = n.kind === 'police' ? '#3a7bff' : '#ff3b30'; g.beginPath(); g.arc(p.x, p.y, 6, 0, 7); g.fill(); } }
+  for (const n of IE.npcs) if (!n.dead && (n.kind !== 'ped') && n.group.visible !== false) { const p = toScr(n.pos.x, n.pos.z); if (p) { g.fillStyle = n.kind === 'guard' ? '#48e07a' : n.kind === 'police' ? '#3a7bff' : '#ff3b30'; g.beginPath(); g.arc(p.x, p.y, 6, 0, 7); g.fill(); } }
   for (const v of IE.vehicles) if (!v.dead && (v.police || v.hostile)) { const p = toScr(v.pos.x, v.pos.z); if (p) { const on = (performance.now() / 250 | 0) % 2; g.fillStyle = v.police ? (on ? '#3a7bff' : '#ff3b30') : '#ff3b30'; g.fillRect(p.x - 6, p.y - 6, 12, 12); } }
   const mt = missionTarget(); if (mt) { const p = toScr(mt.x, mt.z, true); icon(g, p.x, p.y, mission.active ? 'target' : 'mission', 16); }
   if (ONL()) for (const r of IEonline.peers.values()) { const p = toScr(r.pos.x, r.pos.z, true); g.fillStyle = r.pr && r.pr.pa ? '#9aa' : '#48e07a'; g.strokeStyle = '#000'; g.lineWidth = 3; g.beginPath(); g.arc(p.x, p.y, 9, 0, 7); g.stroke(); g.fill(); }
@@ -1512,7 +1526,7 @@ function drawBig() {
   const sz = Math.min(1.6, 0.8 + MV.zoom * 0.2);
   g.font = `600 ${13 * dpr * sz}px Barlow Condensed, Arial`;
   for (const c of IE.cities) { const p = w2m(c.x, c.z); g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.fillStyle = '#000'; g.fillText(c.name, tx(p.x) + 9 * dpr + 1, ty(p.y) - 6 * dpr + 1); g.fillStyle = '#fff'; g.fillText(c.name, tx(p.x) + 9 * dpr, ty(p.y) - 6 * dpr); g.font = `600 ${13 * dpr * sz}px Barlow Condensed, Arial`; }
-  const off = { luxury: [1, 1], weapon: [-1, 0], car: [1, 0], heli: [0, 1], boat: [0, -1], plane: [0, 0] };
+  const off = { biz: [-1, 1], luxury: [1, 1], weapon: [-1, 0], car: [1, 0], heli: [0, 1], boat: [0, -1], plane: [0, 0] };
   for (const s of IE.shops) { const p = w2m(s.mx, s.mz); const o = MV.zoom < 2.5 ? off[s.type] : [0, 0]; icon(g, tx(p.x) + o[0] * 10 * dpr, ty(p.y) + o[1] * 10 * dpr, s.type, 6 * dpr * sz); }
   { const p = w2m(IE.base.x, IE.base.z); icon(g, tx(p.x), ty(p.y), 'base', 9 * dpr * sz); g.fillStyle = '#d9e8a8'; g.textAlign = 'left'; g.fillText('Militärbasis', tx(p.x) + 12 * dpr, ty(p.y) + 4 * dpr); }
   for (const wr of IE.wrecks) { const p = w2m(wr.x, wr.z); icon(g, tx(p.x), ty(p.y), wr.got ? 'wreckGot' : 'wreck', 5.5 * dpr * sz); }
@@ -1523,7 +1537,7 @@ function drawBig() {
   g.save(); g.translate(tx(p.x), ty(p.y)); g.rotate(-P.yaw + Math.PI); g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = 2 * dpr;
   g.beginPath(); g.moveTo(0, -9 * dpr); g.lineTo(7 * dpr, 7 * dpr); g.lineTo(0, 3 * dpr); g.lineTo(-7 * dpr, 7 * dpr); g.closePath(); g.stroke(); g.fill(); g.restore();
   // Legende
-  const items = [['race', 'Rennstrecke'], ['villa', 'Villa (kaufbar)'], ['gas', 'Tankstelle'], ['plane', 'Flughafen & Hangar'], ['weapon', 'Waffenladen'], ['car', 'Autohaus'], ['luxury', 'Luxus-Autohaus'], ['heli', 'Helikopterplatz'], ['boat', 'Bootsladen & Hafen'], ['base', 'Militärbasis'], ['wreck', 'Schiffswrack (tauchen)'], ['mission', 'Mission'], ['wp', 'Wegpunkt']];
+  const items = [['race', 'Rennstrecke'], ['villa', 'Villa (kaufbar)'], ['gas', 'Tankstelle'], ['plane', 'Flughafen & Hangar'], ['weapon', 'Waffenladen'], ['car', 'Autohaus'], ['luxury', 'Luxus-Autohaus'], ['biz', 'Geschäft (kaufbar)'], ['heli', 'Helikopterplatz'], ['boat', 'Bootsladen & Hafen'], ['base', 'Militärbasis'], ['wreck', 'Schiffswrack (tauchen)'], ['mission', 'Mission'], ['wp', 'Wegpunkt']];
   g.fillStyle = 'rgba(13,15,19,0.7)'; g.fillRect(6 * dpr, 6 * dpr, 160 * dpr, (items.length * 20 + 10) * dpr);
   items.forEach((it, i) => { icon(g, 20 * dpr, (20 + i * 20) * dpr, it[0], 7 * dpr); g.fillStyle = '#fff'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = `600 ${13 * dpr}px Barlow Condensed, Arial`; g.fillText(it[1], 34 * dpr, (21 + i * 20) * dpr); });
   $('mapZoom').textContent = MV.zoom.toFixed(1) + '×';
@@ -1702,7 +1716,7 @@ function updateHUD(dt) {
     }
     else if (!P.veh) {
       const s = nearestShop();
-      if (s) pr = `<b>E</b> · ${s.type === 'weapon' ? 'Waffenladen betreten' : s.type === 'car' ? 'Autohaus betreten' : s.type === 'luxury' ? 'Luxus-Autohaus betreten' : s.type === 'boat' ? 'Bootsladen betreten' : s.type === 'plane' ? 'Hangar: Flugzeug wählen' : 'Helikopterplatz'}`;
+      if (s) pr = `<b>E</b> · ${s.type === 'weapon' ? 'Waffenladen betreten' : s.type === 'car' ? 'Autohaus betreten' : s.type === 'luxury' ? 'Luxus-Autohaus betreten' : s.type === 'biz' ? (S.biz && S.biz[s.id] ? 'Dein Geschäft: ' + IE.bizDefs[s.biz].name + ' (Kasse: ' + fmt(Math.floor(S.biz[s.id].cash)) + ')' : IE.bizDefs[s.biz].name + ' kaufen · ' + fmt(IE.bizDefs[s.biz].price)) : s.type === 'boat' ? 'Bootsladen betreten' : s.type === 'plane' ? 'Hangar: Flugzeug wählen' : 'Helikopterplatz'}`;
       else { for (const v of IE.vehicles) if (!v.dead && vehDist(v) < vehReach(v)) { pr = v.type === 'airship' ? '<b>F</b> · Ans Steuer der Flug-Yacht' : `<b>F</b> · Einsteigen: ${v.def.name}`; break; }
       if (!pr && P.ride) pr = '<b>F</b> · Aussteigen (Beifahrer)';
       if (!pr && !P.ride && ONL() && IEonline.nearCarPeer && IEonline.nearCarPeer(P.pos)) pr = '<b>F</b> · Als Beifahrer einsteigen bei ' + IEonline.nearCarPeer(P.pos).name;
@@ -1881,6 +1895,6 @@ function boot() {
 $('bNew').addEventListener('click', () => startGame(false));
 $('bCont').addEventListener('click', () => startGame(true));
 function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = 'italienEmpire_v1' + ACC; $('bCont').hidden = !store.get(); }
-window.IEgame = { enterInterior, exitInterior, putInVehicle, setWanted, maxHP, placePlayer, teleportTo, CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
+window.IEgame = { damageNPC, tracer, flash, enterInterior, exitInterior, putInVehicle, setWanted, maxHP, placePlayer, teleportTo, CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
 boot();
 })();

@@ -240,6 +240,24 @@ function buildGas(scene) {
 }
 
 // ================= VILLEN =================
+function megaExtras(g, s, v, y) {
+  for (const sx of [-1, 1]) { IE.addBox(v.x + sx * 13 * s - 3 * s, v.z - 8.5 * s, v.x + sx * 13 * s + 3 * s, v.z + 0.5 * s, y + 9.5); IE.addBox(v.x + sx * 15.5 * s - 3.3, v.z - 8 * s - 3.3, v.x + sx * 15.5 * s + 3.3, v.z - 8 * s + 3.3, y + 21); }
+  // dritte Etage, Seitenflügel mit Türmen, Springbrunnen, Hubschrauberlandeplatz, Tennisplatz
+  box(10 * s, 4.5, 6 * s, IE.mat.white, -1.5 * s, 13.6, -4.5 * s, g); box(11 * s, 0.5, 7 * s, IE.mat.terracotta, -1.5 * s, 16.1, -4.5 * s, g);
+  for (let k = -1; k <= 1; k++) box(2.2 * s, 2.8, 0.1, IE.mat.glass, k * 2.6 * s - 1.5 * s, 13.6, -1.45 * s, g);
+  for (const sx of [-1, 1]) {
+    box(6 * s, 9, 9 * s, IE.mat.white, sx * 13 * s, 4.5, -4 * s, g); box(6.6 * s, 0.5, 9.6 * s, IE.mat.terracotta, sx * 13 * s, 9.2, -4 * s, g);
+    const tw = new T.Mesh(new T.CylinderGeometry(2.2 * s / 2, 2.2 * s / 2, 16, 16), IE.mat.white); tw.position.set(sx * 15.5 * s, 8, -8 * s); g.add(tw);
+    const cap = new T.Mesh(new T.ConeGeometry(2.6 * s / 2, 5, 16), IE.mat.terracotta); cap.position.set(sx * 15.5 * s, 18.5, -8 * s); g.add(cap);
+    for (let k = -1; k <= 1; k++) box(1.8 * s, 3, 0.1, IE.mat.glass, sx * 13 * s + k * 1.8 * s, 3, 0.55 * s, g);
+  }
+  const fb = new T.Mesh(new T.CylinderGeometry(3 * s / 2, 3.4 * s / 2, 0.8, 24), IE.mat.marble); fb.position.set(-7 * s, 0.4, 9 * s); g.add(fb);
+  const fw = new T.Mesh(new T.CylinderGeometry(2.6 * s / 2, 2.6 * s / 2, 0.2, 24), new T.MeshStandardMaterial({ color: 0x3ec5e0, roughness: 0.1 })); fw.position.set(-7 * s, 0.85, 9 * s); g.add(fw);
+  const fc = new T.Mesh(new T.CylinderGeometry(0.4, 0.6, 3, 10), IE.mat.marble); fc.position.set(-7 * s, 1.5, 9 * s); g.add(fc);
+  const pad = new T.Mesh(new T.CylinderGeometry(7, 7, 0.3, 28), new T.MeshLambertMaterial({ color: 0x5a5c60 })); pad.position.set(16 * s, 0.2, 8 * s); g.add(pad);
+  const hm = new T.Mesh(new T.PlaneGeometry(5, 6), new T.MeshBasicMaterial({ color: 0xf2f2ee })); hm.rotation.x = -Math.PI / 2; hm.position.set(16 * s, 0.37, 8 * s); g.add(hm);
+  box(10, 0.1, 18, new T.MeshLambertMaterial({ color: 0x3a6fb0 }), -14 * s, 0.1, 7 * s, g); box(10, 1, 0.1, IE.mat.white, -14 * s, 0.5, 7 * s, g);
+}
 const villaSigns = {};
 function buildVillas(scene) {
   const road = openPolyline(IE.villaRoad, 3); withDirs(road, false);
@@ -253,7 +271,8 @@ function buildVillas(scene) {
     for (let k = 0; k < 6; k++) { const l = box(0.4, 0.15, 3.2 * s, new T.MeshLambertMaterial({ color: 0x3f7a35 }), 0, 6 * s, 1.4 * s, null); const pv = new T.Group(); pv.position.y = 0; pv.rotation.y = k / 6 * Math.PI * 2; l.rotation.x = 0.35; pv.add(l); g.add(pv); } };
   const roofMat = new T.MeshLambertMaterial({ color: 0xb75a32 }), poolMat = new T.MeshStandardMaterial({ color: 0x3ec5e0, roughness: 0.1, metalness: 0.2 });
   for (const v of IE.villas) {
-    const y = IE.villaRoadH + 1.5, s = v.s, g = new T.Group(); g.position.set(v.x, y, v.z); scene.add(g);
+    const y = v.h !== undefined ? v.h : IE.villaRoadH + 1.5, s = v.s, g = new T.Group(); g.position.set(v.x, y, v.z); scene.add(g);
+    if (v.mega) megaExtras(g, s, v, y);
     // Hauptgebäude: 2 Etagen + Dachterrasse, Front (Glas) Richtung Meer (+z)
     box(18 * s, 6, 10 * s, IE.mat.white, 0, 3, -3 * s, g);
     box(14 * s, 5, 8 * s, IE.mat.white, -1.5 * s, 8.5, -4 * s, g);
@@ -365,7 +384,9 @@ let rob = null; // laufender Überfall
 const ONL = () => window.IEonline && IEonline.active;
 const myName = () => (window.IEaccount && IEaccount.nick) || 'Du';
 const fmtT = t => { const m = Math.floor(t / 60), s = t - m * 60; return m + ':' + (s < 10 ? '0' : '') + s.toFixed(1); };
-const PRIZE = [60000, 30000, 15000, 7500];
+const PRIZE_TOP = { 1: 30000, 2: 500000, 3: 700000, 4: 1000000 }; // Siegprämie nach Anzahl echter Fahrer (1 = Solo gegen KI)
+const PLACE_SHARE = [1, 0.3, 0.15, 0.05];
+const prizeFor = (n, place) => Math.round(PRIZE_TOP[Math.max(1, Math.min(4, n))] * PLACE_SHARE[Math.min(place - 1, 3)]);
 
 // Fortschritt auf der Strecke
 function trackIdx(x, z, hint) {
@@ -413,7 +434,7 @@ function startCountdown(laps) {
 function raceEmit(d) { if (ONL() && IEonline.raceEmit) IEonline.raceEmit(Object.assign({ id: R ? R.id : d.id }, d)); }
 function finishMe() {
   const g = G(); R.fin = true; R.state = 'done'; R.myTime = (performance.now() - R.t0) / 1000; R.finCount++; R.finRank = R.finCount;
-  const place = R.finRank, prize = PRIZE[Math.min(place - 1, 3)] * (R.solo ? 0.5 : 1);
+  const place = R.finRank, prize = prizeFor(R.solo ? 1 : R.n, place);
   g.addMoney(prize); g.banner(place === 1 ? 'Sieg!' : 'Im Ziel', 'Platz ' + place, fmtT(R.myTime) + ' · + ' + g.fmt(prize), 5); g.sfx('pass');
   raceEmit({ t: 'fin', name: myName(), time: R.myTime });
   setTimeout(() => { if (R && R.state === 'done') endRace(); }, 15000);
@@ -433,6 +454,12 @@ function updateRace(dt) {
     if (!P.veh || P.veh !== R.car || P.veh.dead) return endRace('Rennen abgebrochen – du hast dein Auto verlassen');
     const t = trackIdx(P.veh.pos.x, P.veh.pos.z, R.idx);
     if (t.d > 160) return endRace('Rennen abgebrochen – zu weit von der Strecke');
+    // auf der Strecke bleiben: neben der Strecke bremsen, nach 3 s zurücksetzen
+    if (t.d > TW + 3.5 && !P.veh.loop) {
+      R.offT = (R.offT || 0) + dt; const v = P.veh; if (v.speed > 11) v.speed -= (v.speed - 11) * Math.min(1, dt * 3);
+      if (!R.offWarn) { R.offWarn = true; g.toast('Zurück auf die Strecke!', 2); g.sfx('fail'); }
+      if (R.offT > 3) { const q = IE.trackPts[R.idx]; v.pos.set(q.x, IE.groundH(q.x, q.z) + 0.05, q.z); v.yaw = Math.atan2(q.dx, q.dz); v.speed = 0; v.pitch = v.roll = 0; v.group.position.copy(v.pos); v.group.rotation.set(0, v.yaw, 0); g.cam.yaw = v.yaw; R.offT = 0; R.offWarn = false; g.toast('Auf die Strecke zurückgesetzt', 2); }
+    } else { R.offT = 0; R.offWarn = false; }
     const n = IE.trackPts.length, prev = R.idx; R.idx = t.i;
     const q = Math.floor(t.i / n * 4); if (q === R.gate + 1) R.gate = q;
     if (prev > n * 0.85 && t.i < n * 0.15) { if (R.lap < 0) { R.lap = 0; R.gate = 0; } else if (R.gate >= 3) { R.lap++; R.gate = 0; if (R.lap >= R.laps) { R.s = 0; finishMe(); } else { g.banner('Runde ' + (R.lap + 1), 'von ' + R.laps, '', 1.5); g.sfx('beep'); } } }
@@ -518,11 +545,11 @@ let menuLaps = 2;
 function openRaceMenu() {
   const g = G(), rows = [];
   rows.push({ name: 'Runden', stat: 'Wie viele Runden soll das Rennen gehen?', btns: [1, 2, 3, 5].map(n => ({ label: n + (n === menuLaps ? ' ✓' : ''), buy: n === menuLaps, fn: () => { menuLaps = n; openRaceMenu(); } })) });
-  rows.push({ name: 'Solo-Rennen', stat: 'Gegen 3 KI-Fahrer · Preisgeld bis ' + g.fmt(PRIZE[0] / 2), btns: [{ label: 'Starten', buy: true, fn: () => { g.closeModals(); if (R) endRace(); startSolo(menuLaps); } }] });
+  rows.push({ name: 'Solo-Rennen', stat: 'Gegen 3 KI-Fahrer · Siegprämie ' + g.fmt(PRIZE_TOP[1]), btns: [{ label: 'Starten', buy: true, fn: () => { g.closeModals(); if (R) endRace(); startSolo(menuLaps); } }] });
   if (ONL()) {
     const peers = [...IEonline.peers.values()].filter(r => r.pr && typeof r.pr.x === 'number');
     if (R && R.host && R.state === 'lobby') {
-      rows.push({ name: 'Mitspieler-Rennen', stat: (R.joined && R.joined.length ? 'Dabei: ' + R.joined.join(', ') : 'Noch niemand hat angenommen') + ' · Preisgeld bis ' + g.fmt(PRIZE[0]),
+      rows.push({ name: 'Mitspieler-Rennen', stat: (R.joined && R.joined.length ? 'Dabei: ' + R.joined.join(', ') : 'Noch niemand hat angenommen') + ' · Siegprämie: 2 Fahrer ' + g.fmt(PRIZE_TOP[2]) + ' · 3 Fahrer ' + g.fmt(PRIZE_TOP[3]) + ' · 4+ Fahrer ' + g.fmt(PRIZE_TOP[4]),
         btns: [{ label: 'Rennen starten', buy: true, off: !(R.joined && R.joined.length), fn: () => { g.closeModals(); R.n = 1 + R.joined.length; raceEmit({ t: 'go', laps: R.laps, n: R.n }); startCountdown(R.laps); } },
                { label: 'Absagen', fn: () => { raceEmit({ t: 'cancel' }); endRace('Rennen abgesagt'); openRaceMenu(); } }] });
     }
@@ -559,7 +586,7 @@ function nearVilla(pos) { for (const v of IE.villas) if (v.gate && (Math.hypot(p
 function buyVilla(v) {
   const g = G(), S = g.S;
   xModal('villa', v.name, [
-    { name: v.name, stat: 'Panorama-Villa über dem Golf von Neapel · Pool & Terrasse · gehört dir für immer', btns: [{ label: 'Kaufen · ' + g.fmt(v.price), buy: true, off: S.money < v.price, fn: () => {
+    { name: v.name, stat: (v.mega ? 'Riesige Luxusvilla mit Türmen, Pool, Springbrunnen, Helipad & Tennisplatz' : 'Panorama-Villa über dem Golf von Neapel · Pool & Terrasse') + ' · gehört dir für immer', btns: [{ label: 'Kaufen · ' + g.fmt(v.price), buy: true, off: S.money < v.price, fn: () => {
       if (S.money < v.price) return; S.money -= v.price; S.villas = (S.villas || []).concat(v.id); g.sfx('cash'); g.saveGame(); drawVillaSigns(); g.closeModals();
       g.banner('Villa gekauft', v.name, 'Hier wachst du ab jetzt nach einem Krankenhaus-Besuch auf', 5); } }] },
   ], S.money < v.price ? 'Dir fehlen noch ' + g.fmt(v.price - S.money) + '.' : 'Nach dem Kauf: E am Tor = Villa betreten. Drinnen kannst du dich ausruhen (Gesundheit voll + speichern).');
@@ -623,17 +650,96 @@ function openGarage() {
 }
 IE.openGarage = openGarage;
 function wireGarage() {
+  const b3 = $('pSecurity'); if (b3) b3.addEventListener('click', () => { if (G() && G().game.state === 'play') openSecurity(); });
   const b1 = $('pGarage'), b2 = $('tGarage');
   if (b1) b1.addEventListener('click', () => { if (G() && G().game.state === 'play') openGarage(); });
   if (b2) b2.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (G() && G().game.state === 'play') openGarage(); });
   addEventListener('keydown', e => { if (e.code === 'KeyG' && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) && G() && G().game.state === 'play') { if (!$('xModal').hidden && $('xModal').dataset.k === 'garage') G().closeModals(); else if (document.querySelectorAll('.modal:not([hidden])').length === 0) openGarage(); } });
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireGarage); else wireGarage();
+// ----- Fremde Flugzeuge/Helis im Hangar speichern -----
+function hangarSaveTarget() {
+  const g = G(), P = g.P, v = P.veh; if (!v || (v.type !== 'plane' && v.type !== 'heli') || v.dead) return null;
+  const list = v.type === 'plane' ? g.S.planes : g.S.helis; if (list.includes(v.def.id)) return null;
+  const landed = v.type === 'plane' ? v.onGround && Math.abs(v.speed) < 6 : v.pos.y - IE.supportH(v.pos.x, v.pos.z, v.pos.y) < 1.5;
+  if (!landed) return null;
+  const A = IE.airport; if (Math.abs(v.pos.x - A.x) < A.hw + 60 && Math.abs(v.pos.z - A.z) < A.hd + 60) return v;
+  for (const s of IE.shops) if (s.type === 'heli' && Math.hypot(v.pos.x - s.x, v.pos.z - s.z) < 40) return v;
+  return null;
+}
+
+// ================= SECURITY (Leibwächter) =================
+const GUARD_PRICE = 75000, GUARD_MAX = 4;
+let guardSpawnT = 0;
+const isThreat = n => !n.dead && !n.remove && (n.kind === 'enemy' || n.kind === 'zombie' || (n.kind === 'soldier' && n.alert) || (n.kind === 'police' && G().game.wanted > 0 && n.alert));
+function guards() { return IE.npcs.filter(n => n.kind === 'guard' && !n.remove); }
+function guardManager(dt) {
+  const g = G(), S = g.S, P = g.P;
+  const want = S.guardsOn === false ? 0 : (S.guards || 0), list = guards();
+  if (list.length > want) { list.slice(want).forEach(n => n.remove = true); return; }
+  guardSpawnT -= dt;
+  if (list.filter(n => !n.dead).length < want && guardSpawnT <= 0 && !P.interior && !g.game.dead && g.game.state === 'play') {
+    guardSpawnT = list.length ? 20 : 0.3; // Ersatz für gefallene Wächter nach 20 s
+    for (const n of list) if (n.dead) n.remove = true;
+    const have = list.filter(n => !n.dead).length;
+    for (let k = have; k < want; k++) { const a = rnd() * 6.3, x = P.pos.x + Math.sin(a) * 4, z = P.pos.z + Math.cos(a) * 4; const n = IE.spawnNPC(g.scene, 'guard', x, z); n.slot = k; n.keep = true; n.shootT = rnd(); }
+  }
+}
+IE.guardUpdate = function (n, dt) {
+  const g = G(), P = g.P;
+  if (n.dead) { n.deadT += dt; return; }
+  const inVeh = !!P.veh || !!P.ride, hidden = inVeh || !!P.interior;
+  const slotA = [2.4, -2.4, 3.6, -3.6][n.slot % 4], f = fwd(P.yaw);
+  const tx = P.pos.x - f.x * (n.slot < 2 ? 2.2 : 3.6) + f.z * slotA * 0.6, tz = P.pos.z - f.z * (n.slot < 2 ? 2.2 : 3.6) - f.x * slotA * 0.6;
+  if (hidden) { n.group.visible = false; n.pos.set(tx, P.pos.y, tz); n.inCar = true; return; }
+  if (n.inCar) { n.inCar = false; n.pos.set(tx, IE.supportH(tx, tz, P.pos.y + 2), tz); }
+  n.group.visible = true;
+  const dx = tx - n.pos.x, dz = tz - n.pos.z, d = Math.hypot(dx, dz);
+  if (d > 70) { n.pos.set(tx, IE.supportH(tx, tz, P.pos.y + 2), tz); }
+  // Bedrohung suchen
+  let tgt = null, td = 48;
+  for (const o of IE.npcs) if (isThreat(o)) { const dd = o.pos.distanceTo(n.pos); if (dd < td) { td = dd; tgt = o; } }
+  let rTgt = null;
+  if (!tgt && window.IEonline && IEonline.active && IEonline.lastAtt && performance.now() - IEonline.lastAtt.t < 10000) { const r = IEonline.peers.get(IEonline.lastAtt.peer); if (r && r.pr && !r.pr.dead && r.pos.distanceTo(n.pos) < 60) rTgt = r; }
+  let spd = 0, aim = false;
+  if (d > 1.2) { spd = d > 8 ? 7.5 : 4.6; n.yaw = Math.atan2(dx, dz); }
+  else n.yaw = P.yaw;
+  const tp = tgt ? tgt.pos : rTgt ? rTgt.pos : null;
+  if (tp) {
+    aim = true; if (d < 6) { spd = 0; } n.yaw = Math.atan2(tp.x - n.pos.x, tp.z - n.pos.z);
+    n.shootT -= dt;
+    if (n.shootT <= 0) {
+      n.shootT = 0.55 + rnd() * 0.4;
+      const from = new T.Vector3(n.pos.x, n.pos.y + 1.45, n.pos.z), to = new T.Vector3(tp.x, tp.y + 1.2, tp.z), dir = to.clone().sub(from), dist = dir.length(); dir.normalize();
+      if (IE.rayBoxes(from, dir, dist) >= dist - 1.5) {
+        const hit = rnd() < 0.6; g.tracer(from, hit ? to : to.clone().add(new T.Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(3))); g.flash(from); g.sfx('shot', 0.25);
+        if (hit) { if (tgt) g.damageNPC(tgt, 34, false); else if (rTgt) IEonline.sendHit(rTgt.peer, 9); }
+      }
+    }
+  }
+  if (spd > 0) { const ma = Math.atan2(dx, dz), st = Math.min(spd * dt, d); n.pos.x += Math.sin(ma) * st; n.pos.z += Math.cos(ma) * st; }
+  IE.pushOut(n.pos, 0.4, n.pos.y, 1.8);
+  n.pos.y = Math.max(IE.supportH(n.pos.x, n.pos.z, n.pos.y + 0.5), -1.25);
+  const moving = spd > 0.1; n.phase += dt * (moving ? spd * 2 : 0);
+  IE.animHuman(n.h, n.phase, moving ? 0.6 : 0, aim, false);
+  n.group.position.copy(n.pos); n.group.rotation.y = n.yaw;
+};
+function openSecurity() {
+  const g = G(), S = g.S, n = S.guards || 0, rows = [];
+  rows.push({ name: 'Leibwächter anheuern', stat: `Du hast ${n} von ${GUARD_MAX} Leibwächtern · einmalig ${g.fmt(GUARD_PRICE)} pro Person`, btns: [{ label: 'Anheuern · ' + g.fmt(GUARD_PRICE), buy: true, off: n >= GUARD_MAX || S.money < GUARD_PRICE, fn: () => { S.money -= GUARD_PRICE; S.guards = n + 1; S.guardsOn = true; guardSpawnT = 0; g.sfx('cash'); g.saveGame(); openSecurity(); } }] });
+  if (n > 0) {
+    rows.push({ name: 'Security dabei', stat: S.guardsOn === false ? 'Deine Leibwächter warten zu Hause' : 'Deine Leibwächter folgen dir und schießen auf Angreifer', btns: [{ label: S.guardsOn === false ? 'Anfordern' : 'Nach Hause schicken', buy: S.guardsOn === false, fn: () => { S.guardsOn = S.guardsOn === false; guardSpawnT = 0; g.saveGame(); openSecurity(); } }] });
+    rows.push({ name: 'Leibwächter entlassen', stat: 'Einen Leibwächter entlassen (kein Geld zurück)', btns: [{ label: 'Entlassen', fn: () => { S.guards = Math.max(0, n - 1); g.saveGame(); openSecurity(); } }] });
+  }
+  xModal('security', 'Security · Leibwächter', rows, 'Leibwächter folgen dir zu Fuß, steigen mit dir ins Fahrzeug, schießen auf Gegner, Zombies, Soldaten, Polizisten (wenn du gesucht wirst) und online auf Spieler, die dich angreifen. Gefallene Wächter kommen nach 20 Sekunden zurück.');
+}
+IE.openSecurity = openSecurity;
 // ----- Hooks für main.js -----
 IE.extraPrompt = function () {
   const g = G(), P = g.P; if (!g) return '';
   if (P.interior) { const it = P.interior.it; if (it.type === 'villa' && P.interior.villa && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4) return '<b>E</b> · Ausruhen (Gesundheit voll + speichern)'; return ''; }
   if (P.veh && P.veh.type === 'car' && IE.raceStart && Math.hypot(P.veh.pos.x - IE.raceStart.x, P.veh.pos.z - IE.raceStart.z) < 16 && (!R || R.state === 'lobby')) return '<b>E</b> · Rennen fahren / Spieler einladen';
+  { const hv = hangarSaveTarget(); if (hv) return `<b>E</b> · ${hv.def.name} im Hangar speichern`; }
   if (R && R.state === 'lobby' && R.host) return '';
   if (!P.veh) {
     if (rob) return '';
@@ -650,6 +756,7 @@ IE.extraAct = function () {
     if (P.veh.speed > 6) { g.toast('Halte an, um das Rennmenü zu öffnen', 2); return true; }
     openRaceMenu(); return true;
   }
+  { const hv = hangarSaveTarget(); if (hv) { (hv.type === 'plane' ? g.S.planes : g.S.helis).push(hv.def.id); hv.owned = true; g.saveGame(); g.sfx('pass'); g.banner('Im Hangar gespeichert', hv.def.name, 'Ab jetzt kannst du ihn jederzeit spawnen – im Hangar oder über „Meine Fahrzeuge“', 4); return true; } }
   if (!P.veh) {
     const s = nearGas(P.pos);
     if (s) { if (g.game.time >= s.cool && g.S.cur && g.S.cur !== 'faust' && !rob) { rob = { s, t: 0 }; g.setWanted(Math.max(g.game.wanted, 2)); g.toast('Hände hoch! Das ist ein Überfall!', 2.5); g.sfx('shot', 0.6); } return true; }
@@ -658,7 +765,12 @@ IE.extraAct = function () {
   }
   return false;
 };
+function bizTick(dt) {
+  const g = G(), S = g.S; if (!S.biz || g.game.state !== 'play') return;
+  for (const s of IE.shops) { if (s.type !== 'biz') continue; const b = S.biz[s.id]; if (!b) continue; const D = IE.bizDefs[s.biz], inc = D.inc * (1 + 0.5 * (b.lv - 1)); b.cash = Math.min(inc * 120, (b.cash || 0) + inc / 60 * dt); }
+}
 IE.extraUpdate = function (dt) {
+  bizTick(dt); guardManager(dt);
   if (IE.raceBeam) IE.raceBeam.visible = !R;
   updateRace(dt); updateRob(dt);
 };
