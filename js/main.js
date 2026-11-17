@@ -1399,6 +1399,8 @@ function renderShop() {
       $('shopHint').textContent = 'Dein Geschäft verdient ' + fmt(inc(b.lv)) + ' pro Minute, solange du spielst. Die Kasse fasst bis zu 2 Stunden Einnahmen.';
       row('Kasse', `${fmt(Math.floor(b.cash))} warten auf dich`, [{ t: 'Kasse leeren', buy: true, dis: b.cash < 1, f: () => { addMoney(Math.floor(b.cash)); b.cash = 0; sfx('cash'); } }], D.color);
       const upc = Math.round(D.price * 0.5 * b.lv);
+      { const paid = D.price + Array.from({ length: b.lv - 1 }, (_, i) => Math.round(D.price * 0.5 * (i + 1))).reduce((x, y) => x + y, 0), sell = Math.round(paid * 0.7);
+        row('Geschäft verkaufen', `Du bekommst ${fmt(sell)} (70 % von Kauf + Ausbau) – die Kasse wird vorher ausgezahlt`, s.sellAsk ? [{ t: 'Ja, verkaufen', buy: true, f: () => { s.sellAsk = false; addMoney(Math.floor(b.cash)); S.money += sell; delete S.biz[s.id]; sfx('cash'); toast(D.name + ' verkauft · + ' + fmt(sell), 3); } }, { t: 'Abbrechen', f: () => { s.sellAsk = false; } }] : [{ t: 'Verkaufen · ' + fmt(sell), f: () => { s.sellAsk = true; } }]); }
       row('Ausbau · Stufe ' + b.lv + (b.lv >= 5 ? ' (Maximum)' : ''), b.lv >= 5 ? `Einnahmen ${fmt(inc(b.lv))} pro Minute` : `Nächste Stufe: ${fmt(inc(b.lv + 1))} pro Minute`, b.lv >= 5 ? [] : [{ t: 'Ausbauen · ' + fmt(upc), buy: true, dis: S.money < upc, f: () => { S.money -= upc; b.lv++; sfx('cash'); } }]);
     }
   } else {

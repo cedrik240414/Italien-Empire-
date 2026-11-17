@@ -591,6 +591,18 @@ function buyVilla(v) {
       g.banner('Villa gekauft', v.name, 'Hier wachst du ab jetzt nach einem Krankenhaus-Besuch auf', 5); } }] },
   ], S.money < v.price ? 'Dir fehlen noch ' + g.fmt(v.price - S.money) + '.' : 'Nach dem Kauf: E am Tor = Villa betreten. Drinnen kannst du dich ausruhen (Gesundheit voll + speichern).');
 }
+const SELL_RATE = 0.7; // Verkauf: 70 % vom Kaufpreis
+function villaMenu(v) {
+  const g = G(), S = g.S, P = g.P, sell = Math.round(v.price * SELL_RATE);
+  xModal('villa', v.name, [
+    { name: 'Villa betreten', stat: 'Drinnen kannst du dich ausruhen (Gesundheit voll + speichern)', btns: [{ label: 'Betreten', buy: true, fn: () => { g.closeModals(); g.enterInterior('villa', v.gate.x, v.gate.z, null); if (P.interior) { P.interior.villa = v; g.toast(v.name, 2); } } }] },
+    { name: 'Villa verkaufen', stat: 'Du bekommst ' + g.fmt(sell) + ' (70 % vom Kaufpreis ' + g.fmt(v.price) + ')', btns: [{ label: 'Verkaufen · ' + g.fmt(sell), fn: () => {
+      xModal('villa', v.name + ' verkaufen?', [{ name: 'Wirklich verkaufen?', stat: 'Die Villa gehört dir danach nicht mehr. Du bekommst ' + g.fmt(sell) + '.', btns: [
+        { label: 'Ja, verkaufen', buy: true, fn: () => { if (!(S.villas || []).includes(v.id)) return; S.villas = S.villas.filter(id => id !== v.id); S.money += sell; g.sfx('cash'); g.saveGame(); drawVillaSigns(); g.closeModals(); g.banner('Villa verkauft', v.name, '+ ' + g.fmt(sell), 4); } },
+        { label: 'Abbrechen', fn: () => villaMenu(v) }] }]);
+    } }] }
+  ]);
+}
 IE.villaHome = function (pos) {
   const S = G().S, own = IE.villas.filter(v => (S.villas || []).includes(v.id) && v.gate); if (!own.length) return null;
   own.sort((a, b) => Math.hypot(a.x - pos.x, a.z - pos.z) - Math.hypot(b.x - pos.x, b.z - pos.z)); return own[0];
@@ -744,7 +756,7 @@ IE.extraPrompt = function () {
   if (!P.veh) {
     if (rob) return '';
     const s = nearGas(P.pos); if (s) { if (g.game.time < s.cool) return 'Die Kasse ist noch leer – komm später wieder'; return g.S.cur && g.S.cur !== 'faust' ? '<b>E</b> · Tankstelle überfallen' : 'Mit einer Waffe kannst du die Tankstelle überfallen'; }
-    const v = nearVilla(P.pos); if (v) return (g.S.villas || []).includes(v.id) ? `<b>E</b> · ${v.name} betreten` : `<b>E</b> · ${v.name} kaufen · ${g.fmt(v.price)}`;
+    const v = nearVilla(P.pos); if (v) return (g.S.villas || []).includes(v.id) ? `<b>E</b> · ${v.name} (betreten / verkaufen)` : `<b>E</b> · ${v.name} kaufen · ${g.fmt(v.price)}`;
   }
   return '';
 };
@@ -761,7 +773,7 @@ IE.extraAct = function () {
     const s = nearGas(P.pos);
     if (s) { if (g.game.time >= s.cool && g.S.cur && g.S.cur !== 'faust' && !rob) { rob = { s, t: 0 }; g.setWanted(Math.max(g.game.wanted, 2)); g.toast('Hände hoch! Das ist ein Überfall!', 2.5); g.sfx('shot', 0.6); } return true; }
     const v = nearVilla(P.pos);
-    if (v) { if ((g.S.villas || []).includes(v.id)) { g.enterInterior('villa', v.gate.x, v.gate.z, null); if (P.interior) { P.interior.villa = v; g.toast(v.name, 2); } } else buyVilla(v); return true; }
+    if (v) { if ((g.S.villas || []).includes(v.id)) villaMenu(v); else buyVilla(v); return true; }
   }
   return false;
 };
