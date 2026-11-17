@@ -189,7 +189,6 @@ const CHEATS = [
   { seq: ['ZIELEN', 'WAFFE', 'ZIELEN', 'WAFFE'], name: 'Explosive Kugeln', toggle: 'boom' },
   { seq: ['SPRUNG', 'E', 'SPRUNG', 'E', 'SPRUNG'], name: 'Mond-Schwerkraft', toggle: 'moon' },
   { seq: ['RENNEN', 'E', 'ZIELEN', 'WAFFE'], name: 'Nie gesucht', toggle: 'nowanted', on() { game.wanted = 0; } },
-  { seq: ['SPRUNG', 'RENNEN', 'SPRUNG', 'RENNEN', 'SPRUNG'], name: 'Flugmodus', f() { setFly(!P.fly, P.flySpeed || 60); } },
   { seq: ['ZIELEN', 'ZIELEN', 'ZIELEN', 'E'], name: 'Privatjet in der Luft', f() {
       const f = IE.fwd(P.yaw), v = IE.spawnPlane(scene, 'jet', P.pos.x - f.x * 25, P.pos.z - f.z * 25, P.yaw, Math.max(0, IE.groundH(P.pos.x, P.pos.z)) + 250);
       v.speed = 110; v.throttle = 0.7; v.onGround = false; leaveVehicle(); P.veh = v; v.driver = 'player'; P.swim = P.under = false; P.interior = null; P.fly = false; $('speed').hidden = false; cam.yaw = v.yaw; } },
@@ -741,7 +740,8 @@ function updatePlayer(dt) {
     if (P.under) { P.bubT = (P.bubT || 0) - dt; if (P.bubT <= 0) { P.bubT = 0.35; bubble(P.pos.x + Math.sin(P.yaw) * 1.2, P.pos.y + 1.3, P.pos.z + Math.cos(P.yaw) * 1.2); } }
   } else {
     P.under = false;
-    if (ctrl && pressed.has('space') && P.onGround) { P.vy = game.ch.jump ? 22 : 7.5; P.onGround = false; }
+    P.jumpReq = Math.max(0, (P.jumpReq || 0) - dt);
+    if (ctrl && P.jumpReq > 0 && P.onGround) { P.jumpReq = 0; P.vy = game.ch.jump ? 22 : 7.5; P.onGround = false; }
     P.vy -= (game.ch.moon ? 5 : 24) * dt; P.pos.y += P.vy * dt;
     if (P.pos.y <= g) { if (P.vy < -22 && !game.ch.jump && !game.ch.moon) hurtPlayer((-P.vy - 22) * 6); P.pos.y = g; P.vy = 0; P.onGround = true; }
     else if (P.pos.y - g > 0.3) P.onGround = false;
@@ -1733,6 +1733,7 @@ function frame() {
       if (pressed.has('view')) { opts.fp = !opts.fp; saveOpts(); toast(opts.fp ? 'Ego-Sicht' : 'Normale Sicht', 1.2); }
     }
   } else if ((pressed.has('map') && !$('mapModal').hidden) || (pressed.has('wheel') && !$('wheel').hidden)) closeModals();
+  if (pressed.has('space')) P.jumpReq = 0.2; // Sprung merken (wird erst in updatePlayer ausgewertet)
   pressed.clear();
 
   updatePlayer(dt);
