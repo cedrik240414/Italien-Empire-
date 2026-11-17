@@ -74,6 +74,8 @@ body.touch #bars { bottom: auto; top: calc(190px + env(safe-area-inset-top, 0px)
 body.touch #hudMap { display: none; }
 #hudAdmin { pointer-events: auto; left: calc(150px + env(safe-area-inset-left, 0px)); bottom: calc(262px + env(safe-area-inset-bottom, 0px)); background: var(--gold); color: var(--ink); border: 1px solid var(--gold); font-size: 16px; font-weight: 700; letter-spacing: 0.12em; padding: 6px 12px; }
 body.touch #hudAdmin { display: none; }
+#hudMenu { pointer-events: auto; left: calc(16px + env(safe-area-inset-left, 0px)); bottom: calc(300px + env(safe-area-inset-bottom, 0px)); background: rgba(13,15,19,0.75); color: var(--gold); border: 1px solid rgba(217,180,90,0.6); font-size: 16px; font-weight: 700; letter-spacing: 0.12em; padding: 6px 12px; }
+body.touch #hudMenu { display: none; }
 #tAdmin { background: var(--gold); color: var(--ink); border-color: var(--gold); }
 #under { inset: 0; background: radial-gradient(ellipse at 50% 20%, rgba(40,150,170,0.18), rgba(4,40,60,0.55) 80%); }
 .maphelp { color: var(--muted); font-size: 14px; font-family: var(--f-hud); }
@@ -292,7 +294,7 @@ body.touch.playing #touch { display: block; }
       <div><b>FEUER</b> Schießen (mit Zielhilfe)</div><div><b>EIN/AUS</b> Fahrzeug</div>
       <div><b>E</b> Shop / Mission</div><div><b>HOCH / RUNTER</b> Springen · Heli</div><div><b>TAUCHEN / AUF</b> Unter Wasser schwimmen</div><div><b>SICHT</b> Ego-Sicht umschalten</div><div><b>Kreis links</b> Waffenrad</div><div><b>Flugzeug</b> GAS +/− für Schub, Joystick hoch = Nase hoch</div>
     </div>
-    <div class="ver">Version 28</div>
+    <div class="ver">Version 29</div>
   </div>
 </div>
 
@@ -305,6 +307,7 @@ body.touch.playing #touch { display: block; }
   <div class="hud" id="mini"><canvas id="miniC" width="420" height="420"></canvas></div>
   <div class="hud" id="bars"><div class="bar"><i id="hpB"></i></div><div class="bar ar"><i id="arB"></i></div><div class="bar o2" id="o2W" hidden><i id="o2B"></i></div></div>
   <button class="hud" id="hudMap">KARTE · M</button>
+  <button class="hud" id="hudMenu">MENÜ · P</button>
   <button class="hud" id="hudAdmin" hidden>★ ADMIN</button>
   <div class="hud" id="obj" hidden></div>
   <div class="hud" id="onBadge" hidden></div>
@@ -373,6 +376,7 @@ body.touch.playing #touch { display: block; }
     <div id="onJobs" class="jobs"></div>
   </div>
   <div class="opt"><span>Skins, Upgrades &amp; Admin</span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn" id="pGarage" style="font-size:16px;padding:6px 14px">Meine Fahrzeuge (G)</button><button class="btn" id="pSecurity" style="font-size:16px;padding:6px 14px">Security</button><button class="btn" id="pSkins" style="font-size:16px;padding:6px 14px">Skins</button><button class="btn" id="pUp" style="font-size:16px;padding:6px 14px">Upgrades</button><button class="btn ghost" id="pAdmin" style="font-size:16px;padding:6px 14px" hidden>Admin-Panel</button></span></div>
+  <div class="opt"><span>Steuerung <small style="color:var(--muted);font-size:14px">· Tastatur &amp; Maus: WASD, Maus umsehen, Links schießen, Rechts zielen</small></span><span><button class="btn ghost" id="optCtrl" style="font-size:16px;padding:6px 14px">Touch</button></span></div>
   <div class="opt"><span>Grafik</span><span><button class="btn ghost" id="optGfx" style="font-size:16px;padding:6px 14px">Hoch</button></span></div>
   <div class="opt"><label for="optSens">Kamera-Empfindlichkeit</label><input type="range" id="optSens" min="0.3" max="2.5" step="0.1" value="1"></div>
   <div class="opt"><span>Kamera</span><span><button class="btn ghost" id="optView" style="font-size:16px;padding:6px 14px">Normal</button></span></div>
@@ -397,12 +401,12 @@ body.touch.playing #touch { display: block; }
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/data.js?v=28"></script>
-<script src="js/world.js?v=28"></script>
-<script src="js/entities.js?v=28"></script>
-<script src="js/extra.js?v=28"></script>
-<script src="js/main.js?v=28"></script>
-<script src="js/server-config.js?v=28"></script>
-<script src="js/cfnet.js?v=28"></script>
-<script src="js/online.js?v=28"></script>
-<script src="js/account.js?v=28"></script>
+<script src="js/data.js?v=29"></script>
+<script src="js/world.js?v=29"></script>
+<script src="js/entities.js?v=29"></script>
+<script src="js/extra.js?v=29"></script>
+<script src="js/main.js?v=29"></script>
+<script src="js/server-config.js?v=29"></script>
+<script src="js/cfnet.js?v=29"></script>
+<script src="js/online.js?v=29"></script>
+<script src="js/account.js?v=29"></script>

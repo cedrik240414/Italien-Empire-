@@ -96,7 +96,10 @@ const account = {
   claim: () => post('/acc/claim', { token: tok() }),
   logout: () => post('/acc/logout', { token: tok() }),
   list: () => post('/acc/list', { token: tok() }),
-  act: (target, what, amount) => post('/acc/act', { token: tok(), target, what, amount })
+  act: (target, what, amount) => post('/acc/act', { token: tok(), target, what, amount }),
+  save: (slot, data, t) => post('/acc/save', { token: tok(), slot, data, t }),
+  load: slot => post('/acc/load', { token: tok(), slot }),
+  saveBeacon: (slot, data, t) => { try { fetch(base + '/acc/save', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tok(), slot, data, t }) }).catch(() => { }); } catch (e) { } }
 };
 window.IECF = { use: async n => (n === 'room' ? lobby : n === 'db' ? db : n === 'user' ? user : null), server: base, account };
 })();

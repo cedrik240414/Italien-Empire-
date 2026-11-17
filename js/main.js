@@ -7,8 +7,8 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 const angDiff = (a, b) => { let d = b - a; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return d; };
 const fmt = n => '€ ' + Math.round(n).toLocaleString('de-DE');
-const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-if (isTouch) document.body.classList.add('touch');
+const touchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+let isTouch = touchDevice; // wird nach dem Laden der Optionen gesetzt (Steuerung: Touch oder Tastatur & Maus)
 
 // ---------- Speicher ----------
 let SAVE_KEY = 'italienEmpire_v1', ACC = '';
@@ -18,11 +18,45 @@ const store = {
   del() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } }
 };
 const opts = (() => { try { return JSON.parse(localStorage.getItem('italienEmpire_opts') || '{}'); } catch (e) { return {}; } })();
-opts.gfx = opts.gfx || (isTouch ? 'mittel' : 'hoch'); opts.fp = !!opts.fp; opts.sens = opts.sens || 1; if (opts.snd === undefined) opts.snd = true;
+isTouch = opts.ctrl === 'kbm' ? false : opts.ctrl === 'touch' ? true : touchDevice; document.body.classList.toggle('touch', isTouch);
+opts.gfx = opts.gfx || (touchDevice ? 'mittel' : 'hoch'); opts.fp = !!opts.fp; opts.sens = opts.sens || 1; if (opts.snd === undefined) opts.snd = true;
 const saveOpts = () => { try { localStorage.setItem('italienEmpire_opts', JSON.stringify(opts)); } catch (e) { } };
 
 const S = { cheat250: false, villas: [], biz: {}, guards: 0, guardsOn: true, money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], up: {}, skins: [], skin: '', mission: 0, char: 'jack', armor: 0, done: false };
-function saveGame() { store.set(S); }
+// Spielstand: lokal + (mit Konto auf dem eigenen Server) in der Cloud – so ist er auf jedem Gerät da
+const CLOUD = { busy: false, lastPush: 0, timer: null, pending: null };
+const cloudAcc = () => window.IECF && IECF.account && window.IEaccount && IEaccount.token ? IECF.account : null;
+const saveSlot = () => SAVE_KEY.indexOf('online') >= 0 ? 'online' : 'story';
+function cloudPush(now) {
+  const a = cloudAcc(); if (!a || !ACC) return;
+  const go = () => { CLOUD.timer = null; CLOUD.lastPush = Date.now(); a.save(saveSlot(), JSON.stringify(S), S._t || Date.now()).catch(() => { }); };
+  if (now) { if (CLOUD.timer) clearTimeout(CLOUD.timer); go(); return; }
+  if (CLOUD.timer) return;
+  CLOUD.timer = setTimeout(go, Math.max(0, 10000 - (Date.now() - CLOUD.lastPush)));
+}
+function saveGame(now) { S._t = Date.now(); store.set(S); if (game.state === 'play') cloudPush(now === true); }
+document.addEventListener('visibilitychange', () => {
+  const a = cloudAcc(); if (document.visibilityState !== 'hidden' || !a || !ACC || game.state !== 'play') return;
+  S._t = Date.now(); store.set(S); a.saveBeacon(saveSlot(), JSON.stringify(S), S._t);
+});
+async function cloudPull() {
+  const a = cloudAcc(); if (!a) return;
+  CLOUD.busy = true; $('bCont').disabled = true;
+  let got = false;
+  for (const [slot, key] of [['story', 'italienEmpire_v1' + ACC], ['online', 'italienEmpire_online_v1' + ACC]]) {
+    try {
+      const r = await a.load(slot); if (!r || !r.data) continue;
+      let local = null; try { local = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { }
+      const cloud = JSON.parse(r.data);
+      if (!cloud) { if (local && (local._t || 0) < r.t) { localStorage.removeItem(key); } continue; } // Spielstand wurde gelöscht
+      if (!local || (cloud._t || r.t || 0) > (local._t || 0)) { localStorage.setItem(key, r.data); got = true; }
+      else if ((local._t || 0) > (cloud._t || r.t || 0)) a.save(slot, JSON.stringify(local), local._t).catch(() => { }); // dieses Gerät ist neuer -> hochladen
+    } catch (e) { }
+  }
+  CLOUD.busy = false; $('bCont').disabled = false; $('bCont').hidden = !store.get();
+  if (got) toast('Spielstand von deinem Konto geladen ☁', 2.5);
+  if (CLOUD.pending) { const p = CLOUD.pending; CLOUD.pending = null; startGame(p[0], p[1]); }
+}
 
 // ---------- Renderer ----------
 const canvas = $('c');
@@ -79,6 +113,7 @@ function sfx(type, vol) {
   }
 }
 function engineSound(v) {
+  if (v && !isFinite(v.speed)) v.speed = 0;
   if (!AU.eng) return; const t = AU.ctx.currentTime;
   if (!v) { AU.eng.g.gain.setTargetAtTime(0, t, 0.1); AU.eng.lg.gain.setTargetAtTime(0, t, 0.1); return; }
   if (v.type === 'plane') { AU.eng.o.frequency.setTargetAtTime(55 + v.throttle * 90, t, 0.1); AU.eng.f.frequency.setTargetAtTime(500 + v.throttle * 900, t, 0.1); AU.eng.g.gain.setTargetAtTime(0.03 + v.throttle * 0.06, t, 0.1); AU.eng.lg.gain.setTargetAtTime(0, t, 0.1); }
@@ -111,7 +146,7 @@ canvas.addEventListener('mousedown', e => {
 });
 addEventListener('mouseup', e => { if (e.button === 0) inp.fire = false; if (e.button === 2) inp.aim = false; });
 addEventListener('contextmenu', e => e.preventDefault());
-addEventListener('mousemove', e => { if (locked) { inp.lookX += e.movementX; inp.lookY += e.movementY; inp.lastLook = performance.now(); } });
+addEventListener('mousemove', e => { if (locked || (!isTouch && opts.ctrl === 'kbm' && game.state === 'play' && !uiOpen() && e.target === canvas && (e.movementX || e.movementY))) { inp.lookX += e.movementX; inp.lookY += e.movementY; inp.lastLook = performance.now(); } });
 addEventListener('wheel', e => { if (game.state === 'play' && !uiOpen()) press(e.deltaY > 0 ? 'weap' : 'weapPrev'); }, { passive: true });
 
 // Touch
@@ -133,7 +168,7 @@ bindBtn('tSprint', () => { cheatInput('RENNEN'); inp.sprintToggle = !inp.sprintT
 bindBtn('tAim', () => { inp.aim = true; cheatInput('ZIELEN'); }, () => inp.aim = false);
 $('wheelBtn').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); audioInit(); if ($('wheel').hidden) openWheel(); else closeModals(); });
 $('wheel').addEventListener('pointerdown', e => { if (e.target.id === 'wheel' || e.target.id === 'wheelRing') closeModals(); });
-bindBtn('tMap', () => press('map')); bindBtn('tView', () => press('view')); $('hudMap').addEventListener('click', () => press('map')); bindBtn('tChar', () => press('char')); bindBtn('tMenu', () => press('pause'));
+bindBtn('tMap', () => press('map')); bindBtn('tView', () => press('view')); $('hudMap').addEventListener('click', () => press('map')); $('hudMenu').addEventListener('click', () => press('pause')); bindBtn('tChar', () => press('char')); bindBtn('tMenu', () => press('pause'));
 canvas.addEventListener('pointerdown', e => {
   if (e.pointerType !== 'touch') return;
   audioInit();
@@ -715,6 +750,10 @@ function updatePlayer(dt) {
   const mx = ctrl ? inp.mx : 0, my = ctrl ? inp.my : 0;
   if (P.veh) {
     const v = P.veh;
+    if (v.type === 'car' && v.drownT > 2.5 && !v.m.tank) { // Auto versinkt: Spieler schwimmt raus
+      v.driver = null; P.veh = null; v.sunk = true; P.h.group.visible = true; $('speed').hidden = true; engineSound(null);
+      P.pos.set(v.pos.x, Math.max(v.pos.y, -1.2), v.pos.z); P.vy = 0; toast('Dein Auto ist im Wasser versunken – schwimm an Land!', 3); return;
+    }
     if (v.type === 'car') { if (v.loop || (IE.loopCheck && IE.loopCheck(v))) IE.loopUpdate(v, dt); else IE.updateCar(v, { x: mx, y: my, brake: ctrl && inp.hold.space }, dt); if (v.m.tank) v.m.turret.rotation.y += angDiff(v.m.turret.rotation.y, angDiff(v.yaw, cam.yaw)) * Math.min(1, dt * 3); }
     else if (v.type === 'boat') IE.updateBoat(v, { x: mx, y: my, brake: ctrl && inp.hold.space }, dt);
     else if (v.type === 'airship') updateAirship(v, { x: mx, y: my, up: ctrl ? (inp.hold.space ? 1 : 0) - (inp.hold.down ? 1 : 0) : 0 }, dt);
@@ -1112,7 +1151,8 @@ function vehiclesUpdate(dt) {
     const dp = v.pos.distanceTo(P.pos);
     if (v !== P.veh) {
       if (v.removeMe || (dp > 520 && !v.raceAI && !v.owned && !v.base && !(v.ai && v.ai.mission)) || (v.base && dp > 900) || ((v.type === 'boat' || v.type === 'plane') && v.owned && dp > 900) || (v.parked && game.cityActive !== v.city && dp > 300) || (v.ai && v.ai.kind === 'city' && v !== P.veh && (game.cityActive !== v.ai.city || dp > 260))) { scene.remove(v.group); IE.vehicles.splice(i, 1); continue; }
-      if (v.dead) { /* Wrack */ }
+      if (v.sunk) { v.pos.y -= dt * 0.8; v.group.position.y = v.pos.y; v.sinkT = (v.sinkT || 0) + dt; if (v.sinkT > 12) v.removeMe = true; }
+      else if (v.dead) { /* Wrack */ }
       else if (v.raceAI) { }
       else if (v.ai && v.ai.heliPursue) policeHeliUpdate(v, dt);
       else if (v.ai && v.ai.pursue) pursuerUpdate(v, dt);
@@ -1600,18 +1640,28 @@ function openPause() {
   $('cheatBox').hidden = !(window.IEaccount && IEaccount.admin);
   $('pauseModal').hidden = false; if (window.IEonline) IEonline.renderPause(); if (locked) document.exitPointerLock();
   $('progTxt').textContent = `Story: ${Math.min(S.mission, IE.missions.length)} / ${IE.missions.length} Missionen`;
+  $('optCtrl').textContent = isTouch ? 'Touch' : 'Tastatur & Maus';
   $('optSnd').textContent = opts.snd ? 'An' : 'Aus'; $('optSens').value = opts.sens; $('optView').textContent = opts.fp ? 'Ego-Sicht' : 'Normal';
 }
 $('pUp').addEventListener('click', () => openUpgrades());
 $('pSkins').addEventListener('click', () => openSkins());
 $('optGfx').addEventListener('click', () => { opts.gfx = { hoch: 'mittel', mittel: 'niedrig', niedrig: 'hoch' }[opts.gfx]; saveOpts(); applyGfx(); });
 $('optSnd').addEventListener('click', () => { opts.snd = !opts.snd; saveOpts(); $('optSnd').textContent = opts.snd ? 'An' : 'Aus'; if (!opts.snd && AU.master) AU.master.gain.value = 0; else if (AU.master) AU.master.gain.value = 0.5; else audioInit(); });
+function setCtrl(touch) {
+  isTouch = touch; opts.ctrl = touch ? 'touch' : 'kbm'; saveOpts(); document.body.classList.toggle('touch', isTouch);
+  $('keysDesk').hidden = isTouch; $('keysTouch').hidden = !isTouch; $('optCtrl').textContent = isTouch ? 'Touch' : 'Tastatur & Maus';
+  inp.mx = inp.my = 0; inp.fire = inp.aim = false;
+  if (!isTouch && document.pointerLockElement !== canvas) toast('Tastatur & Maus: WASD laufen · Maus = umsehen · Linksklick schießen · Rechtsklick zielen · Klick ins Spiel, um die Maus einzufangen', 6);
+  else toast('Touch-Steuerung aktiv', 2);
+}
+$('optCtrl').addEventListener('click', () => setCtrl(!isTouch));
 $('optView').addEventListener('click', () => { opts.fp = !opts.fp; saveOpts(); $('optView').textContent = opts.fp ? 'Ego-Sicht' : 'Normal'; });
 $('optSens').addEventListener('input', e => { opts.sens = +e.target.value; saveOpts(); });
 let resetArm = false;
 $('optReset').addEventListener('click', () => {
   if (!resetArm) { resetArm = true; $('optReset').textContent = 'Wirklich löschen?'; setTimeout(() => { resetArm = false; $('optReset').textContent = 'Spielstand löschen'; }, 3000); return; }
-  store.del(); location.reload();
+  store.del(); const a = cloudAcc();
+  if (a && ACC) a.save(saveSlot(), 'null', Date.now()).catch(() => { }).finally(() => location.reload()); else location.reload();
 });
 
 // ---------- Kamera ----------
@@ -1749,6 +1799,9 @@ function updateHUD(dt) {
 let last = performance.now();
 function frame() {
   requestAnimationFrame(frame);
+  try { frameBody(); } catch (e) { console.error(e); if (!frame.errShown) { frame.errShown = true; try { toast('Kleiner Fehler abgefangen – das Spiel läuft weiter', 3); } catch (e2) { } } }
+}
+function frameBody() {
   const now = performance.now(); let dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (!$('wheel').hidden) dt *= 0.15;
   if (game.state === 'title') { titleCam(dt); renderer.render(scene, camera); return; }
@@ -1836,6 +1889,7 @@ function titleCam(dt) {
 // ---------- Start ----------
 const S_DEFAULT = JSON.parse(JSON.stringify(S));
 function startGame(cont, mode) {
+  if (CLOUD.busy) { CLOUD.pending = [cont, mode]; toast('Spielstand wird vom Konto geladen …', 2); return; }
   audioInit();
   if (mode === 'online') {
     SAVE_KEY = 'italienEmpire_online_v1' + ACC; Object.assign(S, JSON.parse(JSON.stringify(S_DEFAULT)), { money: 25000, mission: IE.missions.length });
@@ -1880,7 +1934,7 @@ function boot() {
       applyGfx();
       missionBeam = makeBeam(0xf2c230, 2.4); mission.beacon = makeBeam(0xf2c230, 3); mission.beacon.visible = false; wpBeam = makeBeam(0xff5fd2, 2); wpBeam.visible = false;
       $('loading').hidden = true; $('title').hidden = false; game.state = 'title';
-      if (isTouch) { $('keysDesk').hidden = true; $('keysTouch').hidden = false; }
+      $('keysDesk').hidden = isTouch; $('keysTouch').hidden = !isTouch;
       const cast = $('cast'); for (const id in IE.chars) { const c = IE.chars[id]; const d = document.createElement('div'); d.className = 'card'; d.innerHTML = `<div class="tag">${c.age} Jahre · ${IE.cityById[c.home].name}${id === 'jack' ? ' · Hauptcharakter' : ''}</div><h3>${c.name}</h3><p>${c.info}</p>`; cast.appendChild(d); }
       if (store.get()) $('bCont').hidden = false;
     }]
@@ -1896,7 +1950,7 @@ function boot() {
 }
 $('bNew').addEventListener('click', () => startGame(false));
 $('bCont').addEventListener('click', () => startGame(true));
-function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = 'italienEmpire_v1' + ACC; $('bCont').hidden = !store.get(); }
+function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = 'italienEmpire_v1' + ACC; $('bCont').hidden = !store.get(); cloudPull(); }
 window.IEgame = { damageNPC, tracer, flash, enterInterior, exitInterior, putInVehicle, setWanted, maxHP, placePlayer, teleportTo, CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
 boot();
 })();

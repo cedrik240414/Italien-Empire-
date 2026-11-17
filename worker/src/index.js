@@ -76,6 +76,19 @@ export class Hub {
     if (!me) return j({ error: 'no_session' }, 401);
     if (action === 'me') return j({ ...this.pubAcc(me), grant: me.grant || 0 });
     if (action === 'claim') { const g = me.grant || 0; if (g) { me.grant = 0; await st.put('a:' + me.slug, me); } return j({ grant: g }); }
+    // ---- Spielstand in der Cloud (pro Konto, auf jedem Gerät) ----
+    if (action === 'save') {
+      const slot = b.slot === 'online' ? 'online' : 'story', data = typeof b.data === 'string' ? b.data : '';
+      if (!data || data.length > 120000) return j({ error: 'bad_data' }, 400);
+      try { JSON.parse(data); } catch (e) { return j({ error: 'bad_data' }, 400); }
+      const t = Math.max(0, Math.min(Date.now() + 60000, +b.t || Date.now()));
+      await st.put('sv:' + me.slug + ':' + slot, { t, data });
+      return j({ ok: true, t });
+    }
+    if (action === 'load') {
+      const slot = b.slot === 'online' ? 'online' : 'story', v = await st.get('sv:' + me.slug + ':' + slot);
+      return j(v ? { t: v.t, data: v.data } : { t: 0 });
+    }
     if (action === 'logout') { await st.delete('s:' + token); return j({ ok: true }); }
     // ---- Admin ----
     const isAdmin = me.admin || isSuper(me.slug);
