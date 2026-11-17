@@ -527,14 +527,15 @@ IE.spawnNPC = function (scene, kind, x, z, opts) {
   let look;
   if (kind === 'police') look = { pants: 0x1a2340, jacket: 0x1a2340, shirt: 0xd8dce6, skin: skins[(r() * 5) | 0], hair: 0x111111 };
   else if (kind === 'soldier') look = { pants: 0x4b5233, jacket: 0x59613d, shirt: 0x3e4429, skin: skins[(r() * 5) | 0], hair: 0x3a4028 };
+  else if (kind === 'zombie') { const zs = [0x8fa37a, 0x7d9168, 0x9aa88a, 0x6f8460][(r() * 4) | 0]; look = { pants: [0x2f3440, 0x3d3428, 0x2b2b2b][(r() * 3) | 0], jacket: [0x4a4436, 0x5a3030, 0x3a4a3a, 0x6b6250][(r() * 4) | 0], shirt: 0x8a8070, skin: zs, hair: [0x222222, 0x3a3020, 0x555555][(r() * 3) | 0], female: r() < 0.35 }; }
   else if (kind === 'enemy') look = { pants: 0x161616, jacket: opts.boss ? 0x5a0d0d : 0x1d1d22, shirt: opts.boss ? 0xf0f0f0 : 0x2a2a2a, skin: skins[(r() * 5) | 0], hair: 0x1a1a1a };
   else look = { pants: pedColors[(r() * 10) | 0], jacket: pedColors[(r() * 10) | 0], shirt: 0xeeeeee, skin: skins[(r() * 5) | 0], hair: [0x2a1a10, 0x111111, 0x7a5a30, 0xaaaaaa][(r() * 4) | 0], female: r() < 0.45 };
   const h = IE.makeHuman(look);
   if (opts.boss) h.group.scale.setScalar(1.12);
   const y = opts.y !== undefined ? opts.y : IE.supportH(x, z, 999);
-  const n = { kind, h, group: h.group, pos: new T.Vector3(x, y, z), yaw: r() * 6.28, health: kind === 'ped' ? 40 : (opts.boss ? 600 : kind === 'police' ? 80 : kind === 'soldier' ? 130 : 90),
+  const n = { kind, h, group: h.group, pos: new T.Vector3(x, y, z), yaw: r() * 6.28, health: kind === 'ped' ? 40 : kind === 'zombie' ? 60 + r() * 40 : (opts.boss ? 600 : kind === 'police' ? 80 : kind === 'soldier' ? 130 : 90),
     state: 'walk', timer: r() * 3, phase: r() * 6, dead: false, deadT: 0, shootT: 1 + r() * 2, boss: !!opts.boss, name: opts.name, city: opts.city, mission: !!opts.mission, speed: 0 };
-  if (kind !== 'ped') IE.setGunLen(h, opts.boss ? 0.5 : kind === 'soldier' ? 0.8 : 0.28);
+  if (kind !== 'ped' && kind !== 'zombie') IE.setGunLen(h, opts.boss ? 0.5 : kind === 'soldier' ? 0.8 : 0.28);
   h.group.position.copy(n.pos); scene.add(h.group); IE.npcs.push(n); return n;
 };
 IE.killNPC = function (n) {

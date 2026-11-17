@@ -193,6 +193,7 @@ const CHEATS = [
   { seq: ['ZIELEN', 'ZIELEN', 'ZIELEN', 'E'], name: 'Privatjet in der Luft', f() {
       const f = IE.fwd(P.yaw), v = IE.spawnPlane(scene, 'jet', P.pos.x - f.x * 25, P.pos.z - f.z * 25, P.yaw, Math.max(0, IE.groundH(P.pos.x, P.pos.z)) + 250);
       v.speed = 110; v.throttle = 0.7; v.onGround = false; leaveVehicle(); P.veh = v; v.driver = 'player'; P.swim = P.under = false; P.interior = null; P.fly = false; $('speed').hidden = false; cam.yaw = v.yaw; } },
+  { seq: ['ZIELEN', 'RENNEN', 'ZIELEN', 'RENNEN', 'E'], name: 'Zombie-Apokalypse', toggle: 'zombies', on() { zombieStart(); }, off() { zombieEnd(); } },
   { seq: ['E', 'E', 'E', 'RENNEN', 'RENNEN'], name: '+ 1 Stufe Geld-Multiplikator', f() { S.up = S.up || {}; S.up.geld = upLvl('geld') + 1; } }
 ];
 let cheatBuf = [];
@@ -203,9 +204,13 @@ function cheatInput(sym) {
   for (const c of CHEATS.slice().sort((a, b) => b.seq.length - a.seq.length)) {
     if (seq.length < c.seq.length || c.seq.some((x, i) => seq[seq.length - c.seq.length + i] !== x)) continue;
     cheatBuf = [];
-    if (c.toggle) { game.ch[c.toggle] = !game.ch[c.toggle]; if (game.ch[c.toggle] && c.on) c.on(); sfx('pass'); banner('Cheat ' + (game.ch[c.toggle] ? 'an' : 'aus'), c.name, '', 2.5); return; }
-    c.f(); sfx('pass'); banner('Cheat aktiviert', c.name, '', 2.5); return;
+    runCheat(c); return;
   }
+}
+function runCheat(c) {
+  if (game.state !== 'play') { toast('Starte zuerst ein Spiel', 2); return; }
+  if (c.toggle) { game.ch[c.toggle] = !game.ch[c.toggle]; if (game.ch[c.toggle] && c.on) c.on(); if (!game.ch[c.toggle] && c.off) c.off(); sfx('pass'); if (c.toggle !== 'zombies') banner('Cheat ' + (game.ch[c.toggle] ? 'an' : 'aus'), c.name, '', 2.5); return; }
+  c.f(); sfx('pass'); banner('Cheat aktiviert', c.name, '', 2.5);
 }
 
 // ---------- Spielzustand ----------
@@ -405,11 +410,41 @@ function damageNPC(n, dmg, byPlayer) {
       if (n.kind === 'soldier') { setWanted(3); addWanted(0.5); for (const o of IE.npcs) if (o.kind === 'soldier') o.alert = true; }
       if (n.mission && mission.coop && ONL()) IEonline.jobKill(mission.def.id, mission.step, n.id);
       if (n.kind === 'enemy') { const amt = n.boss ? 5000 : 40 + (Math.random() * 160 | 0); spawnCash(n.pos, amt); }
+      else if (n.kind === 'zombie') { game.zKills = (game.zKills || 0) + 1; spawnCash(n.pos, 20 + (Math.random() * 60 | 0)); }
       else if (n.kind === 'ped') spawnCash(n.pos, 15 + (Math.random() * 70 | 0));
       else if (n.kind === 'police') spawnCash(n.pos, 60 + (Math.random() * 120 | 0));
       else if (n.kind === 'soldier') spawnCash(n.pos, 120 + (Math.random() * 230 | 0));
     }
   } else if (n.kind === 'ped') { n.state = 'flee'; n.timer = 8; }
+}
+// ---------- Zombie-Apokalypse ----------
+function zombieStart() {
+  game.zKills = 0; game.zSpawnT = 0;
+  IE.sky.visible = false; scene.background = FOG_Z;
+  for (const n of IE.npcs) if (n.kind === 'ped' && !n.dead) { n.state = 'flee'; n.timer = 10; }
+  for (let i = 0; i < 12; i++) spawnZombie(25, 60);
+  banner('Zombie-Apokalypse', 'Die Toten erheben sich', 'Überlebe! Code nochmal eingeben zum Beenden', 4.5); sfx('fail');
+}
+function zombieEnd() {
+  IE.sky.visible = true; scene.background = null;
+  for (const n of IE.npcs) if (n.kind === 'zombie') n.remove = true;
+  if (!mission.active) $('obj').hidden = true;
+  banner('Apokalypse vorbei', (game.zKills || 0) + ' Zombies erledigt', '', 3.5);
+}
+function spawnZombie(rMin, rMax) {
+  for (let k = 0; k < 8; k++) {
+    const a = Math.random() * Math.PI * 2, r = rMin + Math.random() * (rMax - rMin), x = P.pos.x + Math.cos(a) * r, z = P.pos.z + Math.sin(a) * r;
+    if (!IE.isLand(x, z) || IE.blockedAt(x, z, 1)) continue;
+    return IE.spawnNPC(scene, 'zombie', x, z);
+  }
+}
+function zombieSpawner(dt) {
+  if (P.interior || game.dead) return;
+  game.zSpawnT = (game.zSpawnT || 0) - dt; if (game.zSpawnT > 0) return; game.zSpawnT = 0.7;
+  let c = 0; for (const n of IE.npcs) if (n.kind === 'zombie' && !n.dead) { c++; if (n.pos.distanceTo(P.pos) > 160) n.remove = true; }
+  const max = (isTouch ? 26 : 36) + Math.min(20, (game.zKills || 0) / 10 | 0);
+  if (c < max) spawnZombie(40, 95);
+  if (!mission.active) { $('obj').hidden = false; $('obj').innerHTML = `<small>Zombie-Apokalypse</small>${game.zKills || 0} Zombies erledigt · ${c} in der Nähe`; }
 }
 function spawnCash(p, amt) {
   const m = new T.Mesh(new T.BoxGeometry(0.4, 0.2, 0.25), new T.MeshBasicMaterial({ color: 0x4fd16b }));
@@ -736,14 +771,36 @@ function updatePlayer(dt) {
 // ---------- KI ----------
 function npcUpdate(n, dt) {
   const dp = n.pos.distanceTo(P.pos);
-  if (n.dead) { n.deadT += dt; if (n.deadT > 25 || (dp > 200 && !n.mission)) n.remove = true; return; }
+  if (n.dead) { n.deadT += dt; if (n.zombify && game.ch.zombies && n.deadT > n.zombify) { n.zombify = 0; n.remove = true; IE.spawnNPC(scene, 'zombie', n.pos.x, n.pos.z); } if (n.deadT > 25 || (dp > 200 && !n.mission)) n.remove = true; return; }
   if (dp > (n.keep ? 900 : 330) && !n.mission) { n.remove = true; return; }
   if (dp > 260) { n.group.visible = false; return; } n.group.visible = true;
   let mvx = 0, mvz = 0, spd = 0, aim = false;
-  if (n.kind === 'ped') {
+  if (n.kind === 'zombie') {
+    const tgt = P.veh ? P.veh.pos : P.pos, tx = tgt.x - n.pos.x, tz = tgt.z - n.pos.z, d = Math.hypot(tx, tz);
+    n.zs = n.zs || (Math.random() < 0.25 ? 4.6 : 2 + Math.random() * 1.2);
+    let prey = null;
+    if (d > 25) { // unterwegs Passanten anfallen
+      n.preyT = (n.preyT || 0) - dt;
+      if (n.preyT <= 0) { n.preyT = 1; n.prey = null; for (const o of IE.npcs) if (o.kind === 'ped' && !o.dead && o.pos.distanceTo(n.pos) < 18) { n.prey = o; break; } }
+      prey = n.prey && !n.prey.dead ? n.prey : null;
+    }
+    const gx = prey ? prey.pos.x - n.pos.x : tx, gz = prey ? prey.pos.z - n.pos.z : tz, gd = Math.hypot(gx, gz);
+    n.yaw = Math.atan2(gx, gz) + Math.sin(game.time * 1.7 + n.phase) * 0.15;
+    const reach = prey ? 1.1 : (P.veh ? 2.6 : 1.3);
+    spd = gd > reach ? n.zs : 0;
+    n.biteT = (n.biteT || 0) - dt;
+    if (gd <= reach + 0.2 && n.biteT <= 0 && !game.dead) {
+      n.biteT = 0.9 + Math.random() * 0.4;
+      if (prey) { IE.killNPC(prey); prey.zombify = 4; n.prey = null; }
+      else if (P.veh) { if (P.veh.health !== undefined) P.veh.health -= 25; sfx('hit', 0.4); }
+      else { hurtPlayer(7 + Math.random() * 5); sfx('hit', 0.5); }
+    }
+    for (const o of IE.npcs) if (o.kind === 'ped' && !o.dead && o.state !== 'flee' && Math.abs(o.pos.x - n.pos.x) < 14 && Math.abs(o.pos.z - n.pos.z) < 14) { o.state = 'flee'; o.timer = 8; o.fleeFrom = n; }
+  } else if (n.kind === 'ped') {
     n.timer -= dt;
     if (n.state === 'flee') {
-      const ax = n.pos.x - P.pos.x, az = n.pos.z - P.pos.z, l = Math.hypot(ax, az) || 1;
+      const ff = n.fleeFrom && !n.fleeFrom.dead && !n.fleeFrom.remove ? n.fleeFrom.pos : P.pos;
+      const ax = n.pos.x - ff.x, az = n.pos.z - ff.z, l = Math.hypot(ax, az) || 1;
       n.yaw = Math.atan2(ax / l, az / l); spd = 5.5; if (n.timer <= 0) n.state = 'walk';
     } else {
       if (n.timer <= 0) { n.yaw += (Math.random() - 0.5) * 2.4; n.timer = 3 + Math.random() * 5; n.idle = Math.random() < 0.2; }
@@ -784,6 +841,7 @@ function npcUpdate(n, dt) {
   const moving = Math.abs(spd) + Math.abs(mvx) > 0.1;
   n.phase += dt * (moving ? Math.max(Math.abs(spd), 2) * 2 : 0);
   IE.animHuman(n.h, n.phase, moving ? 0.6 : 0, aim, false);
+  if (n.kind === 'zombie') { n.h.armL.rotation.x = n.h.armR.rotation.x = -1.35 + Math.sin(n.phase * 0.5) * 0.15; n.h.armR.rotation.z = 0; }
   n.group.position.copy(n.pos); n.group.rotation.y = n.yaw;
 }
 
@@ -1561,13 +1619,13 @@ function updateCamera(dt) {
   camera.lookAt(cam.target);
   underwaterFx();
 }
-const FOG_AIR = new T.Color(0xd5d2c8), FOG_SEA = new T.Color(0x0e5a70);
+const FOG_Z = new T.Color(0x5d6655), FOG_AIR = new T.Color(0xd5d2c8), FOG_SEA = new T.Color(0x0e5a70);
 function underwaterFx() {
   const uw = camera.position.y < -0.05 && IE.groundH(camera.position.x, camera.position.z) < camera.position.y;
   game.uw = uw;
   $('under').hidden = !uw;
   if (uw) { scene.fog.color.copy(FOG_SEA); scene.fog.near = 1; scene.fog.far = 48; }
-  else scene.fog.color.copy(FOG_AIR);
+  else scene.fog.color.copy(game.ch.zombies ? FOG_Z : FOG_AIR);
 }
 
 // ---------- HUD ----------
@@ -1670,6 +1728,7 @@ function frame() {
 
   updatePlayer(dt);
   if (game.dead) { game.deadT += dt; if (game.deadT > 3.5) respawn(); }
+  if (game.ch.zombies) zombieSpawner(dt);
   for (let i = IE.npcs.length - 1; i >= 0; i--) { const n = IE.npcs[i]; npcUpdate(n, dt); if (n.remove) { scene.remove(n.group); IE.npcs.splice(i, 1); } }
   vehiclesUpdate(dt);
   spawner(dt); policeUpdate(dt); missionUpdate(dt);
@@ -1696,7 +1755,7 @@ function frame() {
   // Sonne folgt dem Spieler (Schatten)
   sun.position.set(P.pos.x + SUN_DIR.x * 300, P.pos.y + SUN_DIR.y * 300, P.pos.z + SUN_DIR.z * 300); sun.target.position.copy(P.pos);
   IE.sky.position.copy(camera.position);
-  const alt = camera.position.y; if (!game.uw) { scene.fog.near = 500 + alt * 2; scene.fog.far = 3200 + alt * 6; }
+  const alt = camera.position.y; if (!game.uw) { if (game.ch.zombies) { scene.fog.near = 40; scene.fog.far = 420 + alt * 2; } else { scene.fog.near = 500 + alt * 2; scene.fog.far = 3200 + alt * 6; } }
   engineSound(P.veh && !P.veh.dead ? P.veh : null);
   updateHUD(dt);
   drawMini();
@@ -1776,6 +1835,6 @@ function boot() {
 $('bNew').addEventListener('click', () => startGame(false));
 $('bCont').addEventListener('click', () => startGame(true));
 function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = 'italienEmpire_v1' + ACC; $('bCont').hidden = !store.get(); }
-window.IEgame = { openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
+window.IEgame = { CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
 boot();
 })();

@@ -180,6 +180,7 @@ async function openAdmin() {
   $('adFly').textContent = g.P.fly ? 'Flugmodus: An' : 'Flugmodus: Aus';
   $('adGod').textContent = g.game.ch && g.game.ch.god ? 'Unsterblich: An' : 'Unsterblich: Aus';
   $('adSpeed').value = g.P.flySpeed || 120; $('adSpeedV').textContent = Math.round(($('adSpeed').value) * 3.6) + ' km/h';
+  drawAdminCheats();
   await renderAdminList();
 }
 let adminCache = [];
@@ -222,6 +223,22 @@ $('adFly').addEventListener('click', () => { const g = IEgame; g.setFly(!g.P.fly
 $('adGod').addEventListener('click', () => { const g = IEgame; g.game.ch = g.game.ch || {}; g.game.ch.god = !g.game.ch.god; if (g.game.ch.god) g.hurtPlayer(0); $('adGod').textContent = g.game.ch.god ? 'Unsterblich: An' : 'Unsterblich: Aus'; g.toast(g.game.ch.god ? '★ Unsterblich' : 'Unsterblich aus', 2); });
 $('adSpeed').addEventListener('input', () => { const v = +$('adSpeed').value; $('adSpeedV').textContent = Math.round(v * 3.6) + ' km/h'; IEgame.P.flySpeed = v; });
 $('adYacht').addEventListener('click', () => { if (IEgame.game.state !== 'play') { IEgame.toast('Starte zuerst ein Spiel', 2); return; } IEgame.spawnAirship(); IEgame.closeModals(); });
+function drawAdminCheats() {
+  const g = IEgame, box = $('adCheats'); box.innerHTML = '';
+  for (const c of g.CHEATS) {
+    const on = c.toggle && g.game.ch[c.toggle];
+    const b = document.createElement('button');
+    b.className = 'btn' + (c.toggle && !on ? ' ghost' : '');
+    b.style.cssText = 'font-size:15px;padding:6px 12px' + (c.toggle === 'zombies' ? ';border-color:#7fae5a' : '');
+    b.textContent = c.name + (c.toggle ? (on ? ': An' : ': Aus') : '');
+    b.addEventListener('click', () => {
+      if (g.game.state !== 'play') { g.toast('Starte zuerst ein Spiel', 2); return; }
+      if (c.toggle) { g.runCheat(c); drawAdminCheats(); if (c.toggle === 'zombies' && g.game.ch.zombies) g.closeModals(); }
+      else { g.closeModals(); g.runCheat(c); }
+    });
+    box.appendChild(b);
+  }
+}
 A.openAdmin = openAdmin;
 $('acctAdmin').addEventListener('click', openAdmin);
 $('pAdmin').addEventListener('click', openAdmin);
