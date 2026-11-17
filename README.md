@@ -68,7 +68,7 @@ Im Menü unter „Upgrades“ unendlich oft kaufbar: Geld-Multiplikator, Lebense
 Besiegte Figuren lassen Geld fallen.
 
 ## Cheat-Codes
-Es gibt geheime Cheat-Codes (Knopf-Kombinationen). Admins sehen die Liste im Menü.
+Es gibt geheime Cheat-Codes (Knopf-Kombinationen). Sie funktionieren für alle – auch in öffentlichen und privaten Online-Lobbys. Die Liste sehen nur Admins im Menü.
 
 ## Steuerung (Tastatur)
 WASD laufen/fahren · Maus Kamera · Linksklick schießen · Rechtsklick zielen · Shift sprinten/Heli runter ·

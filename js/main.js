@@ -203,7 +203,6 @@ function cheatInput(sym) {
   for (const c of CHEATS.slice().sort((a, b) => b.seq.length - a.seq.length)) {
     if (seq.length < c.seq.length || c.seq.some((x, i) => seq[seq.length - c.seq.length + i] !== x)) continue;
     cheatBuf = [];
-    if (window.IEonline && IEonline.active && IEonline.isPublic && !(window.IEaccount && IEaccount.admin)) { toast('Cheats sind in der öffentlichen Lobby aus'); return; }
     if (c.toggle) { game.ch[c.toggle] = !game.ch[c.toggle]; if (game.ch[c.toggle] && c.on) c.on(); sfx('pass'); banner('Cheat ' + (game.ch[c.toggle] ? 'an' : 'aus'), c.name, '', 2.5); return; }
     c.f(); sfx('pass'); banner('Cheat aktiviert', c.name, '', 2.5); return;
   }
