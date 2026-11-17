@@ -291,6 +291,7 @@ const flashGeo = new T.SphereGeometry(0.12, 6, 4), flashMat = new T.MeshBasicMat
 function flash(p) { const m = new T.Mesh(flashGeo, flashMat); m.position.copy(p); scene.add(m); effects.push({ o: m, t: 0, life: 0.05, kill() { scene.remove(m); } }); }
 const boomMat = new T.MeshBasicMaterial({ color: 0xff8a2a, transparent: true, opacity: 0.9 }), smokeMat = new T.MeshLambertMaterial({ color: 0x333333, transparent: true, opacity: 0.6 });
 function explosion(p, radius) {
+  if (IE.addScorch) IE.addScorch(p, radius);
   const m = new T.Mesh(new T.SphereGeometry(1, 16, 10), boomMat.clone()); m.position.copy(p); scene.add(m);
   effects.push({ o: m, t: 0, life: 0.9, upd(e) { const k = e.t / e.life; m.scale.setScalar(1 + k * radius); m.material.opacity = 0.9 * (1 - k); }, kill() { scene.remove(m); m.material.dispose(); } });
   for (let i = 0; i < 6; i++) { const s = new T.Mesh(new T.SphereGeometry(1.5, 8, 6), smokeMat.clone()); s.position.copy(p).add(new T.Vector3((Math.random() - 0.5) * 4, Math.random() * 2, (Math.random() - 0.5) * 4)); scene.add(s); const vy = 2 + Math.random() * 3; effects.push({ o: s, t: 0, life: 3, upd(e, dt) { s.position.y += vy * dt; s.scale.setScalar(1 + e.t); s.material.opacity = 0.6 * (1 - e.t / e.life); }, kill() { scene.remove(s); s.material.dispose(); } }); }
@@ -526,6 +527,7 @@ function playerShoot(dt) {
     }
     const end = ray.o.clone().addScaledVector(d, Math.min(bestT, w.range + skip));
     if (k === 0 || w.pellets > 1) tracer(muzzle, end);
+    if (!hitN && !hitV && !hitR && bestT < w.range + skip && IE.addBulletHole) IE.addBulletHole(end, d);
     if (hitR) { IEonline.sendHit(hitR, w.dmg); flashHit(); }
     if (hitN) { damageNPC(hitN, w.dmg * (head ? 2.5 : 1) * dmgMult(), true); flashHit(); }
     if (game.ch.boom && k === 0 && game.time - (game.boomT || 0) > 0.18) { game.boomT = game.time; explosion(end.clone(), 3.5); }
@@ -995,7 +997,7 @@ function spawnCityTraffic(c, pp) {
 }
 
 // ---------- Spawner (Verkehr, Passanten, Polizei) ----------
-function civCar(fancy) { const l = IE.cars.filter(c => !c.military && (fancy ? c.price >= 90000 : c.price < 90000)); return l[(Math.random() * l.length) | 0]; }
+function civCar(fancy) { const l = IE.cars.filter(c => !c.military && !c.luxury && (fancy ? c.price >= 90000 : c.price < 90000)); return l[(Math.random() * l.length) | 0]; }
 function inBase(p, m) { const B = IE.base; return Math.abs(p.x - B.x) < B.hw + (m || 0) && Math.abs(p.z - B.z) < B.hd + (m || 0); }
 function baseAndHarbor() {
   const pp = P.pos, B = IE.base, dB = Math.hypot(pp.x - B.x, pp.z - B.z);
@@ -1330,7 +1332,7 @@ function teleportTo(x, y, z) {
   fade();
 }
 function fade() { const f = $('fade'); f.hidden = false; f.style.opacity = 1; setTimeout(() => { f.style.opacity = 0; }, 60); setTimeout(() => { f.hidden = true; }, 500); }
-const SHOP_ROOM = { weapon: 'armeria', car: 'autosalone', boat: 'nautica' };
+const SHOP_ROOM = { weapon: 'armeria', car: 'autosalone', luxury: 'autosalone', boat: 'nautica' };
 
 // ---------- Shops ----------
 let shopCur = null;
@@ -1376,9 +1378,10 @@ function renderShop() {
         [{ t: 'Zum Steg bringen', buy: true, f: () => { for (const v of IE.vehicles) if (v.type === 'boat' && v.def.id === b.id && !v.driver) v.removeMe = true; setTimeout(() => spawnT = 0, 50); closeModals(); toast(b.name + ' wird an den Steg gebracht'); } }] :
         [{ t: 'Kaufen · ' + fmt(b.price), buy: true, dis: S.money < b.price, f: () => { S.money -= b.price; S.boats.push(b.id); sfx('cash'); spawnT = 0; closeModals(); toast(b.name + ' gekauft – liegt am Steg!'); } }], b.color);
     }
-  } else if (s.type === 'car') {
-    $('shopT').textContent = 'Autosalone · ' + city; $('shopHint').textContent = 'Gekaufte Autos kannst du in jedem Autosalone kostenlos abholen.';
-    for (const c of IE.cars.filter(c => !c.military)) {
+  } else if (s.type === 'car' || s.type === 'luxury') {
+    const lux = s.type === 'luxury';
+    $('shopT').textContent = (lux ? 'Lusso Automobili · ' : 'Autosalone · ') + city; $('shopHint').textContent = lux ? 'Die exklusivsten Autos Italiens. Gekaufte Autos kannst du jederzeit über „Meine Fahrzeuge“ herholen.' : 'Gekaufte Autos kannst du in jedem Autosalone kostenlos abholen – oder über „Meine Fahrzeuge“ herholen.';
+    for (const c of IE.cars.filter(c => !c.military && !!c.luxury === lux)) {
       const own = S.cars.includes(c.id);
       row(c.name, `Höchstgeschwindigkeit ${Math.round(c.speed * 3.6)} km/h · Beschleunigung ${c.accel}`, own ?
         [{ t: 'Abholen', buy: true, f: () => { spawnOwnedCar(c.id, s); closeModals(); } }] :
@@ -1439,8 +1442,8 @@ function buildMapCanvas() {
 }
 const w2m = (x, z) => ({ x: (x - IE.grid.x0) * MAP.s, y: (z - IE.grid.z0) * MAP.s });
 function icon(g, x, y, kind, size) {
-  const col = { race: '#ff4fd8', villa: '#d9b45a', villaOwn: '#48e07a', gas: '#ff9a3c', plane: '#f2c230', weapon: '#e94b3c', car: '#3aa0ff', heli: '#48e07a', boat: '#35d6e8', base: '#a9c25a', wreck: '#f2c94c', wreckGot: '#6b6b6b', mission: '#f2c230', wp: '#ff5fd2', target: '#f2c230' }[kind];
-  const ch = { race: 'R', villa: 'V', villaOwn: '⌂', gas: 'T', plane: '✈', weapon: 'W', car: 'A', heli: 'H', boat: 'B', base: '✪', wreck: '$', wreckGot: '$', mission: 'M', wp: '•', target: '★' }[kind];
+  const col = { luxury: '#d6b04a', race: '#ff4fd8', villa: '#d9b45a', villaOwn: '#48e07a', gas: '#ff9a3c', plane: '#f2c230', weapon: '#e94b3c', car: '#3aa0ff', heli: '#48e07a', boat: '#35d6e8', base: '#a9c25a', wreck: '#f2c94c', wreckGot: '#6b6b6b', mission: '#f2c230', wp: '#ff5fd2', target: '#f2c230' }[kind];
+  const ch = { luxury: '€', race: 'R', villa: 'V', villaOwn: '⌂', gas: 'T', plane: '✈', weapon: 'W', car: 'A', heli: 'H', boat: 'B', base: '✪', wreck: '$', wreckGot: '$', mission: 'M', wp: '•', target: '★' }[kind];
   g.fillStyle = '#111'; g.beginPath(); g.arc(x, y, size, 0, 7); g.fill(); g.strokeStyle = col; g.lineWidth = Math.max(1.5, size * 0.22); g.stroke();
   g.fillStyle = col; g.font = `bold ${size * 1.15}px Barlow Condensed, Arial`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(ch, x, y + 0.5);
 }
@@ -1509,7 +1512,7 @@ function drawBig() {
   const sz = Math.min(1.6, 0.8 + MV.zoom * 0.2);
   g.font = `600 ${13 * dpr * sz}px Barlow Condensed, Arial`;
   for (const c of IE.cities) { const p = w2m(c.x, c.z); g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.fillStyle = '#000'; g.fillText(c.name, tx(p.x) + 9 * dpr + 1, ty(p.y) - 6 * dpr + 1); g.fillStyle = '#fff'; g.fillText(c.name, tx(p.x) + 9 * dpr, ty(p.y) - 6 * dpr); g.font = `600 ${13 * dpr * sz}px Barlow Condensed, Arial`; }
-  const off = { weapon: [-1, 0], car: [1, 0], heli: [0, 1], boat: [0, -1], plane: [0, 0] };
+  const off = { luxury: [1, 1], weapon: [-1, 0], car: [1, 0], heli: [0, 1], boat: [0, -1], plane: [0, 0] };
   for (const s of IE.shops) { const p = w2m(s.mx, s.mz); const o = MV.zoom < 2.5 ? off[s.type] : [0, 0]; icon(g, tx(p.x) + o[0] * 10 * dpr, ty(p.y) + o[1] * 10 * dpr, s.type, 6 * dpr * sz); }
   { const p = w2m(IE.base.x, IE.base.z); icon(g, tx(p.x), ty(p.y), 'base', 9 * dpr * sz); g.fillStyle = '#d9e8a8'; g.textAlign = 'left'; g.fillText('Militärbasis', tx(p.x) + 12 * dpr, ty(p.y) + 4 * dpr); }
   for (const wr of IE.wrecks) { const p = w2m(wr.x, wr.z); icon(g, tx(p.x), ty(p.y), wr.got ? 'wreckGot' : 'wreck', 5.5 * dpr * sz); }
@@ -1520,7 +1523,7 @@ function drawBig() {
   g.save(); g.translate(tx(p.x), ty(p.y)); g.rotate(-P.yaw + Math.PI); g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = 2 * dpr;
   g.beginPath(); g.moveTo(0, -9 * dpr); g.lineTo(7 * dpr, 7 * dpr); g.lineTo(0, 3 * dpr); g.lineTo(-7 * dpr, 7 * dpr); g.closePath(); g.stroke(); g.fill(); g.restore();
   // Legende
-  const items = [['race', 'Rennstrecke'], ['villa', 'Villa (kaufbar)'], ['gas', 'Tankstelle'], ['plane', 'Flughafen & Hangar'], ['weapon', 'Waffenladen'], ['car', 'Autohaus'], ['heli', 'Helikopterplatz'], ['boat', 'Bootsladen & Hafen'], ['base', 'Militärbasis'], ['wreck', 'Schiffswrack (tauchen)'], ['mission', 'Mission'], ['wp', 'Wegpunkt']];
+  const items = [['race', 'Rennstrecke'], ['villa', 'Villa (kaufbar)'], ['gas', 'Tankstelle'], ['plane', 'Flughafen & Hangar'], ['weapon', 'Waffenladen'], ['car', 'Autohaus'], ['luxury', 'Luxus-Autohaus'], ['heli', 'Helikopterplatz'], ['boat', 'Bootsladen & Hafen'], ['base', 'Militärbasis'], ['wreck', 'Schiffswrack (tauchen)'], ['mission', 'Mission'], ['wp', 'Wegpunkt']];
   g.fillStyle = 'rgba(13,15,19,0.7)'; g.fillRect(6 * dpr, 6 * dpr, 160 * dpr, (items.length * 20 + 10) * dpr);
   items.forEach((it, i) => { icon(g, 20 * dpr, (20 + i * 20) * dpr, it[0], 7 * dpr); g.fillStyle = '#fff'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = `600 ${13 * dpr}px Barlow Condensed, Arial`; g.fillText(it[1], 34 * dpr, (21 + i * 20) * dpr); });
   $('mapZoom').textContent = MV.zoom.toFixed(1) + '×';
@@ -1699,7 +1702,7 @@ function updateHUD(dt) {
     }
     else if (!P.veh) {
       const s = nearestShop();
-      if (s) pr = `<b>E</b> · ${s.type === 'weapon' ? 'Waffenladen betreten' : s.type === 'car' ? 'Autohaus betreten' : s.type === 'boat' ? 'Bootsladen betreten' : s.type === 'plane' ? 'Hangar: Flugzeug wählen' : 'Helikopterplatz'}`;
+      if (s) pr = `<b>E</b> · ${s.type === 'weapon' ? 'Waffenladen betreten' : s.type === 'car' ? 'Autohaus betreten' : s.type === 'luxury' ? 'Luxus-Autohaus betreten' : s.type === 'boat' ? 'Bootsladen betreten' : s.type === 'plane' ? 'Hangar: Flugzeug wählen' : 'Helikopterplatz'}`;
       else { for (const v of IE.vehicles) if (!v.dead && vehDist(v) < vehReach(v)) { pr = v.type === 'airship' ? '<b>F</b> · Ans Steuer der Flug-Yacht' : `<b>F</b> · Einsteigen: ${v.def.name}`; break; }
       if (!pr && P.ride) pr = '<b>F</b> · Aussteigen (Beifahrer)';
       if (!pr && !P.ride && ONL() && IEonline.nearCarPeer && IEonline.nearCarPeer(P.pos)) pr = '<b>F</b> · Als Beifahrer einsteigen bei ' + IEonline.nearCarPeer(P.pos).name;
@@ -1878,6 +1881,6 @@ function boot() {
 $('bNew').addEventListener('click', () => startGame(false));
 $('bCont').addEventListener('click', () => startGame(true));
 function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = 'italienEmpire_v1' + ACC; $('bCont').hidden = !store.get(); }
-window.IEgame = { putInVehicle, setWanted, maxHP, placePlayer, teleportTo, CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
+window.IEgame = { enterInterior, exitInterior, putInVehicle, setWanted, maxHP, placePlayer, teleportTo, CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
 boot();
 })();

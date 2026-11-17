@@ -109,7 +109,10 @@ IE.shops = [
   { type: 'heli',   city: 'cagliari',dx: 90,  dz: -60 },
   { type: 'weapon', city: 'cagliari',dx: -40, dz: 40 },
   { type: 'heli',   city: 'catania', dx: 90,  dz: -70 },
-  { type: 'heli',   city: 'reggio',  dx: 60,  dz: 50 }
+  { type: 'heli',   city: 'reggio',  dx: 60,  dz: 50 },
+  { type: 'luxury', city: 'neapel',  dx: -160, dz: -70 },
+  { type: 'luxury', city: 'mailand', dx: 130, dz: 130 },
+  { type: 'luxury', city: 'rom',     dx: 160, dz: -60 }
 ];
 
 IE.weapons = [
@@ -145,6 +148,12 @@ IE.cars = [
   { id: 'gt3',      name: 'Corsa GT3 (Rennwagen)', price: 240000, speed: 82, accel: 33, grip: 3.1, color: 0xf27a1a, kind: 'sport' },
   { id: 'fulmine',  name: 'Fulmine Hyper',   price: 650000, speed: 96, accel: 42, grip: 2.9, color: 0x2a8fd8, kind: 'super' },
   { id: 'iperione', name: 'Iperione 1000 PS', price: 1100000, speed: 104, accel: 46, grip: 3.0, color: 0xe8e8e8, kind: 'super' },
+  { id: 'diamante', name: 'Diamante GTR',     price: 2500000,  speed: 100, accel: 44, grip: 3.1, color: 0xdfe8f0, kind: 'super', luxury: true },
+  { id: 'leggenda', name: 'Leggenda V12',     price: 3800000,  speed: 104, accel: 45, grip: 3.0, color: 0x7a0c14, kind: 'super', luxury: true },
+  { id: 'saetta',   name: 'Saetta Elettrica', price: 4500000,  speed: 108, accel: 52, grip: 3.2, color: 0x18c2d8, kind: 'sport', luxury: true },
+  { id: 'imperatore', name: 'Imperatore Limousine', price: 6000000, speed: 78, accel: 26, grip: 2.6, color: 0x0b0b0d, kind: 'limo', luxury: true },
+  { id: 'oro',      name: 'Oro Assoluto (vergoldet)', price: 9000000, speed: 106, accel: 46, grip: 3.0, color: 0xd6b04a, kind: 'super', luxury: true },
+  { id: 'aquila',   name: 'Aquila Hyper 2000 PS', price: 15000000, speed: 120, accel: 58, grip: 3.4, color: 0x14161a, kind: 'super', luxury: true },
   { id: 'jeep',     name: 'Militärjeep',     price: 0, speed: 44, accel: 18, grip: 2.5, color: 0x4f5a34, kind: 'suv', military: true },
   { id: 'panzer',   name: 'Carro Armato (Panzer)', price: 0, speed: 17, accel: 7, grip: 2.6, color: 0x55603a, kind: 'tank', military: true }
 ];
@@ -170,23 +179,24 @@ IE.airport = { name: 'Aeroporto di Napoli', lon: 15.46, lat: 40.84, hw: 80, hd: 
 (function () { const p = IE.geo(IE.airport.lon, IE.airport.lat); IE.airport.x = p.x; IE.airport.z = p.z; })();
 IE.cityById.flughafen = { id: 'flughafen', name: 'Flughafen', x: IE.airport.x - IE.airport.hw - 30, z: IE.airport.z + 60, r: 20, base: IE.airport.h };
 IE.flatZones = [ { x: IE.base.x, z: IE.base.z, hw: IE.base.hw, hd: IE.base.hd, h: 12 }, { x: IE.airport.x, z: IE.airport.z, hw: IE.airport.hw + 10, hd: IE.airport.hd + 10, h: IE.airport.h } ];
-// Rennstrecke: eigene Insel vor der Adriaküste (bei Ravenna/Rimini), mit Damm zum Festland
-IE.track = { name: 'Autodromo dell\'Adriatico', x: 380, z: -1000, hw: 320, hd: 200, h: 6 };
-IE.flatZones.push({ x: IE.track.x, z: IE.track.z, hw: IE.track.hw, hd: IE.track.hd, h: IE.track.h, f: 70, sea: true });
-IE.flatZones.push({ x: -5, z: -1000, hw: 75, hd: 13, h: IE.track.h, f: 26, sea: true }); // Damm
+// Rennstrecke: große Ebene an der Nordost-Adria (gegenüber von Italien), weit weg von Städten
+IE.track = { name: 'Autodromo dell\'Adriatico', x: 1550, z: -1700, hw: 380, hd: 235, h: 20 };
+IE.flatZones.push({ x: IE.track.x, z: IE.track.z, hw: IE.track.hw, hd: IE.track.hd, h: IE.track.h, f: 120 });
 // Villenstraße am Hang über Neapel (Blick auf Stadt und Golf)
-IE.villaRoad = [[395, 235], [388, 200], [382, 160], [380, 120], [384, 92], [400, 112], [425, 135], [460, 147], [500, 152], [540, 154], [580, 155], [620, 153], [655, 152]];
+IE.villaRoad = [[395, 235], [388, 200], [382, 160], [380, 120], [384, 92], [400, 112], [425, 135], [460, 147], [500, 152], [540, 154], [580, 155], [620, 153], [660, 152], [700, 152]];
 IE.villaRoadH = 58;
+// side: 'n' = bergseitig (Tor vorne zur Straße), 's' = talseitig (Tor hinten zur Straße); alle blicken aufs Meer
 IE.villas = [
-  { id: 'v1', name: 'Villa Aurora',     x: 470, z: 120, price: 1500000, rot: 0 },
-  { id: 'v2', name: 'Villa Belvedere',  x: 515, z: 124, price: 2200000, rot: 0 },
-  { id: 'v3', name: 'Villa Sirena',     x: 560, z: 125, price: 3000000, rot: 0 },
-  { id: 'v4', name: 'Villa Vesuvio',    x: 605, z: 124, price: 4200000, rot: 0 },
-  { id: 'v5', name: 'Villa del Golfo',  x: 650, z: 122, price: 6500000, rot: 0 },
-  { id: 'v6', name: 'Villa Imperiale',  x: 430, z: 108, price: 9500000, rot: 0, big: true }
+  { id: 'v1', name: 'Villa Aurora',     x: 470, z: 116, side: 'n', price: 1500000 },
+  { id: 'v2', name: 'Villa Belvedere',  x: 510, z: 188, side: 's', price: 2200000 },
+  { id: 'v3', name: 'Villa Sirena',     x: 550, z: 122, side: 'n', price: 3000000 },
+  { id: 'v4', name: 'Villa Vesuvio',    x: 590, z: 189, side: 's', price: 4200000 },
+  { id: 'v5', name: 'Villa del Golfo',  x: 630, z: 121, side: 'n', price: 6500000 },
+  { id: 'v6', name: 'Villa Imperiale',  x: 705, z: 117, side: 'n', price: 9500000, big: true }
 ];
+for (const v of IE.villas) v.s = v.big ? 2 : 1.6;
 for (let i = 7; i < IE.villaRoad.length; i++) { const a = IE.villaRoad[i - 1], b = IE.villaRoad[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 3, hd: Math.abs(b[1] - a[1]) / 2 + 6, h: IE.villaRoadH, f: 16, small: true }); }
-for (const v of IE.villas) IE.flatZones.push({ x: v.x, z: v.z, hw: v.big ? 22 : 17, hd: v.big ? 17 : 14, h: IE.villaRoadH + 1.5, f: 18, small: true });
+for (const v of IE.villas) IE.flatZones.push({ x: v.x, z: v.z + 1.25 * v.s, hw: 10 * v.s + 3, hd: 9.25 * v.s + 3, h: IE.villaRoadH + 1.5, f: 20, small: true });
 IE.planes = [
   { id: 'piccolo',  name: 'Piccolo 172 (Propeller)', price: 0,       speed: 62,  minSpeed: 22, turn: 1.0, color: 0xf2f2ee, accent: 0xc8372d, kind: 'prop' },
   { id: 'acrobata', name: 'Acrobata (Kunstflug)',    price: 180000,  speed: 85,  minSpeed: 24, turn: 1.8, color: 0xd12b2b, accent: 0xf2f2f2, kind: 'stunt' },

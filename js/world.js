@@ -459,7 +459,7 @@ function buildCities(scene) {
     reserve[cid].push({ x: hb.land.x - hb.dx * 12, z: hb.land.z - hb.dz * 12, r: 30 });
     for (let t = 0; t < 30; t += 6) reserve[cid].push({ x: hb.land.x - hb.dx * t, z: hb.land.z - hb.dz * t, r: 16 });
   }
-  IE.shops.forEach(s => { if (s.fixed) return; const c = IE.cityById[s.city]; const p = IE.snapLand(c.x + s.dx, c.z + s.dz, c.x, c.z); s.x = p.x; s.z = p.z; reserve[s.city].push({ x: s.x, z: s.z, r: s.type === 'heli' ? 34 : 30 }); });
+  IE.shops.forEach(s => { if (s.fixed) return; const c = IE.cityById[s.city]; const p = IE.snapLand(c.x + s.dx, c.z + s.dz, c.x, c.z); s.x = p.x; s.z = p.z; reserve[s.city].push({ x: s.x, z: s.z, r: s.type === 'heli' ? 34 : s.type === 'luxury' ? 38 : 30 }); });
   IE.shops.forEach(s => { if (s.fixed) reserve[s.city].push({ x: s.x, z: s.z, r: 26 }); });
   const resolvePt = (o, def) => { if (o.at === 'airport') { o.x = IE.airport.spawn.x; o.z = IE.airport.spawn.z; return o; } const c = IE.cityById[o.city || def]; const p = IE.snapLand(c.x + (o.dx || 0), c.z + (o.dz || 0), c.x, c.z); o.x = p.x; o.z = p.z; return o; };
   IE.airport.spawn = { x: IE.airport.x - 40, z: IE.airport.z + 40 };
@@ -718,25 +718,26 @@ function marker(scene, x, y, z, color, r) {
 }
 IE.marker = marker;
 function buildShops(scene) {
-  const sw = signTex('ARMERIA', '#1b1b1b', '#e94b3c'), sc = signTex('AUTOSALONE', '#0f2440', '#ffffff');
+  const sw = signTex('ARMERIA', '#1b1b1b', '#e94b3c'), sc = signTex('AUTOSALONE', '#0f2440', '#ffffff'), sl = signTex('LUSSO AUTOMOBILI', '#0b0b0d', '#d6b04a');
   const hmat = new T.MeshLambertMaterial({ map: heliTex() });
   for (const s of IE.shops) {
     const c = IE.cityById[s.city];
     // Gebäude hinter dem Marker, Richtung vom Zentrum weg
     let ax = s.x - c.cx, az = s.z - c.cz; const l = Math.hypot(ax, az) || 1; ax /= l; az /= l;
     const y = rawH(s.x, s.z);
-    if (s.type === 'weapon' || s.type === 'car') {
-      const bw = s.type === 'car' ? 26 : 14, bd = s.type === 'car' ? 16 : 10, bh = s.type === 'car' ? 8 : 7;
+    if (s.type === 'weapon' || s.type === 'car' || s.type === 'luxury') {
+      const lux = s.type === 'luxury', bw = lux ? 36 : s.type === 'car' ? 26 : 14, bd = lux ? 20 : s.type === 'car' ? 16 : 10, bh = lux ? 12 : s.type === 'car' ? 8 : 7;
       const bx = s.x + ax * (bd / 2 + 4), bz = s.z + az * (bd / 2 + 4), rot = Math.atan2(ax, az);
-      const mat = s.type === 'car' ? new T.MeshStandardMaterial({ color: 0xdfe6ea, metalness: 0.3, roughness: 0.4 }) : new T.MeshLambertMaterial({ color: 0x6b5a4a });
+      const mat = lux ? new T.MeshStandardMaterial({ color: 0x15161a, metalness: 0.7, roughness: 0.25 }) : s.type === 'car' ? new T.MeshStandardMaterial({ color: 0xdfe6ea, metalness: 0.3, roughness: 0.4 }) : new T.MeshLambertMaterial({ color: 0x6b5a4a });
       const b = add(scene, new T.BoxGeometry(bw, bh, bd), mat, bx, y + bh / 2 - 0.3, bz, rot);
-      if (s.type === 'car') { const gl = add(scene, new T.BoxGeometry(bw - 2, bh - 3, 0.3), IE.mat.glass, bx - ax * (bd / 2 + 0.1), y + bh / 2 - 0.8, bz - az * (bd / 2 + 0.1), rot); }
-      const sign = new T.Mesh(new T.PlaneGeometry(bw * 0.7, bw * 0.7 / 4), new T.MeshBasicMaterial({ map: s.type === 'car' ? sc : sw }));
+      if (lux) { add(scene, new T.BoxGeometry(bw + 0.6, 0.8, bd + 0.6), IE.mat.gold, bx, y + bh, bz, rot); for (const k of [-1, 1]) add(scene, new T.BoxGeometry(1, bh, 1), IE.mat.gold, bx - ax * (bd / 2 + 0.3) + az * k * (bw / 2), y + bh / 2, bz - az * (bd / 2 + 0.3) - ax * k * (bw / 2), rot); }
+      if (s.type === 'car' || lux) { const gl = add(scene, new T.BoxGeometry(bw - 2, bh - 3, 0.3), IE.mat.glass, bx - ax * (bd / 2 + 0.1), y + bh / 2 - 0.8, bz - az * (bd / 2 + 0.1), rot); }
+      const sign = new T.Mesh(new T.PlaneGeometry(bw * 0.7, bw * 0.7 / 4), new T.MeshBasicMaterial({ map: lux ? sl : s.type === 'car' ? sc : sw }));
       sign.position.set(bx - ax * (bd / 2 + 0.05), y + bh - 0.5, bz - az * (bd / 2 + 0.05)); sign.rotation.y = rot + Math.PI; scene.add(sign);
       const ext = Math.max(bw, bd) / 2;
       IE.addBox(bx - ext * (Math.abs(az) > 0.7 ? bw / (2 * ext) : bd / (2 * ext)), bz - ext * (Math.abs(az) > 0.7 ? bd / (2 * ext) : bw / (2 * ext)),
                 bx + ext * (Math.abs(az) > 0.7 ? bw / (2 * ext) : bd / (2 * ext)), bz + ext * (Math.abs(az) > 0.7 ? bd / (2 * ext) : bw / (2 * ext)), y + bh);
-      s.marker = marker(scene, s.x, y, s.z, s.type === 'car' ? 0x3aa0ff : 0xff4a3a);
+      s.marker = marker(scene, s.x, y, s.z, lux ? 0xd6b04a : s.type === 'car' ? 0x3aa0ff : 0xff4a3a);
       s.spawn = { x: s.x - az * 9, z: s.z + ax * 9, rot: rot + Math.PI / 2 };
     } else if (s.type === 'boat') {
       buildHarbor(scene, s);
@@ -998,7 +999,7 @@ function buildInteriors(scene) {
     buero:     { floor: 0x6b5644, wall: 0xd8d0c2, w: 18, d: 14, name: 'Sofias Büro' },
     galerie:   { floor: 0xd9cfbf, wall: 0xf6f3ec, w: 30, d: 22, name: 'Galleria d\'Arte' },
     bank:      { floor: 0xcfc6b4, wall: 0xe9e1cf, w: 30, d: 22, name: 'Banca Privata' },
-    villa:     { floor: 0x8a5a3a, wall: 0xefe4cf, w: 30, d: 24, name: 'Villa' },
+    villa:     { floor: 0xe9e1cf, wall: 0xf6f1e6, w: 44, d: 32, name: 'Villa' },
     casino:    { floor: 0x5a0f18, wall: 0x2a1a14, w: 36, d: 26, name: 'Casino' }
   };
   types.forEach((t, i) => {
@@ -1050,10 +1051,26 @@ function buildInteriors(scene) {
       const vault = new T.Mesh(new T.CylinderGeometry(2.4, 2.4, 0.5, 24), IE.mat.gold); vault.rotation.x = Math.PI / 2; vault.position.set(ox + W / 2 - 4, y + 2.6, oz - D / 2 + 0.4); scene.add(vault);
       for (let k = 0; k < 4; k++) deco(0.5, 0.3, 0.4, IE.mat.gold, W / 2 - 5 + (k % 2) * 0.6, -D / 2 + 3, (k >> 1) * 0.3);
     } else if (t === 'villa') {
-      box(5, 0.8, 2, 0xe9e1cc, -4, 2); box(2, 0.8, 4, 0xe9e1cc, -7.5, -0.5); deco(8, 0.02, 6, 0x7a1a24, -3, 0, 0.01);
-      deco(3, 0.6, 1.5, 0x3a2a20, -4, -1); const ch = new T.Mesh(new T.SphereGeometry(1, 12, 8), new T.MeshBasicMaterial({ color: 0xfff1c8 })); ch.position.set(ox, y + H - 1.5, oz); scene.add(ch);
-      for (let k = 0; k < 3; k++) deco(2.4, 1.6, 0.1, [0x8a6a2a, 0x4a6a8a, 0x6a2a2a][k], -6 + k * 6, -D / 2 + 0.3, 2.2);
-      box(2, 2.4, 0.6, 0x5a3a20, W / 2 - 2, -D / 2 + 0.4);
+      // Wohnbereich: Sofas, Teppich, Couchtisch, großer Fernseher
+      deco(12, 0.02, 8, 0x7a1a24, -8, 1, 0.01); box(7, 0.9, 2, 0xe9e1cc, -8, 4.5); box(2, 0.9, 5, 0xe9e1cc, -12.5, 1.5); box(2, 0.9, 5, 0xe9e1cc, -3.5, 1.5);
+      deco(3.5, 0.5, 2, 0x3a2a20, -8, 1); deco(7, 3.6, 0.15, new T.MeshBasicMaterial({ color: 0x0a0a0c }), -8, -D / 2 + 0.3, 1.2); deco(6.6, 3.2, 0.05, new T.MeshBasicMaterial({ color: 0x1f4fb0 }), -8, -D / 2 + 0.4, 1.4);
+      // Bar mit Hockern
+      box(8, 1.1, 1.2, 0x2a1a14, 10, -6); deco(8, 0.08, 1.4, IE.mat.marble, 10, -6, 1.1); for (let k = 0; k < 4; k++) deco(0.6, 0.8, 0.6, 0xd6b04a, 7 + k * 2, -4.6);
+      for (let k = 0; k < 6; k++) deco(0.25, 0.6, 0.25, [0x2e8b57, 0x8a2a1e, 0xd6b04a][k % 3], 7.5 + k, -D / 2 + 0.5, 1.6);
+      deco(9, 2.2, 0.4, 0x3a2a20, 10, -D / 2 + 0.3, 0.6);
+      // Flügel (Klavier)
+      box(2.4, 1, 3, 0x0b0b0d, 14, 5); deco(1, 0.8, 0.6, 0x0b0b0d, 14, 3);
+      // Esstisch
+      box(6, 0.9, 2.4, 0x5a3a20, 2, -2); for (let k = 0; k < 3; k++) for (const sd of [-1, 1]) deco(0.7, 1.2, 0.7, 0xe9e1cc, 0 + k * 2, -2 + sd * 1.8);
+      // Schlafbereich (Ausruhen) in der Ecke = it.item
+      box(4, 0.8, 5, 0xf6f1e6, W / 2 - 4, -D / 2 + 4); deco(4, 0.4, 1, 0x7a1a24, W / 2 - 4, -D / 2 + 1.8, 0.8);
+      // Kronleuchter, Gemälde, Pflanzen, goldene Statue
+      for (const cx of [-8, 8]) { const ch = new T.Mesh(new T.SphereGeometry(1, 12, 8), new T.MeshBasicMaterial({ color: 0xfff1c8 })); ch.position.set(ox + cx, y + H - 1.4, oz); scene.add(ch); }
+      for (let k = 0; k < 3; k++) deco(3, 2, 0.1, [0x8a6a2a, 0x4a6a8a, 0x6a2a2a][k], -14 + k * 6, -D / 2 + 0.3, 2.2 + 1.6);
+      for (const [px, pz] of [[-W / 2 + 1.5, D / 2 - 2], [W / 2 - 1.5, D / 2 - 2], [-W / 2 + 1.5, -D / 2 + 2]]) { deco(1, 1, 1, 0x7a5a3a, px, pz); deco(1.6, 2.2, 1.6, 0x3f7a35, px, pz, 1); }
+      box(1.2, 1, 1.2, IE.mat.marble, 0, 8); deco(0.8, 2, 0.8, IE.mat.gold, 0, 8, 1);
+      // Panoramafenster (Front)
+      for (const sd of [-1, 1]) deco(W / 2 - 6, 3.6, 0.1, new T.MeshBasicMaterial({ color: 0x9fd4ee }), sd * (W / 4 + 1.5), D / 2 - 0.3, 1.4);
     } else if (t === 'casino') {
       for (let k = 0; k < 3; k++) { box(4, 0.9, 2.4, 0x1e6a3a, -10 + k * 10, -1); }
       for (let k = 0; k < 8; k++) { box(1.2, 2, 0.9, 0x2a2a2a, -W / 2 + 2 + k * 2, -D / 2 + 1); deco(0.9, 0.6, 0.05, new T.MeshBasicMaterial({ color: [0xff3b30, 0xf2c230, 0x3aa0ff][k % 3] }), -W / 2 + 2 + k * 2, -D / 2 + 1.47, 1.1); }

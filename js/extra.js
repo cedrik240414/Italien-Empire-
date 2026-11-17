@@ -69,12 +69,13 @@ const box = (w, h, d, mat, x, y, z, parent) => { const m = new T.Mesh(new T.BoxG
 // ================= RENNSTRECKE =================
 const TR = IE.track;
 const LOCAL = [[-240, -160], [0, -165], [240, -160], [285, -125], [292, -62], [252, -22], [165, -12], [112, 32], [132, 92], [222, 112], [272, 145], [228, 172], [0, 170], [-205, 168], [-272, 140], [-282, 82], [-232, 42], [-150, 30], [-110, -18], [-172, -62], [-262, -82], [-292, -126]];
-const TW = 9.5; // halbe Streckenbreite
+const TW = 10; // halbe Streckenbreite
+const SC = 1.15; // Streckengröße
 const loops = []; IE.loops = loops;
 function buildTrack(scene) {
-  const pts = catmull(LOCAL.map(p => [TR.x + p[0], TR.z + p[1]]), 3);
+  const pts = catmull(LOCAL.map(p => [TR.x + p[0] * SC, TR.z + p[1] * SC]), 3);
   // Start = Punkt auf der Zielgeraden nahe lokal x=0
-  let si = 0, bd = 1e9; pts.forEach((p, i) => { const d = Math.hypot(p.x - TR.x, p.z - (TR.z - 165)); if (d < bd) { bd = d; si = i; } });
+  let si = 0, bd = 1e9; pts.forEach((p, i) => { const d = Math.hypot(p.x - TR.x, p.z - (TR.z - 165 * SC)); if (d < bd) { bd = d; si = i; } });
   const rot = pts.slice(si).concat(pts.slice(0, si));
   const len = withDirs(rot, true);
   IE.trackPts = rot; IE.trackLen = len;
@@ -130,7 +131,7 @@ function buildTrack(scene) {
   tyres.count = ti; scene.add(tyres);
   // Loopings auf der Gegengeraden
   for (const lx of [70, -95]) {
-    let li = 0, ld = 1e9; rot.forEach((p, i) => { const d = Math.hypot(p.x - (TR.x + lx), p.z - (TR.z + 170)); if (d < ld) { ld = d; li = i; } });
+    let li = 0, ld = 1e9; rot.forEach((p, i) => { const d = Math.hypot(p.x - (TR.x + lx * SC), p.z - (TR.z + 170 * SC)); if (d < ld) { ld = d; li = i; } });
     buildLoop(scene, rot[li]);
   }
   // Rennstart-Punkt (vor der Startlinie)
@@ -252,25 +253,37 @@ function buildVillas(scene) {
     for (let k = 0; k < 6; k++) { const l = box(0.4, 0.15, 3.2 * s, new T.MeshLambertMaterial({ color: 0x3f7a35 }), 0, 6 * s, 1.4 * s, null); const pv = new T.Group(); pv.position.y = 0; pv.rotation.y = k / 6 * Math.PI * 2; l.rotation.x = 0.35; pv.add(l); g.add(pv); } };
   const roofMat = new T.MeshLambertMaterial({ color: 0xb75a32 }), poolMat = new T.MeshStandardMaterial({ color: 0x3ec5e0, roughness: 0.1, metalness: 0.2 });
   for (const v of IE.villas) {
-    const y = IE.villaRoadH + 1.5, s = v.big ? 1.3 : 1, g = new T.Group(); g.position.set(v.x, y, v.z); scene.add(g);
-    // Hauptgebäude (zur Straße/zum Meer = +z)
-    box(18 * s, 6, 10 * s, IE.mat.white, 0, 3, -3 * s, g); box(12 * s, 5, 8 * s, IE.mat.white, -2 * s, 8.5, -4 * s, g);
-    box(19 * s, 0.5, 11 * s, roofMat, 0, 6.2, -3 * s, g); box(13 * s, 0.5, 9 * s, roofMat, -2 * s, 11.2, -4 * s, g);
-    for (let k = -3; k <= 3; k++) box(1.6, 2.6, 0.1, IE.mat.glass, k * 2.4 * s, 2.6, 2.05 * s, g);
-    for (let k = -2; k <= 1; k++) box(1.5, 2.2, 0.1, IE.mat.glass, k * 2.6 * s - 1 * s, 8.4, 0.05 * s, g);
-    // Terrasse + Pool
-    box(18 * s, 0.3, 8 * s, IE.mat.travertine, 0, 0.15, 6 * s, g);
-    box(9 * s, 0.25, 4.5 * s, poolMat, 3 * s, 0.25, 6.5 * s, g);
-    for (const sx of [-1, 1]) box(0.4, 1.1, 8 * s, IE.mat.travertine, sx * 9 * s, 0.6, 6 * s, g);
-    box(18 * s, 1.1, 0.4, IE.mat.travertine, -4 * s, 0.6, 10 * s, g);
-    // Tor mit Namensschild
-    const st = textTex([{ t: v.name, f: 'bold 46px Georgia' }, { t: G() ? '' : '', f: 'bold 34px Arial' }], 512, 160, '#1b1b1b', '#d9b45a');
-    const sm = new T.Mesh(new T.PlaneGeometry(4.2, 1.3), new T.MeshBasicMaterial({ map: st.t })); sm.position.set(6 * s, 1.8, 10.25 * s); g.add(sm);
-    box(0.5, 2.6, 0.5, IE.mat.travertine, 3.6 * s, 1.3, 10 * s, g); box(0.5, 2.6, 0.5, IE.mat.travertine, 8.6 * s, 1.3, 10 * s, g);
+    const y = IE.villaRoadH + 1.5, s = v.s, g = new T.Group(); g.position.set(v.x, y, v.z); scene.add(g);
+    // Hauptgebäude: 2 Etagen + Dachterrasse, Front (Glas) Richtung Meer (+z)
+    box(18 * s, 6, 10 * s, IE.mat.white, 0, 3, -3 * s, g);
+    box(14 * s, 5, 8 * s, IE.mat.white, -1.5 * s, 8.5, -4 * s, g);
+    box(19 * s, 0.5, 11 * s, roofMat, 0, 6.2, -3 * s, g); box(15 * s, 0.5, 9 * s, IE.mat.travertine, -1.5 * s, 11.2, -4 * s, g);
+    for (const sx of [-1, 1]) box(0.3, 1, 9 * s, IE.mat.glass, -1.5 * s + sx * 7.4 * s, 12, -4 * s, g);
+    box(15 * s, 1, 0.3, IE.mat.glass, -1.5 * s, 12, 0.4 * s, g);
+    for (let k = -3; k <= 3; k++) box(2.1 * s, 3.6, 0.1, IE.mat.glass, k * 2.5 * s, 2.7, 2.05 * s, g);
+    for (let k = -2; k <= 2; k++) box(2.2 * s, 3, 0.1, IE.mat.glass, k * 2.7 * s - 1.5 * s, 8.4, 0.05 * s, g);
+    // Säulen + Balkon
+    for (let k = -2; k <= 2; k++) box(0.5, 6, 0.5, IE.mat.marble, k * 4.2 * s, 3, 2.6 * s, g);
+    box(18 * s, 0.4, 2 * s, IE.mat.marble, 0, 6.3, 3 * s, g);
+    // Terrasse, Pool, Liegen
+    box(20 * s, 0.3, 9 * s, IE.mat.travertine, 0, 0.15, 6.5 * s, g);
+    box(10 * s, 0.25, 5 * s, poolMat, 3.5 * s, 0.25, 7 * s, g);
+    for (let k = 0; k < 3; k++) box(0.9, 0.35, 2, IE.mat.white, -6 * s + k * 1.6, 0.45, 6.5 * s, g);
+    for (const sx of [-1, 1]) box(0.4, 1.1, 9 * s, IE.mat.travertine, sx * 10 * s, 0.6, 6.5 * s, g);
+    box(20 * s, 1.1, 0.4, IE.mat.travertine, 0, 0.6, 11 * s, g);
+    // Garage
+    box(7 * s, 3.5, 6 * s, IE.mat.white, 12 * s, 1.75, -4 * s, g); box(5 * s, 2.8, 0.1, IE.mat.dark, 12 * s, 1.4, -0.95 * s, g);
+    // Tor mit Namensschild (zur Straße)
+    const gz = v.side === 'n' ? 11.3 * s : -9.5 * s, gx = v.side === 'n' ? -6 * s : 4 * s;
+    const st = textTex([], 512, 160, '#1b1b1b', '#d9b45a');
+    const sm = new T.Mesh(new T.PlaneGeometry(4.2, 1.3), new T.MeshBasicMaterial({ map: st.t, side: T.DoubleSide })); sm.position.set(gx + 3, 1.9, gz); if (v.side !== 'n') sm.rotation.y = Math.PI; g.add(sm);
+    box(0.6, 3, 0.6, IE.mat.travertine, gx - 2.2, 1.5, gz, g); box(0.6, 3, 0.6, IE.mat.travertine, gx + 2.2, 1.5, gz, g); box(5, 0.5, 0.6, IE.mat.travertine, gx, 3.2, gz, g);
     villaSigns[v.id] = { st, v };
-    pal(v.x - 10 * s, v.z + 9 * s, 1); pal(v.x + 10 * s, v.z + 9 * s, 1.1);
-    IE.addBox(v.x - 9 * s, v.z - 8 * s, v.x + 9 * s, v.z + 2 * s, y + 12);
-    v.gate = { x: v.x + 6 * s, z: v.z + 12 * s }; v.y = y;
+    pal(v.x - 11 * s, v.z + 10 * s, 1.2); pal(v.x + 11 * s, v.z + 10 * s, 1.3); pal(v.x + 13 * s, v.z - 9 * s, 1.1);
+    IE.addBox(v.x - 9 * s, v.z - 8 * s, v.x + 9 * s, v.z + 2 * s, y + 12.5);
+    IE.addBox(v.x + 8.5 * s, v.z - 7 * s, v.x + 15.5 * s, v.z - 1 * s, y + 3.6);
+    v.gate = { x: v.x + gx, z: v.z + gz + (v.side === 'n' ? 2.5 : -2.5) }; v.y = y;
+    v.door = { x: v.x, z: v.z + 2.6 * s }; // Haustür (Terrassenseite)
   }
   drawVillaSigns();
 }
@@ -292,6 +305,60 @@ IE.buildExtras = function (scene) {
   try { buildGas(scene); } catch (e) { console.error('Tankstellen', e); }
 };
 
+
+// ================= GEBÄUDESCHÄDEN: Einschusslöcher & Brandflecken =================
+const holes = [], scorches = [];
+let holeMat = null, scorchMat = null;
+function decalMats() {
+  if (holeMat) return;
+  const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(0.35, 'rgba(20,18,16,0.95)'); gr.addColorStop(0.6, 'rgba(60,55,50,0.5)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  for (let i = 0; i < 6; i++) { g.strokeStyle = 'rgba(30,28,25,0.6)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(32, 32); const a = Math.random() * 6.3, l = 14 + Math.random() * 14; g.lineTo(32 + Math.cos(a) * l, 32 + Math.sin(a) * l); g.stroke(); }
+  holeMat = new T.MeshBasicMaterial({ map: new T.CanvasTexture(c), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+  const c2 = document.createElement('canvas'); c2.width = c2.height = 128; const g2 = c2.getContext('2d');
+  const gr2 = g2.createRadialGradient(64, 64, 4, 64, 64, 62); gr2.addColorStop(0, 'rgba(5,5,5,0.95)'); gr2.addColorStop(0.5, 'rgba(15,12,10,0.8)'); gr2.addColorStop(0.8, 'rgba(30,25,20,0.35)'); gr2.addColorStop(1, 'rgba(0,0,0,0)');
+  g2.fillStyle = gr2; g2.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 40; i++) { g2.fillStyle = 'rgba(0,0,0,' + (0.2 + Math.random() * 0.4) + ')'; const a = Math.random() * 6.3, r = 30 + Math.random() * 30; g2.beginPath(); g2.arc(64 + Math.cos(a) * r, 64 + Math.sin(a) * r, 2 + Math.random() * 6, 0, 7); g2.fill(); }
+  scorchMat = new T.MeshBasicMaterial({ map: new T.CanvasTexture(c2), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+}
+const holeGeo = new T.PlaneGeometry(0.5, 0.5);
+// Fläche eines Gebäude-Kolliders am Trefferpunkt bestimmen (Normale)
+function boxNormal(p) {
+  let best = null, bd = 0.4;
+  for (const b of IE.collAt(p.x, p.z)) {
+    if (b.t !== 'box' || p.y > b.top + 0.3 || p.y < b.bottom - 0.3) continue;
+    if (p.x < b.minx - 0.3 || p.x > b.maxx + 0.3 || p.z < b.minz - 0.3 || p.z > b.maxz + 0.3) continue;
+    for (const [d, n] of [[Math.abs(p.x - b.minx), [-1, 0, 0]], [Math.abs(p.x - b.maxx), [1, 0, 0]], [Math.abs(p.z - b.minz), [0, 0, -1]], [Math.abs(p.z - b.maxz), [0, 0, 1]], [Math.abs(p.y - b.top), [0, 1, 0]]])
+      if (d < bd) { bd = d; best = n; }
+  }
+  return best;
+}
+IE.addBulletHole = function (p, dir) {
+  const g = G(); if (!g) return; decalMats();
+  const n = boxNormal(p); if (!n) return;
+  const m = new T.Mesh(holeGeo, holeMat), nv = new T.Vector3(n[0], n[1], n[2]);
+  m.position.copy(p).addScaledVector(nv, 0.03); m.lookAt(m.position.clone().add(nv)); m.rotation.z = Math.random() * 6.3; m.scale.setScalar(0.7 + Math.random() * 0.6);
+  g.scene.add(m); holes.push(m); if (holes.length > 240) g.scene.remove(holes.shift());
+  // kleine Staubwolke
+  const d = new T.Mesh(new T.SphereGeometry(0.15, 6, 4), new T.MeshBasicMaterial({ color: 0xb8ad9a, transparent: true, opacity: 0.7 })); d.position.copy(m.position); g.scene.add(d);
+  let t = 0; const iv = setInterval(() => { t += 0.05; d.scale.setScalar(1 + t * 8); d.material.opacity = 0.7 * (1 - t / 0.5); if (t >= 0.5) { clearInterval(iv); g.scene.remove(d); d.geometry.dispose(); d.material.dispose(); } }, 50);
+};
+IE.addScorch = function (p, radius) {
+  const g = G(); if (!g) return; decalMats();
+  const r = Math.max(2, radius * 0.8), gy = IE.supportH(p.x, p.z, p.y + 1);
+  const add = (pos, nv, size) => { const m = new T.Mesh(new T.PlaneGeometry(size * 2, size * 2), scorchMat); m.position.copy(pos).addScaledVector(nv, 0.05); m.lookAt(m.position.clone().add(nv)); m.rotation.z = Math.random() * 6.3; g.scene.add(m); scorches.push(m); if (scorches.length > 60) g.scene.remove(scorches.shift()); };
+  if (p.y - gy < radius) add(new T.Vector3(p.x, gy, p.z), new T.Vector3(0, 1, 0), r);
+  // Wände in der Nähe schwärzen
+  const seen = new Set();
+  for (const b of IE.collAt(p.x, p.z).concat(IE.collAt(p.x + r, p.z), IE.collAt(p.x - r, p.z), IE.collAt(p.x, p.z + r), IE.collAt(p.x, p.z - r))) {
+    if (b.t !== 'box' || seen.has(b) || b.top < p.y - 1 || b.bottom > p.y + 2) continue; seen.add(b);
+    const cx = Math.max(b.minx, Math.min(b.maxx, p.x)), cz = Math.max(b.minz, Math.min(b.maxz, p.z)), d = Math.hypot(p.x - cx, p.z - cz);
+    if (d > r || d < 0.01) continue;
+    const nv = new T.Vector3(p.x - cx, 0, p.z - cz).normalize();
+    add(new T.Vector3(cx, Math.max(p.y, gy + r * 0.6), cz), nv, r * 0.9);
+  }
+};
 // ================= SPIELLOGIK =================
 let R = null; // aktuelles Rennen
 let rob = null; // laufender Überfall
@@ -488,34 +555,96 @@ function updateRob(dt) {
 }
 
 // ----- Villen -----
-function nearVilla(pos) { for (const v of IE.villas) if (v.gate && Math.hypot(pos.x - v.gate.x, pos.z - v.gate.z) < 6) return v; return null; }
+function nearVilla(pos) { for (const v of IE.villas) if (v.gate && (Math.hypot(pos.x - v.gate.x, pos.z - v.gate.z) < 6 || Math.hypot(pos.x - v.door.x, pos.z - v.door.z) < 5)) return v; return null; }
 function buyVilla(v) {
   const g = G(), S = g.S;
   xModal('villa', v.name, [
     { name: v.name, stat: 'Panorama-Villa über dem Golf von Neapel · Pool & Terrasse · gehört dir für immer', btns: [{ label: 'Kaufen · ' + g.fmt(v.price), buy: true, off: S.money < v.price, fn: () => {
       if (S.money < v.price) return; S.money -= v.price; S.villas = (S.villas || []).concat(v.id); g.sfx('cash'); g.saveGame(); drawVillaSigns(); g.closeModals();
       g.banner('Villa gekauft', v.name, 'Hier wachst du ab jetzt nach einem Krankenhaus-Besuch auf', 5); } }] },
-  ], S.money < v.price ? 'Dir fehlen noch ' + g.fmt(v.price - S.money) + '.' : 'Nach dem Kauf: E am Tor = ausruhen (Gesundheit voll + speichern).');
+  ], S.money < v.price ? 'Dir fehlen noch ' + g.fmt(v.price - S.money) + '.' : 'Nach dem Kauf: E am Tor = Villa betreten. Drinnen kannst du dich ausruhen (Gesundheit voll + speichern).');
 }
 IE.villaHome = function (pos) {
   const S = G().S, own = IE.villas.filter(v => (S.villas || []).includes(v.id) && v.gate); if (!own.length) return null;
   own.sort((a, b) => Math.hypot(a.x - pos.x, a.z - pos.z) - Math.hypot(b.x - pos.x, b.z - pos.z)); return own[0];
 };
 
+
+// ================= MEINE FAHRZEUGE (gekaufte Fahrzeuge herholen) =================
+function freeSpot(cx, cz, r, need) {
+  for (let k = 0; k < 24; k++) {
+    const a = k / 24 * Math.PI * 2 + (G().P.yaw || 0) + Math.PI / 2, rr = r + (k >> 3) * 4, x = cx + Math.sin(a) * rr, z = cz + Math.cos(a) * rr;
+    if (!IE.isLand(x, z) || IE.blockedAt(x, z, need)) continue;
+    return { x, z, yaw: Math.atan2(cx - x, cz - z) + Math.PI / 2 };
+  }
+  return null;
+}
+function clearDelivered(type, id) { for (const v of IE.vehicles) if (v.delivered && v.type === type && !v.driver && (!id || v.def.id === id)) v.removeMe = true; }
+function deliver(kind, id, air) {
+  const g = G(), P = g.P, sc = g.scene;
+  if (P.interior) { g.toast('Geh erst nach draußen', 2); return; }
+  if (R && R.state !== 'lobby') { g.toast('Nicht während eines Rennens', 2); return; }
+  const pp = P.veh ? P.veh.pos : P.pos; let v = null;
+  if (kind === 'car') {
+    const sp = freeSpot(pp.x, pp.z, 5, 2.4); if (!sp) { g.toast('Hier ist kein Platz – geh auf eine freie Fläche', 2.5); return; }
+    clearDelivered('car', id); v = IE.spawnCar(sc, id, sp.x, sp.z, sp.yaw, { owned: true });
+  } else if (kind === 'heli') {
+    const sp = freeSpot(pp.x, pp.z, 14, 8); if (!sp) { g.toast('Hier ist kein Platz für einen Helikopter', 2.5); return; }
+    clearDelivered('heli', id); v = IE.spawnHeli(sc, id, sp.x, IE.supportH(sp.x, sp.z, 999), sp.z, sp.yaw); v.owned = true;
+  } else if (kind === 'plane') {
+    clearDelivered('plane', id);
+    if (air) {
+      const f = fwd(P.yaw), y = Math.max(0, IE.groundH(pp.x, pp.z)) + 240;
+      v = IE.spawnPlane(sc, id, pp.x - f.x * 20, pp.z - f.z * 20, P.yaw, y); v.speed = v.def.speed * 0.8; v.throttle = 0.75; v.onGround = false; v.owned = true; v.delivered = true;
+      g.putInVehicle(v); g.closeModals(); g.toast(v.def.name + ' – guten Flug!', 2.5); return;
+    }
+    const sp = freeSpot(pp.x, pp.z, 22, 12); if (!sp) { g.toast('Hier ist kein Platz für ein Flugzeug – versuch es auf freiem Feld', 2.5); return; }
+    v = IE.spawnPlane(sc, id, sp.x, sp.z, sp.yaw, IE.groundH(sp.x, sp.z)); v.owned = true;
+  } else if (kind === 'boat') {
+    let spot = null;
+    for (let r = 10; r < 600 && !spot; r += 8) for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2, x = pp.x + Math.sin(a) * r, z = pp.z + Math.cos(a) * r; if (IE.terrainH(x, z) < -2.5 && IE.terrainH(x + 6, z) < -2 && IE.terrainH(x - 6, z) < -2) { spot = { x, z, d: r }; break; } }
+    if (!spot) { g.toast('Kein Wasser in der Nähe – geh näher ans Meer', 2.5); return; }
+    clearDelivered('boat', id); v = IE.spawnBoat(sc, id, spot.x, spot.z, Math.atan2(spot.x - pp.x, spot.z - pp.z)); v.owned = true;
+    v.delivered = true; g.closeModals(); g.toast(v.def.name + ' liegt ' + Math.round(spot.d) + ' m entfernt im Wasser', 3); return;
+  }
+  if (v) { v.delivered = true; g.closeModals(); g.toast(v.def.name + ' steht bereit – steig ein (E / EIN-AUS)', 2.5); g.sfx('beep'); }
+}
+function openGarage() {
+  const g = G(), S = g.S, rows = [];
+  const cars = IE.cars.filter(c => (S.cars || []).includes(c.id)), helis = IE.helis.filter(h => (S.helis || []).includes(h.id)), boats = IE.boats.filter(b => (S.boats || []).includes(b.id)), planes = IE.planes.filter(p => (S.planes || []).includes(p.id));
+  for (const c of cars) rows.push({ name: '🚗 ' + c.name, stat: 'Auto · ' + Math.round(c.speed * 3.6) + ' km/h', btns: [{ label: 'Herholen', buy: true, fn: () => deliver('car', c.id) }] });
+  for (const h of helis) rows.push({ name: '🚁 ' + h.name, stat: 'Helikopter', btns: [{ label: 'Herholen', buy: true, fn: () => deliver('heli', h.id) }] });
+  for (const p of planes) rows.push({ name: '✈ ' + p.name, stat: 'Flugzeug', btns: [{ label: 'Am Boden', fn: () => deliver('plane', p.id, false) }, { label: 'In der Luft', buy: true, fn: () => deliver('plane', p.id, true) }] });
+  for (const b of boats) rows.push({ name: '⛵ ' + b.name, stat: 'Boot · kommt ins nächste Wasser', btns: [{ label: 'Herholen', buy: true, fn: () => deliver('boat', b.id) }] });
+  if (!rows.length) rows.push({ name: 'Noch keine Fahrzeuge', stat: 'Kauf dir Autos, Helikopter, Boote oder Flugzeuge in den Läden – dann kannst du sie hier überall herholen.' });
+  rows.push({ name: '🏁 Schnellreise zur Rennstrecke', stat: 'Autodromo dell\'Adriatico · € 2.000', btns: [{ label: 'Hinreisen', off: S.money < 2000, fn: () => { if (R && R.state !== 'lobby') return; S.money -= 2000; g.closeModals(); const sp = IE.raceStart; g.teleportTo(sp.x + 18, IE.groundH(sp.x, sp.z), sp.z + 18); } }] });
+  for (const v of IE.villas.filter(v => (S.villas || []).includes(v.id))) rows.push({ name: '⌂ Nach Hause: ' + v.name, stat: 'kostenlos', btns: [{ label: 'Hinreisen', fn: () => { g.closeModals(); g.teleportTo(v.gate.x, v.y, v.gate.z); } }] });
+  xModal('garage', 'Meine Fahrzeuge', rows, 'Gekaufte Fahrzeuge werden direkt zu dir gebracht. Ein vorher hergeholtes Exemplar verschwindet dabei.');
+}
+IE.openGarage = openGarage;
+function wireGarage() {
+  const b1 = $('pGarage'), b2 = $('tGarage');
+  if (b1) b1.addEventListener('click', () => { if (G() && G().game.state === 'play') openGarage(); });
+  if (b2) b2.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (G() && G().game.state === 'play') openGarage(); });
+  addEventListener('keydown', e => { if (e.code === 'KeyG' && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) && G() && G().game.state === 'play') { if (!$('xModal').hidden && $('xModal').dataset.k === 'garage') G().closeModals(); else if (document.querySelectorAll('.modal:not([hidden])').length === 0) openGarage(); } });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireGarage); else wireGarage();
 // ----- Hooks für main.js -----
 IE.extraPrompt = function () {
-  const g = G(), P = g.P; if (!g || P.interior) return '';
+  const g = G(), P = g.P; if (!g) return '';
+  if (P.interior) { const it = P.interior.it; if (it.type === 'villa' && P.interior.villa && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4) return '<b>E</b> · Ausruhen (Gesundheit voll + speichern)'; return ''; }
   if (P.veh && P.veh.type === 'car' && IE.raceStart && Math.hypot(P.veh.pos.x - IE.raceStart.x, P.veh.pos.z - IE.raceStart.z) < 16 && (!R || R.state === 'lobby')) return '<b>E</b> · Rennen fahren / Spieler einladen';
   if (R && R.state === 'lobby' && R.host) return '';
   if (!P.veh) {
     if (rob) return '';
     const s = nearGas(P.pos); if (s) { if (g.game.time < s.cool) return 'Die Kasse ist noch leer – komm später wieder'; return g.S.cur && g.S.cur !== 'faust' ? '<b>E</b> · Tankstelle überfallen' : 'Mit einer Waffe kannst du die Tankstelle überfallen'; }
-    const v = nearVilla(P.pos); if (v) return (g.S.villas || []).includes(v.id) ? `<b>E</b> · In der ${v.name} ausruhen` : `<b>E</b> · ${v.name} kaufen · ${g.fmt(v.price)}`;
+    const v = nearVilla(P.pos); if (v) return (g.S.villas || []).includes(v.id) ? `<b>E</b> · ${v.name} betreten` : `<b>E</b> · ${v.name} kaufen · ${g.fmt(v.price)}`;
   }
   return '';
 };
 IE.extraAct = function () {
-  const g = G(), P = g.P; if (P.interior) return false;
+  const g = G(), P = g.P;
+  if (P.interior) { const it = P.interior.it; if (it.type === 'villa' && P.interior.villa && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4) { P.health = Math.max(P.health, g.maxHP()); g.saveGame(); g.toast('Ausgeruht · Spiel gespeichert', 2.5); g.sfx('pass'); return true; } return false; }
   if (P.veh && P.veh.type === 'car' && IE.raceStart && Math.hypot(P.veh.pos.x - IE.raceStart.x, P.veh.pos.z - IE.raceStart.z) < 16 && (!R || R.state === 'lobby')) {
     if (g.mission.active) { g.toast('Erst die Mission beenden', 2); return true; }
     if (P.veh.speed > 6) { g.toast('Halte an, um das Rennmenü zu öffnen', 2); return true; }
@@ -525,7 +654,7 @@ IE.extraAct = function () {
     const s = nearGas(P.pos);
     if (s) { if (g.game.time >= s.cool && g.S.cur && g.S.cur !== 'faust' && !rob) { rob = { s, t: 0 }; g.setWanted(Math.max(g.game.wanted, 2)); g.toast('Hände hoch! Das ist ein Überfall!', 2.5); g.sfx('shot', 0.6); } return true; }
     const v = nearVilla(P.pos);
-    if (v) { if ((g.S.villas || []).includes(v.id)) { P.health = Math.max(P.health, g.maxHP()); g.saveGame(); g.toast('Ausgeruht · Spiel gespeichert', 2.5); g.sfx('pass'); } else buyVilla(v); return true; }
+    if (v) { if ((g.S.villas || []).includes(v.id)) { g.enterInterior('villa', v.gate.x, v.gate.z, null); if (P.interior) { P.interior.villa = v; g.toast(v.name, 2); } } else buyVilla(v); return true; }
   }
   return false;
 };

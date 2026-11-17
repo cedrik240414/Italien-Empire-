@@ -219,12 +219,28 @@ O.onDeath = function () {
   room.emit('kill', { victim: O.mePeer, killer: att }).catch(() => { });
   O.lastAtt = null; saveStats();
 };
+// Schutz gegen absichtliches gegenseitiges Töten (Farming): pro Gegner Kills/Tode der letzten 10 Minuten
+const farm = new Map();
+function farmLog(peer, kind) {
+  const r = O.peers.get(peer), key = (r && r.by) || (r && r.name) || peer, now = Date.now();
+  const e = (farm.get(key) || []).filter(x => now - x.t < 600000); e.push({ t: now, k: kind }); farm.set(key, e);
+  const kills = e.filter(x => x.k === 'k').length, all = e.length;
+  const allMine = [...farm.values()].flat().filter(x => x.k === 'k' && now - x.t < 300000).length;
+  const quick = e.filter(x => x.k === 'k').slice(-2); // zweimal in kurzer Folge (z. B. direkt nach dem Respawn)
+  const fast = quick.length === 2 && quick[1].t - quick[0].t < 20000;
+  return { blocked: kills > 3 || all > 5 || allMine > 15 || fast };
+}
 function peerName(peer) { if (peer === O.mePeer) return 'Du'; const r = O.peers.get(peer); return r ? r.name : 'Spieler'; }
 function onKill(msg) {
   const data = msg.data || {}; if (data.victim !== msg.peer) return;
   if (data.killer) {
     addFeed(data.killer === O.mePeer ? `Du hast ${peerName(msg.peer)} erledigt` : msg.peer === O.mePeer ? `${peerName(data.killer)} hat dich erledigt` : `${peerName(data.killer)} hat ${peerName(msg.peer)} erledigt`);
-    if (data.killer === O.mePeer && !msg.sameTab) { O.kills++; G().addMoney(1000); G().toast('Abschuss! + € 1.000', 2); saveStats(); }
+    if (msg.sameTab && data.killer !== O.mePeer) farmLog(data.killer, 'd'); // ich wurde getötet
+    if (data.killer === O.mePeer && !msg.sameTab) {
+      const f = farmLog(msg.peer, 'k');
+      if (f.blocked) { G().toast('Kill-Farming erkannt – für ' + peerName(msg.peer) + ' gibt es gerade keine Belohnung', 4); }
+      else { O.kills++; const pay = 10000; G().addMoney(pay); G().toast('Abschuss! + ' + G().fmt(pay), 2.5); saveStats(); }
+    }
   } else addFeed(msg.peer === O.mePeer ? 'Du bist gestorben' : `${peerName(msg.peer)} ist gestorben`);
 }
 
