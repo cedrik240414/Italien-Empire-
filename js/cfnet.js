@@ -31,17 +31,23 @@ function makeRoom(name) {
     if (!tok()) { setTimeout(connect, 1000); return; }
     try { ws = new WebSocket(wsBase + '/room/' + encodeURIComponent(name) + '?token=' + encodeURIComponent(tok())); } catch (e) { setTimeout(connect, 2000); return; }
     ws.onopen = () => { setConn(true); flush(); };
-    ws.onclose = () => { setConn(false); if (!closed) setTimeout(connect, 1500); };
+    ws.onclose = ev => { setConn(false); if (ev && ev.code === 4002) { closed = true; if (window.IEgame) IEgame.toast('Dein Konto ist woanders online gegangen – diese Verbindung wurde getrennt', 6); return; } if (!closed) setTimeout(connect, 1500); };
     ws.onmessage = ev => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
       if (m.t === 'denied') { if (m.reason === 'banned') { closed = true; if (window.IEaccount && IEaccount.onBanned) IEaccount.onBanned(); } return; }
-      if (m.t === 'welcome') { peer = m.peer; peers.clear(); for (const p of m.peers || []) peers.set(p.peer, mk(p)); readyRes(); notify(snapshot(), [], []); }
+      if (m.t === 'welcome') {
+        // Neu verbunden: alte (evtl. tote) Einträge sauber entfernen, sonst bleiben Geister-Spieler stehen
+        const old = [...peers.values()]; peer = m.peer; peers.clear();
+        for (const p of m.peers || []) peers.set(p.peer, mk(p));
+        readyRes(); notify(snapshot(), [], old.filter(o => !peers.has(o.peer)));
+      }
       else if (m.t === 'presence') { if (m.peer === peer) return; const had = peers.has(m.peer), p = mk(m); peers.set(m.peer, p); notify(had ? [] : [p], had ? [p] : [], []); }
       else if (m.t === 'leave') { const p = peers.get(m.peer); peers.delete(m.peer); if (p) notify([], [], [p]); }
       else if (m.t === 'emit') { const msg = { topic: m.topic, data: m.data, peer: m.peer, from: m.from, adm: !!m.adm, by: (peers.get(m.peer) || {}).by || null, isMe: m.peer === peer, sameTab: m.peer === peer, kind: 'viewer', guest: false }; (ls[m.topic] || []).forEach(f => { try { f(msg); } catch (e) { console.error(e); } }); }
     };
   }
   connect();
+  const ka = setInterval(() => { if (closed) { clearInterval(ka); return; } if (open && ws) { try { ws.send('{"t":"ping"}'); } catch (e) { } } }, 8000); // Lebenszeichen
   return {
     name, ready,
     presence(patch) {

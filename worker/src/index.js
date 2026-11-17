@@ -144,6 +144,10 @@ export class Hub {
       server.close(4001, 'denied');
       return new Response(null, { status: 101, webSocket: client });
     }
+    // gleiches Konto schon im Raum (z.B. nach Neuladen)? Alte Verbindung schließen -> keine doppelten Spieler
+    for (const [p, x] of [...this.s]) if (x.slug === who.slug) { this.s.delete(p); try { x.ws.close(4002, 'replaced'); } catch (e) { } this.bc({ t: 'leave', peer: p }); }
+    // tote Verbindungen (lange nichts gesendet) aufräumen
+    for (const [p, x] of [...this.s]) if (Date.now() - (x.seen || x.t) > 30000) { this.s.delete(p); try { x.ws.close(4003, 'stale'); } catch (e) { } this.bc({ t: 'leave', peer: p }); }
     const peer = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
     const me = { ws: server, presence: {}, n: 0, t: Date.now(), slug: who.slug, nick: who.nick, adm: who.admin ? 1 : 0 };
     this.s.set(peer, me);
@@ -151,6 +155,8 @@ export class Hub {
     server.addEventListener('message', ev => {
       if (typeof ev.data !== 'string' || ev.data.length > 6000) return;
       const now = Date.now(); if (now - me.t > 1000) { me.t = now; me.n = 0; } if (++me.n > 60) return;
+      me.seen = now;
+      if (now - (this.sweepT || 0) > 10000) { this.sweepT = now; for (const [p, x] of [...this.s]) if (x !== me && now - (x.seen || x.t) > 30000) { this.s.delete(p); try { x.ws.close(4003, 'stale'); } catch (e) { } this.bc({ t: 'leave', peer: p }); } }
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
       if (m.t === 'presence' && m.p && typeof m.p === 'object' && !Array.isArray(m.p)) {
         me.presence = Object.assign({}, m.p, { uid: 'a_' + me.slug, nm: me.nick, adm: me.adm });

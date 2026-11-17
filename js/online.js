@@ -41,6 +41,12 @@ O.join = async function (isPublic, code, title) {
   await loadStats(); dirty = true; flushStats();
   updateBadge();
 };
+O.raceEmit = function (d) { if (room) room.emit('job', { race: d }).catch(() => { }); };
+O.nearCarPeer = function (pos) {
+  let best = null, bd = 4.8;
+  for (const r of O.peers.values()) { const pr = r.pr; if (!pr || pr.dead || !pr.v || pr.v.t !== 'car' || pr.rd) continue; const d = Math.hypot(r.pos.x - pos.x, r.pos.z - pos.z); if (d < bd) { bd = d; best = r; } }
+  return best;
+};
 O.adminKick = function (slug) { if (room) room.emit('admin', { kick: slug }).catch(() => { }); };
 O.leave = async function () { try { if (room) await room.leave(); } catch (e) { } location.reload(); };
 
@@ -61,15 +67,19 @@ function vehModel(v) {
   if (v.t === 'airship') return IE.makeAirship();
   return null;
 }
+function myUid() { const sl = window.IEaccount && IEaccount.slug; return sl ? 'a_' + sl : O.myId; }
 function ensurePeer(p) {
   const pr = p.presence || {}; if (typeof pr.x !== 'number') return;
+  const uid = p.by || (typeof pr.uid === 'string' ? pr.uid : null);
+  if (uid && O.viaServer && uid === myUid()) return; // eigene alte Verbindung – nicht als zweiten Spieler zeigen
+  if (uid) for (const [k, o] of O.peers) if (k !== p.peer && o.by === uid) removePeer(k); // gleiches Konto doppelt -> alte Verbindung weg
   let r = O.peers.get(p.peer);
   const scene = G().scene;
   if (!r) {
     r = { peer: p.peer, by: null, pos: new T.Vector3(pr.x, pr.y, pr.z), last: new T.Vector3(pr.x, pr.y, pr.z), yaw: pr.yaw || 0, h: null, char: null, veh: null, vehKey: '', tag: null, name: 'Spieler', phase: 0, spd: 0 };
     O.peers.set(p.peer, r);
   }
-  r.pr = pr; r.guest = p.guest;
+  r.pr = pr; r.guest = p.guest; r.seen = performance.now();
   const by = p.by || (typeof pr.uid === 'string' ? pr.uid : null);
   if (by !== r.by || (pr.nm && pr.nm !== r.name)) { r.by = by; resolveNames(); }
   const skin = typeof pr.sk === 'string' && IE.skinById[pr.sk] && (!IE.skinById[pr.sk].admin || pr.adm) ? IE.skinById[pr.sk] : null;
@@ -120,6 +130,7 @@ function sendPresence() {
     sw: P.under ? 2 : P.swim ? 1 : 0, sk: g.S.skin || '', uid: O.myId || '', nm: (window.IEaccount && IEaccount.nick) || '', k: O.kills, d: O.deaths, pa: O.passive ? 1 : 0, w: g.S.cur };
   const ship = IE.vehicles.find(q => q.type === 'airship' && q.mine && !q.removeMe);
   pr.ship = ship ? { x: r2(ship.pos.x), y: r2(ship.pos.y), z: r2(ship.pos.z), yaw: r2(ship.yaw) } : null;
+  pr.rd = P.ride || null; pr.rc = IE.racePresence ? IE.racePresence() : null;
   pr.v = v && v.type !== 'airship' ? { t: v.type, id: v.def.id, yaw: r2(v.yaw), p: r2(v.pitch || 0), r: r2(v.roll || 0), col: v.m.bodyMat ? v.m.bodyMat.color.getHex() : undefined } : null;
   room.presence(pr).catch(() => { });
 }
@@ -128,14 +139,21 @@ O.update = function (dt) {
   sendT -= dt; if (sendT <= 0) { sendT = 0.1; sendPresence(); }
   hitT -= dt; if (hitT <= 0) { hitT = 0.15; for (const k in pending) { if (pending[k] > 0) room.emit('hit', { to: k, d: Math.min(400, Math.round(pending[k])) }).catch(() => { }); delete pending[k]; } }
   const cam = G().camera;
+  const nowT = performance.now();
+  for (const [k, r] of [...O.peers]) if (r.seen && nowT - r.seen > 25000) removePeer(k);
   for (const r of O.peers.values()) {
     const pr = r.pr; if (!pr) continue;
     if (r.shipM && pr.ship) { const st = new T.Vector3(pr.ship.x, pr.ship.y, pr.ship.z); if (r.shipPos.distanceTo(st) > 60) r.shipPos.copy(st); else r.shipPos.lerp(st, Math.min(1, dt * 9)); r.shipM.group.position.copy(r.shipPos); r.shipM.group.rotation.set(0, pr.ship.yaw || 0, 0); r.shipM.fans.forEach(f => f.rotation.y += dt * 10); }
+    if (!pr.rd) r.toldRide = false;
     const tgt = new T.Vector3(pr.x, pr.y, pr.z);
     if (r.pos.distanceTo(tgt) > 40) r.pos.copy(tgt); else r.pos.lerp(tgt, Math.min(1, dt * 9));
     const mv = r.pos.distanceTo(r.last) / Math.max(dt, 0.001); r.last.copy(r.pos); r.spd += (mv - r.spd) * Math.min(1, dt * 6);
     let dy = (pr.yaw || 0) - r.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2; r.yaw += dy * Math.min(1, dt * 10);
-    if (pr.v && r.veh && pr.v.t === 'airship') {
+    if (pr.rd) { // fährt als Beifahrer mit
+      r.h.group.visible = false; if (r.veh) r.veh.group.visible = false;
+      r.tag.position.set(r.pos.x, r.pos.y + 5, r.pos.z);
+      if (pr.rd === O.mePeer && !r.toldRide) { r.toldRide = true; G().toast(r.name + ' fährt bei dir mit', 2.5); }
+    } else if (pr.v && r.veh && pr.v.t === 'airship') {
       r.veh.group.visible = true; r.veh.group.position.copy(r.pos); r.veh.group.rotation.set(0, pr.v.yaw || 0, 0);
       if (r.veh.fans) r.veh.fans.forEach(f => f.rotation.y += dt * 10);
       r.h.group.visible = false; r.tag.position.set(r.pos.x, r.pos.y + 14, r.pos.z);
@@ -214,6 +232,7 @@ function onKill(msg) {
 O.startJob = function (id) { if (room) room.emit('job', { id }).catch(() => G().toast('Crew-Aufträge starten nur Mitwirkende des Spiels')); };
 function jobDef(id) { return (IE.coopJobs || []).find(j => j.id === id); }
 function onJob(msg) {
+  if (msg.data && msg.data.race) { if (IE.onRaceMsg) IE.onRaceMsg(msg); return; }
   const def = jobDef((msg.data || {}).id); if (!def) return;
   const g = G(); if (g.mission.active && g.mission.coop && g.mission.def === def) return;
   addFeed(msg.sameTab ? `Du startest: ${def.title}` : `${peerName(msg.peer)} startet: ${def.title}`);

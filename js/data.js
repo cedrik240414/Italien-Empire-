@@ -136,6 +136,15 @@ IE.cars = [
   { id: 'classica', name: 'Classica 1965',   price: 55000, speed: 48, accel: 15, grip: 1.9, color: 0x9fc3c9, kind: 'retro' },
   { id: 'rally',    name: 'Rally Integrale', price: 70000, speed: 58, accel: 27, grip: 3.0, color: 0xf3f0e8, kind: 'klein' },
   { id: 'spider',   name: 'Spider Cabrio',   price: 120000, speed: 66, accel: 27, grip: 2.4, color: 0x1f4f8f, kind: 'cabrio' },
+  { id: 'topolino', name: 'Topolino 1950',   price: 28000,  speed: 38, accel: 12, grip: 1.9, color: 0xe8d8a8, kind: 'retro' },
+  { id: 'camper',   name: 'Camper Vacanze',  price: 46000,  speed: 38, accel: 11, grip: 1.8, color: 0xf2efe6, kind: 'van' },
+  { id: 'lusso',    name: 'Lusso SUV',       price: 88000,  speed: 56, accel: 22, grip: 2.4, color: 0x1a1a1a, kind: 'suv' },
+  { id: 'barchetta',name: 'Barchetta Roadster', price: 98000, speed: 62, accel: 25, grip: 2.5, color: 0xb81d24, kind: 'cabrio' },
+  { id: 'stallone', name: 'Stallone GT',     price: 145000, speed: 70, accel: 28, grip: 2.3, color: 0x1d2b4a, kind: 'sport' },
+  { id: 'ammiraglia', name: 'Ammiraglia Limousine', price: 165000, speed: 60, accel: 21, grip: 2.2, color: 0x101418, kind: 'limo' },
+  { id: 'gt3',      name: 'Corsa GT3 (Rennwagen)', price: 240000, speed: 82, accel: 33, grip: 3.1, color: 0xf27a1a, kind: 'sport' },
+  { id: 'fulmine',  name: 'Fulmine Hyper',   price: 650000, speed: 96, accel: 42, grip: 2.9, color: 0x2a8fd8, kind: 'super' },
+  { id: 'iperione', name: 'Iperione 1000 PS', price: 1100000, speed: 104, accel: 46, grip: 3.0, color: 0xe8e8e8, kind: 'super' },
   { id: 'jeep',     name: 'Militärjeep',     price: 0, speed: 44, accel: 18, grip: 2.5, color: 0x4f5a34, kind: 'suv', military: true },
   { id: 'panzer',   name: 'Carro Armato (Panzer)', price: 0, speed: 17, accel: 7, grip: 2.6, color: 0x55603a, kind: 'tank', military: true }
 ];
@@ -161,11 +170,33 @@ IE.airport = { name: 'Aeroporto di Napoli', lon: 15.46, lat: 40.84, hw: 80, hd: 
 (function () { const p = IE.geo(IE.airport.lon, IE.airport.lat); IE.airport.x = p.x; IE.airport.z = p.z; })();
 IE.cityById.flughafen = { id: 'flughafen', name: 'Flughafen', x: IE.airport.x - IE.airport.hw - 30, z: IE.airport.z + 60, r: 20, base: IE.airport.h };
 IE.flatZones = [ { x: IE.base.x, z: IE.base.z, hw: IE.base.hw, hd: IE.base.hd, h: 12 }, { x: IE.airport.x, z: IE.airport.z, hw: IE.airport.hw + 10, hd: IE.airport.hd + 10, h: IE.airport.h } ];
+// Rennstrecke: eigene Insel vor der Adriaküste (bei Ravenna/Rimini), mit Damm zum Festland
+IE.track = { name: 'Autodromo dell\'Adriatico', x: 380, z: -1000, hw: 320, hd: 200, h: 6 };
+IE.flatZones.push({ x: IE.track.x, z: IE.track.z, hw: IE.track.hw, hd: IE.track.hd, h: IE.track.h, f: 70, sea: true });
+IE.flatZones.push({ x: -5, z: -1000, hw: 75, hd: 13, h: IE.track.h, f: 26, sea: true }); // Damm
+// Villenstraße am Hang über Neapel (Blick auf Stadt und Golf)
+IE.villaRoad = [[395, 235], [388, 200], [382, 160], [380, 120], [384, 92], [400, 112], [425, 135], [460, 147], [500, 152], [540, 154], [580, 155], [620, 153], [655, 152]];
+IE.villaRoadH = 58;
+IE.villas = [
+  { id: 'v1', name: 'Villa Aurora',     x: 470, z: 120, price: 1500000, rot: 0 },
+  { id: 'v2', name: 'Villa Belvedere',  x: 515, z: 124, price: 2200000, rot: 0 },
+  { id: 'v3', name: 'Villa Sirena',     x: 560, z: 125, price: 3000000, rot: 0 },
+  { id: 'v4', name: 'Villa Vesuvio',    x: 605, z: 124, price: 4200000, rot: 0 },
+  { id: 'v5', name: 'Villa del Golfo',  x: 650, z: 122, price: 6500000, rot: 0 },
+  { id: 'v6', name: 'Villa Imperiale',  x: 430, z: 108, price: 9500000, rot: 0, big: true }
+];
+for (let i = 7; i < IE.villaRoad.length; i++) { const a = IE.villaRoad[i - 1], b = IE.villaRoad[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 3, hd: Math.abs(b[1] - a[1]) / 2 + 6, h: IE.villaRoadH, f: 16, small: true }); }
+for (const v of IE.villas) IE.flatZones.push({ x: v.x, z: v.z, hw: v.big ? 22 : 17, hd: v.big ? 17 : 14, h: IE.villaRoadH + 1.5, f: 18, small: true });
 IE.planes = [
   { id: 'piccolo',  name: 'Piccolo 172 (Propeller)', price: 0,       speed: 62,  minSpeed: 22, turn: 1.0, color: 0xf2f2ee, accent: 0xc8372d, kind: 'prop' },
   { id: 'acrobata', name: 'Acrobata (Kunstflug)',    price: 180000,  speed: 85,  minSpeed: 24, turn: 1.8, color: 0xd12b2b, accent: 0xf2f2f2, kind: 'stunt' },
   { id: 'idro',     name: 'Idrovolante (Wasserflugzeug)', price: 260000, speed: 70, minSpeed: 22, turn: 1.0, color: 0xf2c230, accent: 0x1b3d6e, kind: 'sea' },
   { id: 'jet',      name: 'Jet Privato',             price: 1200000, speed: 150, minSpeed: 40, turn: 0.8, color: 0xf6f6f2, accent: 0x1b3d6e, kind: 'jet' },
+  { id: 'turbo',    name: 'Turboelica Cargo',        price: 140000,  speed: 78,  minSpeed: 26, turn: 0.9, color: 0xdfe3e6, accent: 0x2e6b4f, kind: 'prop' },
+  { id: 'biplano',  name: 'Biplano Acrobatico',      price: 230000,  speed: 80,  minSpeed: 20, turn: 2.2, color: 0xf2c230, accent: 0x1b3d6e, kind: 'stunt' },
+  { id: 'freccia',  name: 'Freccia Tricolore (Kunstflug-Jet)', price: 780000, speed: 140, minSpeed: 38, turn: 1.9, color: 0x1f4fb0, accent: 0xf2f2f2, kind: 'fighter' },
+  { id: 'anfibio',  name: 'Anfibio Grande',          price: 420000,  speed: 82,  minSpeed: 26, turn: 0.9, color: 0xc8372d, accent: 0xf2f2ee, kind: 'sea' },
+  { id: 'jetxl',    name: 'Jet Executive XL',        price: 2400000, speed: 175, minSpeed: 45, turn: 0.85, color: 0x1a1a1a, accent: 0xd9b45a, kind: 'jet' },
   { id: 'caccia',   name: 'Caccia (Kampfjet)',       price: 0,       speed: 190, minSpeed: 45, turn: 1.4, color: 0x7b8590, accent: 0x4a5236, kind: 'fighter', armed: true, military: true }
 ];
 IE.planeById = {}; IE.planes.forEach(p => IE.planeById[p.id] = p);

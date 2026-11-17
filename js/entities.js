@@ -312,13 +312,15 @@ IE.updatePlane = function (v, inp, dt) {
   } else {
     const turn = d.turn;
     if (d.kind === 'stunt' || d.kind === 'fighter') v.roll += (inp.x || 0) * 2.6 * turn * 0.6 * dt;
-    else v.roll += ((inp.x || 0) * 0.9 - v.roll) * Math.min(1, dt * 1.8);
-    if (!(inp.x) && (d.kind === 'stunt' || d.kind === 'fighter')) v.roll += (Math.round(v.roll / (Math.PI * 2)) * Math.PI * 2 - v.roll) * Math.min(1, dt * 1.2);
+    else { const base = Math.abs(inp.y || 0) > 0.2 ? Math.round(v.roll / Math.PI) * Math.PI : Math.round(v.roll / (Math.PI * 2)) * Math.PI * 2; v.roll += (base + (inp.x || 0) * 0.9 - v.roll) * Math.min(1, dt * 1.8); }
+    if (!(inp.x) && (d.kind === 'stunt' || d.kind === 'fighter')) { const b = Math.abs(inp.y || 0) > 0.2 ? Math.round(v.roll / Math.PI) * Math.PI : Math.round(v.roll / (Math.PI * 2)) * Math.PI * 2; v.roll += (b - v.roll) * Math.min(1, dt * 1.2); }
     const cr = Math.cos(v.roll);
     v.pitch += (inp.y || 0) * 0.8 * turn * cr * dt;
     v.yaw -= Math.sin(v.roll) * 0.75 * turn * Math.min(v.speed / d.minSpeed, 1.6) * dt * Math.sign(cr || 1) * (cr < 0 ? -1 : 1);
     v.yaw += (inp.y || 0) * 0.8 * turn * Math.sin(v.roll) * dt * 0;
-    v.pitch = Math.max(-1.45, Math.min(1.45, v.pitch));
+    // Looping: über die Senkrechte hinaus -> gleiche Lage anders ausgedrückt (Kurs +180°, Rolle +180°)
+    if (v.pitch > Math.PI / 2 || v.pitch < -Math.PI / 2) { v.pitch = (v.pitch > 0 ? Math.PI : -Math.PI) - v.pitch; v.yaw += Math.PI; v.roll += Math.PI; }
+    if (v.roll > Math.PI * 2) v.roll -= Math.PI * 2; if (v.roll < -Math.PI * 2) v.roll += Math.PI * 2;
     v.speed -= Math.sin(v.pitch) * 9.8 * 0.6 * dt;
     if (v.speed < d.minSpeed) { v.pitch -= (1 - v.speed / d.minSpeed) * 0.9 * dt; }
   }
@@ -332,7 +334,7 @@ IE.updatePlane = function (v, inp, dt) {
   if (v.pos.y < g2) {
     const soft = v.pitch > -0.35 && vy > -10 && Math.abs(Math.sin(v.roll)) < 0.5 && Math.cos(v.roll) > 0;
     if (!soft && !v.dead) v.health = 0;
-    v.pos.y = g2; v.pitch = Math.max(v.pitch, 0); v.roll = 0;
+    v.pos.y = g2; v.pitch = Math.max(v.pitch, 0); v.roll = 0; if (v.pitch > 0.6) v.pitch = 0.35;
   }
   if (g2 < -0.3 && d.kind !== 'sea' && v.pos.y < 0.4) { v.health -= 400 * dt; v.speed *= 0.9; }
   if (IE.pushOut(v.pos, Math.min(3, v.m.L * 0.2), v.pos.y, 2.5)) { if (v.speed > 14) v.health = 0; else v.speed *= -0.2; }

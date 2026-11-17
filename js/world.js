@@ -45,6 +45,7 @@ function coastSigned(x, z) {
   return inside ? best : -best;
 }
 IE.coastSigned = coastSigned;
+IE.smooth = smooth; IE.rawH = (x, z) => rawH(x, z);
 IE.isLandPoly = (x, z) => { for (const k in IE.coast) if (inPoly(x, z, IE.coast[k])) return true; return false; };
 
 // ---------- Höhenraster ----------
@@ -62,15 +63,15 @@ function continent(x, z) {
   const lon = x / (IE.K * IE.LONS) + 12.5, lat = 42 - z / IE.K;
   return lat > 45.85 || (lon < 7.55 && lat > 43.8) || (lon > 13.65 && lat > 45.55);
 }
-function zoneFlat(x, z, h) {
-  for (const b of IE.flatZones) { const d = Math.max(Math.abs(x - b.x) - b.hw, Math.abs(z - b.z) - b.hd, 0);
-    if (d < 140) h = h + (b.h - h) * smooth(140, 10, d); }
+function zoneFlat(x, z, h, seaOnly) {
+  for (const b of IE.flatZones) { if (seaOnly && !b.sea) continue; const F = b.f || 140, d = Math.max(Math.abs(x - b.x) - b.hw, Math.abs(z - b.z) - b.hd, 0);
+    if (d < F) h = h + (b.h - h) * smooth(F, Math.min(10, F * 0.3), d); }
   return h;
 }
 function baseHeight(x, z) {
   let sd = coastSigned(x, z);
   if (sd < 0 && continent(x, z)) sd = 120 - sd;
-  if (sd < 0) return Math.max(-38, -1.5 + sd * 0.09);
+  if (sd < 0) return zoneFlat(x, z, Math.max(-38, -1.5 + sd * 0.09), true);
   const ramp = smooth(0, 70, sd);
   let h = 0.6 + Math.min(sd * 0.012, 9) + fbm(x * 0.004, z * 0.004) * 28 * smooth(20, 400, sd);
   for (const r of ridgeW) {
@@ -155,7 +156,7 @@ for (const r of IE.roads) for (const p of r.pts) {
   }
 }
 for (let i = 0; i < NV; i++) if (RW[i] > 0 && H[i] > -0.6) H[i] = H[i] + (RH[i] - 0.45 - H[i]) * RW[i];
-for (let iz = 0; iz <= G.nz; iz++) for (let ix = 0; ix <= G.nx; ix++) { const i = iz * (G.nx + 1) + ix; if (H[i] > -0.6) H[i] = zoneFlat(G.x0 + ix * G.cx, G.z0 + iz * G.cz, H[i]); }
+for (let iz = 0; iz <= G.nz; iz++) for (let ix = 0; ix <= G.nx; ix++) { const i = iz * (G.nx + 1) + ix; H[i] = zoneFlat(G.x0 + ix * G.cx, G.z0 + iz * G.cz, H[i], H[i] <= -0.6); }
 
 };
 
@@ -411,6 +412,7 @@ IE.buildWorld = function (scene) {
   buildOnlineHouses(scene);
   buildInteriors(scene);
   buildWrecks(scene);
+  if (IE.buildExtras) IE.buildExtras(scene);
   buildNature(scene);
   buildClouds(scene);
 };
@@ -1106,7 +1108,7 @@ function buildNature(scene) {
     const cnt = 1 + (rnd() * 6 | 0);
     for (let i = 0; i < cnt; i++) {
       const px = x + (rnd() - 0.5) * 30, pz = z + (rnd() - 0.5) * 30, ph = rawH(px, pz); if (ph < 2 || IE.nearRoad(px, pz)) continue;
-      if (IE.collAt(px, pz).some(b => b.online && px > b.minx - 3 && px < b.maxx + 3 && pz > b.minz - 3 && pz < b.maxz + 3)) continue;
+      if (IE.collAt(px, pz).some(b => b.t === 'box' && (b.online || b.top > rawH(px, pz) + 1) && px > b.minx - 3 && px < b.maxx + 3 && pz > b.minz - 3 && pz < b.maxz + 3)) continue;
       const s = 0.7 + rnd() * 0.7;
       const tusc = z > -900 && z < -100 && x > -800 && x < 300; // grob Toskana/Umbrien
       if (ph > 55) round.push({ x: px, z: pz, y: ph, s: s * 1.1, dark: true });
