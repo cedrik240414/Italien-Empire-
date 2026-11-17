@@ -898,7 +898,40 @@ function buildOnlineHouses(scene) {
   for (const h of houses) { const b = IE.addBox(h.x - h.w / 2, h.z - h.d / 2, h.x + h.w / 2, h.z + h.d / 2, h.y + h.f * 3.4 + 0.5, h.y); b.online = true; }
   IE.onlineHouses = houses;
 }
-IE.setOnlineWorld = function (on) { IE.onlineOn = !!on; if (IE.onlineGroup) IE.onlineGroup.visible = !!on; };
+// Liegt (x,z) in/auf einem Gebäude? (Box-Kollider deutlich über dem Boden, mit Rand r)
+IE.blockedAt = function (x, z, r) {
+  r = r || 2.5; const g = IE.groundH(x, z);
+  for (const [ox, oz] of [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]])
+    for (const b of IE.collAt(x + ox, z + oz)) {
+      if (b.online && !IE.onlineOn) continue;
+      if (b.top < g + 1.2) continue;
+      if (b.t === 'box') { if (x > b.minx - r && x < b.maxx + r && z > b.minz - r && z < b.maxz + r) return true; }
+      else { const d = Math.hypot(x - b.x, z - b.z); if (d > b.r0 - r && d < b.r1 + r && !(b.gap && Math.abs(z - b.z) < b.gap)) return true; }
+    }
+  return false;
+};
+// Nächster freier, begehbarer Punkt (nicht in Gebäuden, nicht im Wasser wenn vorher Land)
+IE.freeSpot = function (x, z) {
+  const land = IE.isLand(x, z);
+  if (!IE.blockedAt(x, z)) return { x, z };
+  for (let r = 3; r < 160; r += 3) for (let a = 0, n = Math.max(8, Math.round(r * 1.2)); a < n; a++) {
+    const ang = a / n * Math.PI * 2, px = x + Math.cos(ang) * r, pz = z + Math.sin(ang) * r;
+    if ((!land || IE.isLand(px, pz)) && !IE.blockedAt(px, pz)) return { x: px, z: pz };
+  }
+  return { x, z };
+};
+// Missions-Lichtstrahlen aus Gebäuden heraus auf freie Plätze verschieben
+IE.fixMissionSpots = function () {
+  const fix = o => { if (!o || typeof o.x !== 'number') return; if (o._ox === undefined) { o._ox = o.x; o._oz = o.z; } const p = IE.freeSpot(o._ox, o._oz); o.x = p.x; o.z = p.z; };
+  for (const m of (IE.missions || []).concat(IE.coopJobs || [])) {
+    fix(m);
+    for (const st of m.steps || []) {
+      if (st.t === 'goto' || (!st.inside && (st.t === 'collect' || st.t === 'kill'))) fix(st);
+      if (st.cpPos) st.cpPos.forEach(fix);
+    }
+  }
+};
+IE.setOnlineWorld = function (on) { IE.onlineOn = !!on; IE.fixMissionSpots(); if (IE.onlineGroup) IE.onlineGroup.visible = !!on; };
 
 // ---------- Flughafen ----------
 function buildAirport(scene) {

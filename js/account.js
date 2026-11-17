@@ -178,6 +178,7 @@ async function openAdmin() {
   $('adminModal').hidden = false;
   const g = IEgame;
   $('adFly').textContent = g.P.fly ? 'Flugmodus: An' : 'Flugmodus: Aus';
+  $('adGod').textContent = g.game.ch && g.game.ch.god ? 'Unsterblich: An' : 'Unsterblich: Aus';
   $('adSpeed').value = g.P.flySpeed || 120; $('adSpeedV').textContent = Math.round(($('adSpeed').value) * 3.6) + ' km/h';
   await renderAdminList();
 }
@@ -218,6 +219,7 @@ function drawAdminList() {
 }
 $('adSearch').addEventListener('input', drawAdminList);
 $('adFly').addEventListener('click', () => { const g = IEgame; g.setFly(!g.P.fly, +$('adSpeed').value); $('adFly').textContent = g.P.fly ? 'Flugmodus: An' : 'Flugmodus: Aus'; });
+$('adGod').addEventListener('click', () => { const g = IEgame; g.game.ch = g.game.ch || {}; g.game.ch.god = !g.game.ch.god; if (g.game.ch.god) g.hurtPlayer(0); $('adGod').textContent = g.game.ch.god ? 'Unsterblich: An' : 'Unsterblich: Aus'; g.toast(g.game.ch.god ? '★ Unsterblich' : 'Unsterblich aus', 2); });
 $('adSpeed').addEventListener('input', () => { const v = +$('adSpeed').value; $('adSpeedV').textContent = Math.round(v * 3.6) + ' km/h'; IEgame.P.flySpeed = v; });
 $('adYacht').addEventListener('click', () => { if (IEgame.game.state !== 'play') { IEgame.toast('Starte zuerst ein Spiel', 2); return; } IEgame.spawnAirship(); IEgame.closeModals(); });
 A.openAdmin = openAdmin;

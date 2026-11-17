@@ -388,6 +388,7 @@ function addWanted(n) { if (game.ch && game.ch.nowanted) { game.wanted = 0; retu
 // ---------- Schaden ----------
 function hurtPlayer(dmg) {
   if (game.dead) return;
+  if (game.ch && game.ch.god) { P.health = maxHP(); P.o2 = 1; return; }
   dmg *= Math.pow(0.93, upLvl('panzerung'));
   if (P.veh && P.veh.type === 'car') { P.veh.health -= dmg * 4; dmg *= 0.35; }
   if (S.armor > 0) { const a = Math.min(S.armor, dmg * 0.7); S.armor -= a; dmg -= a; }
@@ -1207,6 +1208,7 @@ function failMission(why) {
 // ---------- Tod ----------
 function die() {
   if (game.dead) return;
+  if (game.ch && game.ch.god) { P.health = maxHP(); return; }
   game.dead = true; game.deadT = 0; P.health = 0;
   if (ONL()) IEonline.onDeath();
   if (P.veh) { P.veh.driver = null; P.h.group.visible = true; P.h.group.position.copy(P.veh.pos); P.veh = null; $('speed').hidden = true; engineSound(null); }
@@ -1729,6 +1731,7 @@ function startGame(cont, mode) {
   }
   const sv = cont ? store.get() : null;
   if (sv) Object.assign(S, sv); else { store.del(); }
+  IE.fixMissionSpots();
   $('title').hidden = true; $('hudRoot').hidden = false; document.body.classList.add('playing');
   buildPlayerModel(); P.health = maxHP();
   for (const w of IE.wrecks) if (S.wrecks.includes(w.id)) { w.got = true; w.chest.visible = false; }
