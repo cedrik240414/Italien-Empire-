@@ -1658,8 +1658,8 @@ function switchChar(id) {
 // ---------- Pause ----------
 function openPause() {
   $('cheatList').innerHTML = CHEATS.map(c => `<div class="cheat"><span class="seq">${c.seq.map(x => `<b>${x}</b>`).join('')}</span><span>${c.name}${c.toggle ? (game.ch[c.toggle] ? ' · <b style="color:var(--verde)">an</b>' : ' · aus') : ''}</span></div>`).join('');
-  $('pAdmin').hidden = !(window.IEaccount && IEaccount.admin);
-  $('cheatBox').hidden = !(window.IEaccount && IEaccount.admin);
+  $('pAdmin').hidden = !(window.IEaccount && IEaccount.admin && !IEaccount.hidden);
+  $('cheatBox').hidden = !(window.IEaccount && IEaccount.admin && !IEaccount.hidden);
   $('pauseModal').hidden = false; if (window.IEonline) IEonline.renderPause(); if (locked) document.exitPointerLock();
   $('progTxt').textContent = `Story: ${Math.min(S.mission, IE.missions.length)} / ${IE.missions.length} Missionen`;
   $('optCtrl').textContent = isTouch ? 'Touch' : 'Tastatur & Maus';

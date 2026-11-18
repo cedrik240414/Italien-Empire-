@@ -41,19 +41,20 @@ function msg(t, ok) { const m = $('lgMsg'); m.textContent = t; m.classList.toggl
 function busy(b) { $('lgLogin').disabled = $('lgRegister').disabled = b; }
 function done(nick, info) {
   A.nick = nick; A.slug = slugOf(nick);
-  if (info) { A.admin = !!info.admin; A.superAdmin = !!info.superAdmin; }
+  if (info) { A.admin = !!info.admin; A.superAdmin = !!info.superAdmin; A.hidden = !!info.hidden; }
   try { sessionStorage.setItem('italienEmpire_session', nick); } catch (e) { }
   if (window.IEgame && IEgame.setAccount) IEgame.setAccount(A.slug, nick);
   $('login').hidden = true;
-  $('lgWho').textContent = nick + (A.admin ? ' ★ Admin' : ''); $('acctBar').hidden = false;
+  $('lgWho').textContent = nick + (A.admin && !A.hidden ? ' ★ Admin' : ''); $('acctBar').hidden = false;
   showAdminUI();
   if (window.IEonline && IEonline.touchBoard) IEonline.touchBoard();
   if (SRV() && A.token) startPoll();
   if (!SRV()) claudeAdminInit();
 }
 function showAdminUI() {
-  $('lgWho').textContent = A.nick + (A.admin ? ' ★ Admin' : '');
-  $('acctAdmin').hidden = !A.admin; $('tAdmin').hidden = !A.admin; $('hudAdmin').hidden = !A.admin;
+  const vis = A.admin && !A.hidden; // geheimer Admin: keine sichtbaren Admin-Knöpfe – Panel nur mit Taste O
+  $('lgWho').textContent = A.nick + (vis ? ' ★ Admin' : '');
+  $('acctAdmin').hidden = !vis; $('tAdmin').hidden = !vis; $('hudAdmin').hidden = !vis;
 }
 
 // ---------- claude.ai-Version: Besitzer des Spiels ist Admin, Geschenke & Banns über die gemeinsame Datenbank ----------
@@ -187,6 +188,7 @@ function startPoll() {
       const me = await SRV().me();
       if (me.banned && !me.superAdmin) { A.onBanned(); return; }
       A.setMoon(!!me.moonOpen);
+      if (!!me.hidden !== !!A.hidden) { A.hidden = !!me.hidden; showAdminUI(); }
       if (me.admin !== A.admin) { A.admin = me.admin; showAdminUI(); IEgame.toast(A.admin ? 'Du bist jetzt Admin!' : 'Deine Admin-Rechte wurden entfernt', 4); }
       if (me.grant) { const c = await SRV().claim(); if (c.grant) applyGrant(c.grant); }
     } catch (e) { if (e && e.status === 401) { try { localStorage.removeItem(TOKEN_KEY); } catch (er) { } } }
@@ -283,6 +285,13 @@ function drawAdminCheats() {
 A.openAdmin = openAdmin;
 $('acctAdmin').addEventListener('click', openAdmin);
 $('pAdmin').addEventListener('click', openAdmin);
+// Taste O öffnet/schließt das Admin-Panel (für alle Admins, für geheime Admins der einzige Weg)
+addEventListener('keydown', e => {
+  if (e.code !== 'KeyO' || e.repeat || !A.admin || (e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) return;
+  if (!$('adminModal').hidden) IEgame.closeModals(); else openAdmin();
+});
+// ohne Tastatur (iPad): dreimal schnell auf den Geldbetrag tippen
+{ let taps = []; $('money').addEventListener('pointerdown', () => { if (!A.admin) return; const t = performance.now(); taps = taps.filter(x => t - x < 700).concat(t); if (taps.length >= 3) { taps = []; openAdmin(); } }); }
 $('hudAdmin').addEventListener('click', openAdmin);
 $('tAdmin').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); openAdmin(); });
 
