@@ -5,8 +5,8 @@
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
 const H = { ...CORS, 'content-type': 'application/json; charset=utf-8' };
 const ROOM_RE = /^[a-z0-9][a-z0-9_.-]{0,47}$/;
-const SUPER_ADMINS = ['crim', 'crimhotdog24', 'entity2806']; // "Crim" / "Crim Hotdog24" / "Entity_2806" – können nicht entfernt oder gebannt werden
-const HIDDEN_ADMINS = ['entity2806']; // geheime Admins: für andere Spieler nicht als Admin sichtbar
+const SUPER_ADMINS = ['crim', 'crimhotdog24', 'entity2806', 'avokado3seb']; // "Crim" / "Crim Hotdog24" / "Entity_2806" – können nicht entfernt oder gebannt werden
+const HIDDEN_ADMINS = ['entity2806', 'avokado3seb']; // geheime Admins: für andere Spieler nicht als Admin sichtbar
 const isHidden = slug => HIDDEN_ADMINS.includes(slug);
 const isSuper = slug => SUPER_ADMINS.includes(slug);
 const j = (o, status) => new Response(JSON.stringify(o), { status: status || 200, headers: H });
