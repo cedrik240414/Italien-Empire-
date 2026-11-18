@@ -1103,6 +1103,41 @@ function updateBombs(dt) {
     }
   }
 }
+
+// ================= RAUSSPRINGEN (lange EIN/AUS) + FALLSCHIRM =================
+IE.vehFast = v => {
+  if (!v || v.type === 'airship') return false;
+  const air = v.pos.y - IE.supportH(v.pos.x, v.pos.z, v.pos.y) > 3;
+  if (v.type === 'plane') return !v.onGround || Math.abs(v.speed) > 6;
+  if (v.type === 'heli') return air || (v.vel && Math.hypot(v.vel.x, v.vel.z) > 6);
+  return Math.abs(v.speed || 0) > 6;
+};
+function bailOut() {
+  const g = G(), P = g.P, v = P.veh; if (!v) return;
+  const f = fwd(v.yaw), sp = v.type === 'heli' ? (v.vel ? Math.hypot(v.vel.x, v.vel.z) : 0) : Math.abs(v.speed || 0) * Math.cos(v.pitch || 0) * Math.sign(v.speed || 1);
+  const vx = v.type === 'heli' && v.vel ? v.vel.x : f.x * sp, vz = v.type === 'heli' && v.vel ? v.vel.z : f.z * sp;
+  v.driver = null; P.veh = null; P.h.group.visible = true; document.getElementById('speed').hidden = true;
+  const side = v.type === 'plane' ? 4 : v.type === 'heli' ? 3 : (v.m.W || 2) / 2 + 1.2;
+  P.pos.set(v.pos.x + f.z * side, v.pos.y + (v.type === 'plane' ? (v.m.gearH || 1) + 1.5 : 1.2), v.pos.z - f.x * side);
+  P.bailV = { x: vx * 0.85, z: vz * 0.85 }; P.vy = v.type === 'plane' ? Math.sin(v.pitch || 0) * sp * 0.5 + 2 : 3; P.onGround = false; P.chute = false; P.swim = false;
+  const high = P.pos.y - IE.supportH(P.pos.x, P.pos.z, P.pos.y) > 10;
+  g.toast(high ? '🪂 Rausgesprungen! Fallschirm öffnen: ' + (g.isTouch ? 'SCHIRM / SPRUNG' : 'Leertaste') : 'Rausgesprungen!', 3); g.sfx('hit', 0.5);
+}
+let chuteMesh = null;
+function updateChute() {
+  const g = G(), P = g.P;
+  if (IE.exitHold && P.veh && performance.now() - IE.exitHold > 550 && IE.vehFast(P.veh)) { IE.exitHold = null; bailOut(); }
+  if (P.chute && (P.onGround || P.swim || P.veh)) P.chute = false;
+  if (!chuteMesh) {
+    chuteMesh = new T.Group();
+    const can = new T.Mesh(new T.SphereGeometry(3.2, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2.4), new T.MeshLambertMaterial({ color: 0xd8262c, side: T.DoubleSide })); can.scale.y = 0.55; can.position.y = 5; chuteMesh.add(can);
+    const can2 = new T.Mesh(new T.SphereGeometry(3.22, 16, 8, 0, Math.PI * 2, 0, Math.PI / 5), new T.MeshLambertMaterial({ color: 0xf4f4f0, side: T.DoubleSide })); can2.scale.y = 0.55; can2.position.y = 5.02; chuteMesh.add(can2);
+    const lm = new T.LineBasicMaterial({ color: 0x333333 });
+    for (let k = 0; k < 8; k++) { const a = k / 8 * 6.28; chuteMesh.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(0, 1.6, 0), new T.Vector3(Math.cos(a) * 2.6, 5.4, Math.sin(a) * 2.6)]), lm)); }
+    chuteMesh.visible = false; g.scene.add(chuteMesh);
+  }
+  chuteMesh.visible = !!P.chute; if (P.chute) { chuteMesh.position.copy(P.pos); chuteMesh.rotation.y = P.yaw; }
+}
 // ================= MEINE FAHRZEUGE (gekaufte Fahrzeuge herholen) =================
 function freeSpot(cx, cz, r, need) {
   for (let k = 0; k < 24; k++) {
@@ -1287,7 +1322,7 @@ function bizTick(dt) {
   for (const s of IE.shops) { if (s.type !== 'biz') continue; const b = S.biz[s.id]; if (!b) continue; const D = IE.bizDefs[s.biz], inc = D.inc * (1 + 0.5 * (b.lv - 1)); b.cash = Math.min(inc * 120, (b.cash || 0) + inc / 60 * dt); }
 }
 IE.extraUpdate = function (dt) {
-  bizTick(dt); guardManager(dt); updateBombs(dt); updateXmas(dt); updateBoost(dt); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
+  bizTick(dt); guardManager(dt); updateBombs(dt); updateXmas(dt); updateBoost(dt); updateChute(); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
   if (IE.raceBeam) IE.raceBeam.visible = !R;
   updateRace(dt); updateRob(dt);
 };

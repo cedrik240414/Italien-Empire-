@@ -131,21 +131,22 @@ addEventListener('keydown', e => {
   if (e.repeat) return; keys[e.code] = true;
   const m = { KeyF: 'enter', Enter: 'enter', KeyE: 'act', KeyQ: 'weap', KeyM: 'map', KeyC: 'char', KeyV: 'view', Tab: 'wheel', Escape: 'pause', KeyP: 'pause', Space: 'space' };
   if (m[e.code]) press(m[e.code]);
-  const cs = { KeyE: 'E', Space: 'SPRUNG', ShiftLeft: 'RENNEN', ShiftRight: 'RENNEN', KeyQ: 'WAFFE' }[e.code]; if (cs) cheatInput(cs);
+  const cs = { KeyE: 'E', Space: 'SPRUNG', ShiftLeft: 'RENNEN', ShiftRight: 'RENNEN', KeyQ: 'WAFFE' }[e.code]; if (cs) { cheatInput(cs); holdDown(cs); }
+  if (e.code === 'KeyF' || e.code === 'Enter' || e.code === 'KeyE') IE.exitHold = performance.now();
   if (/^Digit[1-7]$/.test(e.code)) press('w' + e.code.slice(5));
   if (e.code === 'KeyB' && game.state === 'play' && !uiOpen() && IE.dropBomb) IE.dropBomb();
   if (e.code === 'Space' || e.code === 'Tab' || e.code.startsWith('Arrow')) e.preventDefault();
 });
-addEventListener('keyup', e => { keys[e.code] = false; });
+addEventListener('keyup', e => { keys[e.code] = false; const cs = { KeyE: 'E', Space: 'SPRUNG', ShiftLeft: 'RENNEN', ShiftRight: 'RENNEN', KeyQ: 'WAFFE' }[e.code]; if (cs) holdUp(cs); if (e.code === 'KeyF' || e.code === 'Enter' || e.code === 'KeyE') IE.exitHold = null; });
 let locked = false;
 document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === canvas; });
 canvas.addEventListener('mousedown', e => {
   if (isTouch) return;
   if (!locked && game.state === 'play' && !uiOpen()) { try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => { }); } catch (er) { } }
-  if (e.button === 0) inp.fire = true; if (e.button === 2) { inp.aim = true; cheatInput('ZIELEN'); }
+  if (e.button === 0) inp.fire = true; if (e.button === 2) { inp.aim = true; cheatInput('ZIELEN'); holdDown('ZIELEN'); }
   if (dlg.active) press('space');
 });
-addEventListener('mouseup', e => { if (e.button === 0) inp.fire = false; if (e.button === 2) inp.aim = false; });
+addEventListener('mouseup', e => { if (e.button === 0) inp.fire = false; if (e.button === 2) { inp.aim = false; holdUp('ZIELEN'); } });
 addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('mousemove', e => { if (locked || (!isTouch && opts.ctrl === 'kbm' && game.state === 'play' && !uiOpen() && e.target === canvas && (e.movementX || e.movementY))) { inp.lookX += e.movementX; inp.lookY += e.movementY; inp.lastLook = performance.now(); } });
 addEventListener('wheel', e => { if (game.state === 'play' && !uiOpen()) press(e.deltaY > 0 ? 'weap' : 'weapPrev'); }, { passive: true });
@@ -153,10 +154,14 @@ addEventListener('wheel', e => { if (game.state === 'play' && !uiOpen()) press(e
 // Touch
 const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0 }, look = { id: null, x: 0, y: 0 };
 const touchBtn = {};
+// Lange gedrückte Knöpfe (für Cheats mit „lang“ und Rausspringen)
+const LONG_SYM = { tAct: 'E', tJump: 'SPRUNG', tSprint: 'RENNEN', tAim: 'ZIELEN', tWeap: 'WAFFE' }, holdT = {};
+function holdDown(sym) { holdT[sym] = performance.now(); if (sym === 'EINAUS') IE.exitHold = performance.now(); }
+function holdUp(sym) { const t = holdT[sym]; holdT[sym] = 0; if (sym === 'EINAUS' || sym === 'E') IE.exitHold = null; if (t && performance.now() - t >= 600 && sym !== 'EINAUS') cheatInput(sym + '_LANG'); }
 function bindBtn(id, down, up) {
-  const el = $(id);
-  el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); el.classList.add('on'); down && down(); audioInit(); });
-  const end = e => { el.classList.remove('on'); up && up(); };
+  const el = $(id); let isDown = false;
+  el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); el.classList.add('on'); isDown = true; if (LONG_SYM[id]) holdDown(LONG_SYM[id]); if (id === 'tEnter') holdDown('EINAUS'); down && down(); audioInit(); });
+  const end = e => { el.classList.remove('on'); if (isDown) { isDown = false; if (LONG_SYM[id]) holdUp(LONG_SYM[id]); if (id === 'tEnter') holdUp('EINAUS'); } up && up(); };
   el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end); el.addEventListener('pointerleave', end);
 }
 bindBtn('tBomb', () => { if (IE.dropBomb) IE.dropBomb(); });
@@ -229,15 +234,17 @@ const CHEATS = [
   { seq: ['ZIELEN', 'ZIELEN', 'ZIELEN', 'E'], name: 'Privatjet in der Luft', f() {
       const f = IE.fwd(P.yaw), v = IE.spawnPlane(scene, 'jet', P.pos.x - f.x * 25, P.pos.z - f.z * 25, P.yaw, Math.max(0, IE.groundH(P.pos.x, P.pos.z)) + 250);
       v.speed = 110; v.throttle = 0.7; v.onGround = false; leaveVehicle(); P.veh = v; v.driver = 'player'; P.swim = P.under = false; P.interior = null; P.fly = false; $('speed').hidden = false; cam.yaw = v.yaw; } },
+  { seq: ['E_LANG', 'SPRUNG_LANG', 'E_LANG', 'SPRUNG_LANG'], name: 'Flug-Yacht', f() { spawnAirship(); } },
   { seq: ['ZIELEN', 'RENNEN', 'ZIELEN', 'RENNEN', 'E'], name: 'Zombie-Apokalypse', toggle: 'zombies', on() { zombieStart(); }, off() { zombieEnd(); } },
   { seq: ['E', 'E', 'E', 'RENNEN', 'RENNEN'], name: '+ 1 Stufe Geld-Multiplikator', f() { S.up = S.up || {}; S.up.geld = upLvl('geld') + 1; } }
 ];
 let cheatBuf = [];
 function cheatInput(sym) {
   if (game.state !== 'play' || uiOpen() || dlg.active) return;
-  const now = performance.now(); cheatBuf = cheatBuf.filter(c => now - c.t < 6000); cheatBuf.push({ s: sym, t: now });
-  const seq = cheatBuf.map(c => c.s);
+  const now = performance.now(); cheatBuf = cheatBuf.filter(c => now - c.t < (sym.endsWith('_LANG') ? 12000 : 6000)); cheatBuf.push({ s: sym, t: now });
+  const isLong = sym.endsWith('_LANG'), seq = cheatBuf.map(c => c.s).filter(s => s.endsWith('_LANG') === isLong);
   for (const c of CHEATS.slice().sort((a, b) => b.seq.length - a.seq.length)) {
+    if (c.seq.some(x => x.endsWith('_LANG')) !== isLong) continue;
     if (seq.length < c.seq.length || c.seq.some((x, i) => seq[seq.length - c.seq.length + i] !== x)) continue;
     cheatBuf = [];
     runCheat(c); return;
@@ -687,14 +694,14 @@ function tryEnterExit() {
   if (P.interior) return;
   if (P.ride) { // als Beifahrer aussteigen
     const r = ONL() && IEonline.peers.get(P.ride); P.ride = null; P.h.group.visible = true;
-    const yaw = r && r.pr && r.pr.v ? r.pr.v.yaw : P.yaw, f = IE.fwd(yaw); placePlayer(P.pos.x - f.z * 1.9, P.pos.z + f.x * 1.9); toast('Ausgestiegen', 1.2); return;
+    const yaw = r && r.pr && r.pr.v ? r.pr.v.yaw : P.yaw, f = IE.fwd(yaw), spd = r ? r.spd || 0 : 0, air = P.pos.y - IE.supportH(P.pos.x, P.pos.z, P.pos.y) > 3;
+    if (spd > 6 || air) { P.pos.x -= f.z * 2.5; P.pos.z += f.x * 2.5; P.bailV = { x: f.x * spd * 0.8, z: f.z * spd * 0.8 }; P.onGround = false; P.vy = 0; if (air) toast('Fallschirm öffnen: ' + (isTouch ? 'SPRUNG' : 'Leertaste') + ' drücken!', 3); return; }
+    placePlayer(P.pos.x - f.z * 1.9, P.pos.z + f.x * 1.9); toast('Ausgestiegen', 1.2); return;
   }
   if (P.veh) {
     const v = P.veh;
-    if (v.type === 'heli' && v.pos.y - IE.supportH(v.pos.x, v.pos.z, v.pos.y) > 3 && Math.hypot(v.vel.x, v.vel.z) > 3) { /* Fallschirm-loser Absprung */ }
     if (v.type === 'airship') { v.driver = null; P.veh = null; const hp = helmWorld(v, 1.8); P.pos.copy(hp); P.vy = 0; P.onShip = v; $('speed').hidden = true; engineSound(null); return; }
-    if ((v.type === 'car' || v.type === 'boat') && Math.abs(v.speed) > 6) { toast('Zu schnell zum Aussteigen'); return; }
-    if (v.type === 'plane' && (!v.onGround || v.speed > 6)) { toast('Erst landen und anhalten'); return; }
+    if (IE.vehFast && IE.vehFast(v)) { toast(isTouch ? 'Zum Rausspringen EIN/AUS lange gedrückt halten' : 'Zum Rausspringen F / E lange gedrückt halten', 2); return; }
     v.driver = null; P.veh = null;
     const f = IE.fwd(v.yaw); const side = v.type === 'heli' ? 3 : v.type === 'plane' ? 3.5 : v.type === 'boat' ? v.m.W / 2 + 1.2 : v.m.tank ? 2.6 : 1.8;
     placePlayer(v.pos.x + f.z * side, v.pos.z - f.x * side);
@@ -760,7 +767,7 @@ function updatePlayer(dt) {
   if (game.dead) { if (P.ride) { P.ride = null; P.h.group.visible = true; } return; }
   if (P.ride) { // Beifahrer: folgt dem Auto des Fahrers
     const r = ONL() && IEonline.peers.get(P.ride);
-    if (!r || !r.pr || !r.pr.v || r.pr.v.t !== 'car' || r.pr.dead) { P.ride = null; P.h.group.visible = true; placePlayer(P.pos.x + 2, P.pos.z); toast('Die Fahrt ist vorbei', 1.6); }
+    if (!r || !r.pr || !r.pr.v || r.pr.v.t === 'airship' || r.pr.dead) { P.ride = null; P.h.group.visible = true; placePlayer(P.pos.x + 2, P.pos.z); toast('Die Fahrt ist vorbei', 1.6); }
     else { const f = IE.fwd(r.pr.v.yaw || 0); P.pos.set(r.pos.x - f.z * 0.45, r.pos.y, r.pos.z + f.x * 0.45); P.vy = 0; P.onGround = true; P.yaw = r.pr.v.yaw || 0; P.h.group.visible = false; P.aimT -= dt; return; }
   }
   const ctrl = !dlg.active && !uiOpen();
@@ -819,7 +826,11 @@ function updatePlayer(dt) {
     P.under = false;
     P.jumpReq = Math.max(0, (P.jumpReq || 0) - dt);
     if (ctrl && P.jumpReq > 0 && P.onGround) { P.jumpReq = 0; P.vy = game.ch.jump ? 22 : 7.5; P.onGround = false; }
-    P.vy -= (game.ch.moon ? 5 : 24) * dt; P.pos.y += P.vy * dt;
+    // Fallschirm öffnen (in der Luft, hoch genug)
+    if (ctrl && P.jumpReq > 0 && !P.onGround && !P.chute && P.pos.y - g > 8) { P.jumpReq = 0; P.chute = true; sfx('beep'); toast('🪂 Fallschirm offen', 1.5); }
+    if (P.bailV) { P.pos.x += P.bailV.x * dt; P.pos.z += P.bailV.z * dt; const dr = P.onGround ? 6 : P.chute ? 1.5 : 0.25; P.bailV.x *= Math.exp(-dr * dt); P.bailV.z *= Math.exp(-dr * dt); if (Math.hypot(P.bailV.x, P.bailV.z) < 0.3) P.bailV = null; }
+    P.vy -= (game.ch.moon ? 5 : 24) * dt; if (P.chute) P.vy = Math.max(P.vy, -4.5); P.pos.y += P.vy * dt;
+    if (P.pos.y <= g && !P.onGround) { const hv = P.bailV ? Math.hypot(P.bailV.x, P.bailV.z) : 0; if (hv > 9 && !P.chute && !game.ch.moon) hurtPlayer((hv - 9) * 4); if (P.chute) { P.chute = false; P.vy = 0; } }
     if (P.pos.y <= g) { if (P.vy < -22 && !game.ch.jump && !game.ch.moon) hurtPlayer((-P.vy - 22) * 6); P.pos.y = g; P.vy = 0; P.onGround = true; }
     else if (P.pos.y - g > 0.3) P.onGround = false;
     if (!P.onGround && g < -1.3 && P.pos.y < -1.25) { P.pos.y = -1.25; P.vy = 0; }
@@ -1657,7 +1668,7 @@ function switchChar(id) {
 
 // ---------- Pause ----------
 function openPause() {
-  $('cheatList').innerHTML = CHEATS.map(c => `<div class="cheat"><span class="seq">${c.seq.map(x => `<b>${x}</b>`).join('')}</span><span>${c.name}${c.toggle ? (game.ch[c.toggle] ? ' · <b style="color:var(--verde)">an</b>' : ' · aus') : ''}</span></div>`).join('');
+  $('cheatList').innerHTML = CHEATS.map(c => `<div class="cheat"><span class="seq">${c.seq.map(x => `<b>${x.replace('_LANG', ' (lang)')}</b>`).join('')}</span><span>${c.name}${c.toggle ? (game.ch[c.toggle] ? ' · <b style="color:var(--verde)">an</b>' : ' · aus') : ''}</span></div>`).join('');
   $('pAdmin').hidden = !(window.IEaccount && IEaccount.admin && !IEaccount.hidden);
   $('cheatBox').hidden = !(window.IEaccount && IEaccount.admin && !IEaccount.hidden);
   $('pauseModal').hidden = false; if (window.IEonline) IEonline.renderPause(); if (locked) document.exitPointerLock();
@@ -1811,7 +1822,7 @@ function updateHUD(dt) {
     $('tDown').style.display = inH || inA || P.fly || (P.swim && !P.veh) ? '' : 'none'; $('tDown').textContent = P.veh && P.veh.type === 'plane' ? 'GAS −' : inH || inA || P.fly ? 'RUNTER' : 'TAUCHEN';
     const inP = P.veh && P.veh.type === 'plane';
     if (inP) $('tDown').style.display = '';
-    $('tJump').textContent = inP ? 'GAS +' : inH || inA || P.fly ? 'HOCH' : inC || inB ? 'BREMSE' : P.swim ? 'AUF' : 'SPRUNG';
+    $('tJump').textContent = !P.veh && !P.onGround && !P.chute && !P.swim && P.pos.y - IE.supportH(P.pos.x, P.pos.z, P.pos.y) > 8 ? 'SCHIRM' : inP ? 'GAS +' : inH || inA || P.fly ? 'HOCH' : inC || inB ? 'BREMSE' : P.swim ? 'AUF' : 'SPRUNG';
     $('tSprint').style.display = P.veh ? 'none' : ''; $('tAim').style.display = P.veh ? 'none' : '';
     $('tFire').style.display = (inH || (P.veh && P.veh.type === 'plane')) && !P.veh.def.armed ? 'none' : '';
     $('tBomb').style.display = P.veh && (inH || P.veh.type === 'plane') && P.veh.def.armed ? '' : 'none';
@@ -1975,6 +1986,6 @@ function boot() {
 $('bNew').addEventListener('click', () => startGame(false));
 $('bCont').addEventListener('click', () => startGame(true));
 function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = 'italienEmpire_v1' + ACC; $('bCont').hidden = !store.get(); cloudPull(); }
-window.IEgame = { explosion, damageNPC, tracer, flash, enterInterior, exitInterior, putInVehicle, setWanted, maxHP, placePlayer, teleportTo, CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
+window.IEgame = { explosion, get isTouch() { return isTouch; }, damageNPC, tracer, flash, enterInterior, exitInterior, putInVehicle, setWanted, maxHP, placePlayer, teleportTo, CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, closeModals, openPause, IE };
 boot();
 })();

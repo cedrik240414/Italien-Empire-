@@ -43,8 +43,8 @@ O.join = async function (isPublic, code, title) {
 };
 O.raceEmit = function (d) { if (room) room.emit('job', { race: d }).catch(() => { }); };
 O.nearCarPeer = function (pos) {
-  let best = null, bd = 4.8;
-  for (const r of O.peers.values()) { const pr = r.pr; if (!pr || pr.dead || !pr.v || pr.v.t !== 'car' || pr.rd) continue; const d = Math.hypot(r.pos.x - pos.x, r.pos.z - pos.z); if (d < bd) { bd = d; best = r; } }
+  let best = null, bd = 1e9; const reach = { car: 4.8, boat: 7.5, heli: 7, plane: 9 };
+  for (const r of O.peers.values()) { const pr = r.pr; if (!pr || pr.dead || !pr.v || !reach[pr.v.t] || pr.rd) continue; const d = Math.hypot(r.pos.x - pos.x, r.pos.z - pos.z); if (d < reach[pr.v.t] && Math.abs(r.pos.y - pos.y) < 6 && d < bd) { bd = d; best = r; } }
   return best;
 };
 O.adminMoon = function (open) { if (room) room.emit('admin', { moon: open === false ? 0 : 1 }).catch(() => { }); };
