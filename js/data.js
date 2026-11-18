@@ -472,6 +472,7 @@ IE.coopJobs = [
 // price 0 = gratis, admin = nur für Admins
 const SK = { light: 0xe9c3a6, mid: 0xd8a47f, tan: 0xc8946c, dark: 0x8a5a3a, pale: 0xf0d8c4 };
 IE.skins = [
+  { id: 'trooper', name: 'Weißer Weltraumsoldat', cat: 'Spaß', price: 75000, look: { pants: 0xf2f2f0, jacket: 0xf2f2f0, shirt: 0x1a1a1a, skin: SK.light, hair: 0x111111, hat: 'trooper', hands: 0x111111, shoes: 0xf2f2f0, stripe: 0x1a1a1a } },
   { id: 'jack', name: 'Jack Moretti', cat: 'Crew', price: 0, look: IE.chars.jack },
   { id: 'marco', name: 'Marco Bellini', cat: 'Crew', price: 0, look: IE.chars.marco },
   { id: 'sofia', name: 'Sofia Romano', cat: 'Crew', price: 0, look: IE.chars.sofia },

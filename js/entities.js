@@ -57,7 +57,12 @@ IE.makeHuman = function (o) {
   // Hüte & Helme
   const hc = o.hatColor !== undefined ? o.hatColor : 0x222222;
   const cyl = (rt, rb, h, c, y, z) => { const m = new T.Mesh(new T.CylinderGeometry(rt, rb, h, 14), mc(c)); m.position.set(0, y, z || 0); m.castShadow = true; head.add(m); return m; };
-  if (o.hat === 'cap') { box(0.27, 0.08, 0.28, hc, head, 0, 0.17, 0); box(0.22, 0.02, 0.12, hc, head, 0, 0.14, 0.18); }
+  if (o.hat === 'trooper') { // weißer Weltraumsoldaten-Helm mit schwarzem Visier
+    const hm = new T.Mesh(new T.SphereGeometry(0.19, 16, 12), mc(0xf2f2f0)); hm.scale.set(1, 1.05, 1.05); hm.position.y = 0.03; head.add(hm);
+    box(0.09, 0.045, 0.02, 0x0a0a0a, head, -0.05, 0.05, 0.175); box(0.09, 0.045, 0.02, 0x0a0a0a, head, 0.05, 0.05, 0.175);
+    box(0.1, 0.06, 0.03, 0x555555, head, 0, -0.06, 0.18); box(0.02, 0.1, 0.02, 0x0a0a0a, head, 0, -0.01, 0.185);
+    box(0.36, 0.03, 0.12, 0xf2f2f0, head, 0, -0.1, -0.05);
+  } else if (o.hat === 'cap') { box(0.27, 0.08, 0.28, hc, head, 0, 0.17, 0); box(0.22, 0.02, 0.12, hc, head, 0, 0.14, 0.18); }
   else if (o.hat === 'pilot') { box(0.28, 0.08, 0.29, hc, head, 0, 0.17, 0); box(0.24, 0.02, 0.1, 0x111111, head, 0, 0.13, 0.17); box(0.06, 0.04, 0.01, 0xe8c040, head, 0, 0.18, 0.146); }
   else if (o.hat === 'fedora') { cyl(0.2, 0.2, 0.02, hc, 0.15); cyl(0.12, 0.14, 0.13, hc, 0.22); cyl(0.142, 0.142, 0.03, 0x111111, 0.18); }
   else if (o.hat === 'cowboy') { cyl(0.28, 0.28, 0.02, hc, 0.15); cyl(0.12, 0.14, 0.14, hc, 0.23); }

@@ -984,6 +984,109 @@ function furnitureMenu(v) {
 }
 IE.paintMenu = paintMenu; IE.furnitureMenu = furnitureMenu;
 
+// ================= HAUSTIERE =================
+const PETS = {
+  hund:    { name: 'Hund',            price: 25000 },
+  katze:   { name: 'Katze',           price: 20000 },
+  vogel:   { name: 'Vogel',           price: 15000, fly: true },
+  huhn:    { name: 'Huhn',            price: 10000 },
+  eule:    { name: 'Eule',            price: 40000, fly: true },
+  reh:     { name: 'Reh',             price: 60000 },
+  fisch:   { name: 'Fisch in der Wasserblase', price: 30000, float: true },
+  rentier: { name: 'Rentier',         price: 120000 },
+  dino:    { name: 'Dino',            price: 500000 },
+  alien:   { name: 'Grünes Baby-Alien', price: 1000000, float: true }
+};
+IE.pets = PETS;
+IE.makePet = function (id) {
+  const g = new T.Group(), legs = [], wings = [], L = c => new T.MeshLambertMaterial({ color: c });
+  const bx = (w, h, d, c, x, y, z, p) => { const m = new T.Mesh(new T.BoxGeometry(w, h, d), typeof c === 'number' ? L(c) : c); m.position.set(x, y, z); (p || g).add(m); return m; };
+  const sph = (r, c, x, y, z, p) => { const m = new T.Mesh(new T.SphereGeometry(r, 12, 10), typeof c === 'number' ? L(c) : c); m.position.set(x, y, z); (p || g).add(m); return m; };
+  const leg = (w, h, c, x, z, y0) => { const pv = new T.Group(); pv.position.set(x, y0, z); g.add(pv); bx(w, h, w, c, 0, -h / 2, 0, pv); legs.push(pv); };
+  const eyes = (y, z, sp, r, c) => { sph(r || 0.04, c || 0x111111, -sp, y, z); sph(r || 0.04, c || 0x111111, sp, y, z); };
+  switch (id) {
+    case 'hund': bx(0.38, 0.36, 0.9, 0xa0703a, 0, 0.6, 0); bx(0.3, 0.3, 0.36, 0xa0703a, 0, 0.88, 0.5); bx(0.16, 0.14, 0.18, 0x8a5a2b, 0, 0.82, 0.74); sph(0.05, 0x111111, 0, 0.86, 0.84); eyes(0.95, 0.68, 0.08);
+      bx(0.08, 0.18, 0.12, 0x6a4420, -0.16, 0.98, 0.45); bx(0.08, 0.18, 0.12, 0x6a4420, 0.16, 0.98, 0.45); const t = bx(0.08, 0.08, 0.35, 0xa0703a, 0, 0.75, -0.55); t.rotation.x = 0.6;
+      for (const [x, z] of [[-0.13, 0.3], [0.13, 0.3], [-0.13, -0.3], [0.13, -0.3]]) leg(0.1, 0.42, 0x8a5a2b, x, z, 0.44); break;
+    case 'katze': bx(0.26, 0.24, 0.6, 0x7c7c84, 0, 0.42, 0); bx(0.24, 0.22, 0.24, 0x7c7c84, 0, 0.6, 0.36); eyes(0.64, 0.48, 0.06, 0.035, 0x7fe08f);
+      for (const sx of [-1, 1]) { const e = new T.Mesh(new T.ConeGeometry(0.06, 0.12, 4), L(0x7c7c84)); e.position.set(sx * 0.08, 0.76, 0.36); g.add(e); }
+      const tl = bx(0.05, 0.45, 0.05, 0x7c7c84, 0, 0.62, -0.32); tl.rotation.x = -0.3; for (const [x, z] of [[-0.09, 0.2], [0.09, 0.2], [-0.09, -0.2], [0.09, -0.2]]) leg(0.07, 0.3, 0x6a6a72, x, z, 0.3); break;
+    case 'vogel': sph(0.16, 0x2a7ad8, 0, 0, 0); sph(0.11, 0x2a7ad8, 0, 0.12, 0.12); const bk = new T.Mesh(new T.ConeGeometry(0.035, 0.1, 6), L(0xf2a020)); bk.rotation.x = Math.PI / 2; bk.position.set(0, 0.11, 0.25); g.add(bk); eyes(0.15, 0.2, 0.05, 0.022);
+      for (const sx of [-1, 1]) { const pv = new T.Group(); pv.position.set(sx * 0.12, 0.03, 0); g.add(pv); bx(0.28, 0.03, 0.16, 0x1f5fb0, sx * 0.14, 0, 0, pv); wings.push(pv); } bx(0.1, 0.03, 0.18, 0x1f5fb0, 0, 0, -0.2); break;
+    case 'eule': sph(0.26, 0x7a5a3a, 0, 0, 0).scale.y = 1.2; sph(0.09, 0xffffff, -0.1, 0.12, 0.2); sph(0.09, 0xffffff, 0.1, 0.12, 0.2); sph(0.045, 0xf2c230, -0.1, 0.12, 0.27); sph(0.045, 0xf2c230, 0.1, 0.12, 0.27); sph(0.02, 0x111111, -0.1, 0.12, 0.31); sph(0.02, 0x111111, 0.1, 0.12, 0.31);
+      for (const sx of [-1, 1]) { const t = new T.Mesh(new T.ConeGeometry(0.05, 0.14, 4), L(0x5a3a20)); t.position.set(sx * 0.12, 0.33, 0.05); g.add(t); const pv = new T.Group(); pv.position.set(sx * 0.22, 0.05, 0); g.add(pv); bx(0.4, 0.04, 0.22, 0x5a3a20, sx * 0.2, 0, 0, pv); wings.push(pv); } break;
+    case 'huhn': sph(0.22, 0xf4f4f0, 0, 0.42, 0).scale.z = 1.2; sph(0.13, 0xf4f4f0, 0, 0.66, 0.16); bx(0.04, 0.1, 0.12, 0xd8262c, 0, 0.8, 0.16); const hb = new T.Mesh(new T.ConeGeometry(0.035, 0.08, 6), L(0xf2a020)); hb.rotation.x = Math.PI / 2; hb.position.set(0, 0.65, 0.3); g.add(hb); bx(0.05, 0.08, 0.04, 0xd8262c, 0, 0.58, 0.26); eyes(0.69, 0.27, 0.05, 0.02);
+      for (const sx of [-1, 1]) { const pv = new T.Group(); pv.position.set(sx * 0.2, 0.45, 0); g.add(pv); bx(0.04, 0.16, 0.24, 0xe8e8e2, 0, 0, 0, pv); wings.push(pv); leg(0.04, 0.22, 0xf2a020, sx * 0.08, 0, 0.22); } break;
+    case 'reh': case 'rentier': { const c = id === 'reh' ? 0xb07a45 : 0x7a4a26, big = id === 'rentier' ? 1.25 : 1;
+      const gg = new T.Group(); g.add(gg); gg.scale.setScalar(big);
+      const B = (w, h, d, cc, x, y, z) => bx(w, h, d, cc, x, y, z, gg);
+      B(0.4, 0.42, 1.0, c, 0, 0.95, 0); B(0.16, 0.5, 0.18, c, 0, 1.3, 0.5); B(0.22, 0.22, 0.34, c, 0, 1.55, 0.62); sph(0.045, id === 'rentier' ? 0xff2020 : 0x111111, 0, 1.52, 0.8, gg); B(0.14, 0.14, 0.06, 0xffffff, 0, 1.0, -0.52);
+      for (const sx of [-1, 1]) { B(0.04, 0.15, 0.1, c, sx * 0.13, 1.68, 0.56); if (id === 'rentier') { B(0.04, 0.5, 0.04, 0xd8c8a0, sx * 0.1, 1.95, 0.55); B(0.25, 0.04, 0.04, 0xd8c8a0, sx * 0.2, 2.05, 0.55); B(0.04, 0.2, 0.04, 0xd8c8a0, sx * 0.3, 2.15, 0.55); } else B(0.03, 0.15, 0.03, 0xd8c8a0, sx * 0.07, 1.74, 0.56); }
+      for (const [x, z] of [[-0.14, 0.38], [0.14, 0.38], [-0.14, -0.38], [0.14, -0.38]]) { const pv = new T.Group(); pv.position.set(x, 0.78, z); gg.add(pv); bx(0.08, 0.78, 0.08, c, 0, -0.39, 0, pv); legs.push(pv); }
+      break; }
+    case 'dino': { const gr = 0x4f9a3a;
+      bx(0.7, 0.8, 1.4, gr, 0, 1.4, 0); bx(0.5, 0.5, 0.7, gr, 0, 2.0, 0.85); bx(0.48, 0.18, 0.6, 0x3f7a2e, 0, 1.78, 1.0); eyes(2.12, 1.18, 0.16, 0.05, 0xf2c230);
+      for (let k = 0; k < 5; k++) bx(0.06, 0.08, 0.04, 0xffffff, -0.16 + k * 0.08, 1.86, 1.3);
+      const tl = bx(0.35, 0.35, 1.4, gr, 0, 1.3, -1.2); tl.rotation.x = -0.25;
+      for (const sx of [-1, 1]) { bx(0.1, 0.35, 0.1, gr, sx * 0.3, 1.5, 0.6); leg(0.24, 1.0, gr, sx * 0.25, 0, 1.05); }
+      for (let k = 0; k < 6; k++) bx(0.06, 0.18, 0.18, 0x2e6a22, 0, 1.85 - k * 0.04, 0.4 - k * 0.4); break; }
+    case 'fisch': { const bub = new T.Mesh(new T.SphereGeometry(0.45, 18, 14), new T.MeshStandardMaterial({ color: 0x8fdcff, transparent: true, opacity: 0.35, roughness: 0.05, metalness: 0.1 })); g.add(bub);
+      const f = sph(0.14, 0xf27a1a, 0, 0, 0); f.scale.set(0.6, 0.8, 1.4); const tf = new T.Mesh(new T.ConeGeometry(0.1, 0.16, 4), L(0xf27a1a)); tf.rotation.x = -Math.PI / 2; tf.position.z = -0.25; g.add(tf); eyes(0.04, 0.14, 0.06, 0.02); wings.push(tf); break; }
+    case 'alien': { const gc = 0x8fbf6a;
+      bx(0.34, 0.36, 0.28, 0xa08a6a, 0, 0.35, 0); sph(0.22, gc, 0, 0.72, 0.02); eyes(0.75, 0.2, 0.08, 0.06, 0x111111);
+      for (const sx of [-1, 1]) { const e = new T.Mesh(new T.ConeGeometry(0.1, 0.45, 8), L(gc)); e.rotation.z = sx * -1.35; e.position.set(sx * 0.36, 0.78, 0); g.add(e); bx(0.06, 0.2, 0.06, gc, sx * 0.2, 0.32, 0.08); }
+      const pod = new T.Mesh(new T.SphereGeometry(0.42, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), new T.MeshStandardMaterial({ color: 0xc8ccd0, metalness: 0.7, roughness: 0.3, side: T.DoubleSide })); pod.position.y = 0.2; g.add(pod); break; }
+  }
+  return { g, legs, wings, fly: !!(PETS[id] || {}).fly, float: !!(PETS[id] || {}).float, phase: 0 };
+};
+IE.animPet = function (pt, dt, spd) {
+  pt.phase += dt * (2 + Math.min(spd, 9) * 1.6);
+  pt.legs.forEach((l, i) => l.rotation.x = spd > 0.3 ? Math.sin(pt.phase + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI / 2 : 0)) * 0.6 : 0);
+  pt.wings.forEach((w, i) => { if (pt.float) w.rotation.y = Math.sin(pt.phase * 2) * 0.5; else w.rotation.z = Math.sin(pt.phase * (pt.fly ? 3 : 1.2)) * (pt.fly ? 0.8 : 0.3) * (i ? -1 : 1); });
+};
+let myPet = null; const homePets = [];
+function petTick(dt) {
+  const g = G(), P = g.P, S = g.S, id = S.petActive && (S.pets || []).includes(S.petActive) ? S.petActive : null;
+  if (myPet && myPet.id !== id) { g.scene.remove(myPet.g); myPet = null; }
+  if (!id) return;
+  if (!myPet) { myPet = Object.assign(IE.makePet(id), { id, pos: P.pos.clone(), yaw: P.yaw }); g.scene.add(myPet.g); }
+  const hidden = !!P.veh || !!P.ride || g.game.dead || (launch && true);
+  myPet.g.visible = !hidden; if (hidden) { myPet.pos.copy(P.pos); return; }
+  const f = fwd(P.yaw), tx = P.pos.x - f.x * 2.2 + f.z * 1.2, tz = P.pos.z - f.z * 2.2 - f.x * 1.2;
+  const dx = tx - myPet.pos.x, dz = tz - myPet.pos.z, d = Math.hypot(dx, dz);
+  if (d > 30) myPet.pos.set(tx, P.pos.y, tz);
+  let spd = 0; if (d > 0.6) { spd = Math.min(d * 2.2, 11); myPet.pos.x += dx / d * spd * dt; myPet.pos.z += dz / d * spd * dt; myPet.yaw = Math.atan2(dx, dz); } else myPet.yaw += (P.yaw - myPet.yaw) * Math.min(1, dt * 3);
+  const gy = P.interior ? P.interior.it.y : IE.supportH(myPet.pos.x, myPet.pos.z, P.pos.y + 1.5);
+  const t = performance.now() / 1000;
+  myPet.pos.y = myPet.fly ? Math.max(gy, P.pos.y) + 2.2 + Math.sin(t * 2) * 0.25 : myPet.float ? Math.max(gy, P.pos.y - 0.2) + 0.9 + Math.sin(t * 2.5) * 0.12 : gy;
+  myPet.g.position.copy(myPet.pos); myPet.g.rotation.y = myPet.yaw; IE.animPet(myPet, dt, spd);
+}
+IE.myPetId = () => { const S = G().S, P = G().P; return S.petActive && (S.pets || []).includes(S.petActive) && !P.veh && !P.ride ? S.petActive : ''; };
+function homePetsTick(dt) {
+  const g = G(), P = g.P, S = g.S, inVilla = P.interior && P.interior.it.type.indexOf('villa_') === 0;
+  const want = inVilla ? (S.pets || []).filter(id => id !== S.petActive) : [];
+  if (!inVilla || homePets.room !== P.interior.it.type || homePets.length !== want.length) { homePets.forEach(h => g.scene.remove(h.g)); homePets.length = 0; homePets.room = inVilla ? P.interior.it.type : null;
+    if (inVilla) { const it = P.interior.it; want.forEach((id, k) => { const h = Object.assign(IE.makePet(id), { id, x: it.x - 12 + (k % 5) * 6, z: it.z + 6 + Math.floor(k / 5) * 4, yaw: rnd() * 6, tx: 0, tz: 0, wait: rnd() * 3 }); h.g.position.set(h.x, it.y, h.z); g.scene.add(h.g); homePets.push(h); }); } }
+  if (!inVilla) return; const it = P.interior.it, t = performance.now() / 1000;
+  for (const h of homePets) {
+    h.wait -= dt; let spd = 0;
+    if (h.wait <= 0) { h.wait = 2 + rnd() * 4; h.tx = it.x + (rnd() - 0.5) * (it.W - 8); h.tz = it.z + (rnd() - 0.5) * (it.D - 8); }
+    const dx = h.tx - h.x, dz = h.tz - h.z, d = Math.hypot(dx, dz); if (h.tx && d > 0.5) { spd = 2; h.x += dx / d * spd * dt; h.z += dz / d * spd * dt; h.yaw = Math.atan2(dx, dz); }
+    h.g.position.set(h.x, it.y + (h.fly ? 2 + Math.sin(t * 2) * 0.3 : h.float ? 1 + Math.sin(t * 2.5) * 0.1 : 0), h.z); h.g.rotation.y = h.yaw; IE.animPet(h, dt, spd);
+  }
+}
+function openPets() {
+  const g = G(), S = g.S; S.pets = S.pets || []; const rows = [], hasVilla = (S.villas || []).length > 0;
+  for (const [id, p] of Object.entries(PETS)) {
+    const own = S.pets.includes(id), act = S.petActive === id;
+    rows.push({ name: '🐾 ' + p.name, stat: own ? (act ? 'Läuft gerade mit dir mit' : hasVilla ? 'Bleibt zu Hause in deiner Villa' : 'Wartet zu Hause') : g.fmt(p.price),
+      btns: own ? [act ? { label: 'Zu Hause lassen', fn: () => { S.petActive = ''; g.saveGame(); openPets(); if (!hasVilla) g.toast('Tipp: Mit einer Villa kannst du deine Tiere zu Hause besuchen', 3); } } : { label: 'Mitnehmen', buy: true, fn: () => { S.petActive = id; g.saveGame(); openPets(); } }]
+        : [{ label: 'Kaufen · ' + g.fmt(p.price), buy: true, off: S.money < p.price, fn: () => { if (S.money < p.price) return; S.money -= p.price; S.pets.push(id); S.petActive = id; g.sfx('cash'); g.saveGame(); openPets(); g.toast(p.name + ' gehört jetzt dir und läuft mit dir mit!', 3); } }] });
+  }
+  xModal('pets', '🐾 Haustiere', rows, 'Immer nur ein Tier läuft mit dir mit – die anderen bleiben zu Hause in deiner Villa (dort kannst du sie besuchen). Online sehen alle Spieler dein Tier.');
+}
+IE.openPets = openPets;
+
 // ================= SPIELLOGIK =================
 let R = null; // aktuelles Rennen
 let rob = null; // laufender Überfall
@@ -1401,6 +1504,7 @@ function openGarage() {
 }
 IE.openGarage = openGarage;
 function wireGarage() {
+  const b7 = $('pPets'); if (b7) b7.addEventListener('click', () => { if (G() && G().game.state === 'play') openPets(); });
   const b4 = $('pAdvent'); if (b4) b4.addEventListener('click', () => { if (G() && G().game.state === 'play') openAdvent(); });
   const b5 = $('tBoost'); if (b5) b5.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); IE.planeBoost(); });
   const b6 = $('adXmas'); if (b6) b6.addEventListener('click', () => { XM.test = !XM.test; b6.textContent = XM.test ? 'Weihnachten testen: An' : 'Weihnachten testen: Aus'; XM.told = false; });
@@ -1532,7 +1636,7 @@ function bizTick(dt) {
   for (const s of IE.shops) { if (s.type !== 'biz') continue; const b = S.biz[s.id]; if (!b) continue; const D = IE.bizDefs[s.biz], inc = D.inc * (1 + 0.5 * (b.lv - 1)); b.cash = Math.min(inc * 120, (b.cash || 0) + inc / 60 * dt); }
 }
 IE.extraUpdate = function (dt) {
-  bizTick(dt); guardManager(dt); updateBombs(dt); updateXmas(dt); updateBoost(dt); updateChute(); updateDriftSmoke(dt); updateHouses(); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
+  bizTick(dt); guardManager(dt); updateBombs(dt); updateXmas(dt); updateBoost(dt); updateChute(); updateDriftSmoke(dt); updateHouses(); petTick(dt); homePetsTick(dt); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
   if (IE.raceBeam) IE.raceBeam.visible = !R;
   updateRace(dt); updateRob(dt);
 };

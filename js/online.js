@@ -98,10 +98,12 @@ function ensurePeer(p) {
   }
   if (pr.ship && !r.shipM) { r.shipM = IE.makeAirship(); r.shipPos = new T.Vector3(pr.ship.x, pr.ship.y, pr.ship.z); scene.add(r.shipM.group); }
   if (!pr.ship && r.shipM) { scene.remove(r.shipM.group); r.shipM = null; }
+  const petId = typeof pr.pet === 'string' && IE.pets && IE.pets[pr.pet] ? pr.pet : '';
+  if (petId !== (r.petId || '')) { if (r.pet) scene.remove(r.pet.g); r.pet = petId ? IE.makePet(petId) : null; r.petId = petId; if (r.pet) { r.pet.pos = r.pos.clone(); scene.add(r.pet.g); } }
   if (!r.tag) { r.tag = nameTag(r.name); scene.add(r.tag); }
 }
 function removePeer(peer) {
-  const r = O.peers.get(peer); if (!r) return; const scene = G().scene;
+  const r = O.peers.get(peer); if (!r) return; const scene = G().scene; if (r.pet) scene.remove(r.pet.g);
   if (r.h) scene.remove(r.h.group); if (r.veh) scene.remove(r.veh.group); if (r.tag) scene.remove(r.tag); if (r.shipM) scene.remove(r.shipM.group);
   O.peers.delete(peer);
 }
@@ -132,7 +134,7 @@ function sendPresence() {
     sw: P.under ? 2 : P.swim ? 1 : 0, sk: g.S.skin || '', uid: O.myId || '', nm: (window.IEaccount && IEaccount.nick) || '', k: O.kills, d: O.deaths, pa: O.passive ? 1 : 0, w: g.S.cur };
   const ship = IE.vehicles.find(q => q.type === 'airship' && q.mine && !q.removeMe);
   pr.ship = ship ? { x: r2(ship.pos.x), y: r2(ship.pos.y), z: r2(ship.pos.z), yaw: r2(ship.yaw) } : null;
-  pr.rd = P.ride || null; pr.rc = IE.racePresence ? IE.racePresence() : null;
+  pr.rd = P.ride || null; pr.pet = IE.myPetId ? IE.myPetId() : ''; pr.rc = IE.racePresence ? IE.racePresence() : null;
   pr.v = v && v.type !== 'airship' ? { t: v.type, id: v.def.id, yaw: r2(v.yaw), p: r2(v.pitch || 0), r: r2(v.roll || 0), col: v.m.bodyMat ? v.m.bodyMat.color.getHex() : undefined } : null;
   room.presence(pr).catch(() => { });
 }
@@ -180,6 +182,10 @@ O.update = function (dt) {
       }
       r.tag.position.set(r.pos.x, r.pos.y + 2.5, r.pos.z);
     }
+    if (r.pet) { const pt = r.pet, f = { x: Math.sin(r.yaw), z: Math.cos(r.yaw) }, tx = r.pos.x - f.x * 2.2 + f.z * 1.2, tz = r.pos.z - f.z * 2.2 - f.x * 1.2, ddx = tx - pt.pos.x, ddz = tz - pt.pos.z, dd = Math.hypot(ddx, ddz);
+      if (dd > 30) pt.pos.set(tx, r.pos.y, tz); let sp = 0; if (dd > 0.6) { sp = Math.min(dd * 2.2, 11); pt.pos.x += ddx / dd * sp * dt; pt.pos.z += ddz / dd * sp * dt; pt.g.rotation.y = Math.atan2(ddx, ddz); }
+      const gy = IE.supportH(pt.pos.x, pt.pos.z, r.pos.y + 1.5), tt = performance.now() / 1000; pt.pos.y = pt.fly ? Math.max(gy, r.pos.y) + 2.2 + Math.sin(tt * 2) * 0.25 : pt.float ? Math.max(gy, r.pos.y - 0.2) + 0.9 : gy;
+      pt.g.position.copy(pt.pos); pt.g.visible = !(pr.v || pr.rd || pr.dead); IE.animPet(pt, dt, sp); }
     const d = cam.position.distanceTo(r.pos); r.tag.visible = d < 400; const s = Math.max(1, d / 25); r.tag.scale.set(2.6 * s, 0.65 * s, 1);
   }
   feedTick(dt);
