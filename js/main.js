@@ -164,6 +164,7 @@ function bindBtn(id, down, up) {
   const end = e => { el.classList.remove('on'); if (isDown) { isDown = false; if (LONG_SYM[id]) holdUp(LONG_SYM[id]); if (id === 'tEnter') holdUp('EINAUS'); } up && up(); };
   el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end); el.addEventListener('pointerleave', end);
 }
+bindBtn('tDrift', () => inp.drift = true, () => inp.drift = false);
 bindBtn('tBomb', () => { if (IE.dropBomb) IE.dropBomb(); });
 bindBtn('tFire', () => inp.fire = true, () => inp.fire = false);
 bindBtn('tJump', () => { inp.jump = true; press('space'); cheatInput('SPRUNG'); }, () => inp.jump = false);
@@ -778,7 +779,7 @@ function updatePlayer(dt) {
       v.driver = null; P.veh = null; v.sunk = true; P.h.group.visible = true; $('speed').hidden = true; engineSound(null);
       P.pos.set(v.pos.x, Math.max(v.pos.y, -1.2), v.pos.z); P.vy = 0; toast('Dein Auto ist im Wasser versunken – schwimm an Land!', 3); return;
     }
-    if (v.type === 'car') { if (v.loop || (IE.loopCheck && IE.loopCheck(v))) IE.loopUpdate(v, dt); else IE.updateCar(v, { x: mx, y: my, brake: ctrl && inp.hold.space }, dt); if (v.m.tank) v.m.turret.rotation.y += angDiff(v.m.turret.rotation.y, angDiff(v.yaw, cam.yaw)) * Math.min(1, dt * 3); }
+    if (v.type === 'car') { if (v.loop || (IE.loopCheck && IE.loopCheck(v))) IE.loopUpdate(v, dt); else IE.updateCar(v, { x: mx, y: my, brake: ctrl && inp.hold.space, drift: ctrl && (inp.drift || keys.ShiftLeft || keys.ShiftRight) }, dt); if (v.m.tank) v.m.turret.rotation.y += angDiff(v.m.turret.rotation.y, angDiff(v.yaw, cam.yaw)) * Math.min(1, dt * 3); }
     else if (v.type === 'boat') IE.updateBoat(v, { x: mx, y: my, brake: ctrl && inp.hold.space }, dt);
     else if (v.type === 'airship') updateAirship(v, { x: mx, y: my, up: ctrl ? (inp.hold.space ? 1 : 0) - (inp.hold.down ? 1 : 0) : 0 }, dt);
     else if (v.type === 'plane') IE.updatePlane(v, { x: mx, y: my, up: ctrl ? (inp.hold.space ? 1 : 0) - (inp.hold.down ? 1 : 0) : 0, brake: ctrl && inp.hold.down && v.throttle < 0.02 }, dt);
@@ -1827,6 +1828,7 @@ function updateHUD(dt) {
     $('tFire').style.display = (inH || (P.veh && P.veh.type === 'plane')) && !P.veh.def.armed ? 'none' : '';
     $('tBomb').style.display = P.veh && (inH || P.veh.type === 'plane') && P.veh.def.armed ? '' : 'none';
     $('tBoost').style.display = P.veh && P.veh.type === 'plane' ? '' : 'none';
+    $('tDrift').style.display = inC && !P.veh.m.tank ? '' : 'none';
   }
 }
 

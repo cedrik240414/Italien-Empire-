@@ -232,7 +232,7 @@ body.touch.playing #touch { display: block; }
 #tEnter { right: calc(30px + env(safe-area-inset-right, 0px)); bottom: calc(26px + env(safe-area-inset-bottom, 0px)); }
 #tAct { right: calc(130px + env(safe-area-inset-right, 0px)); bottom: calc(204px + env(safe-area-inset-bottom, 0px)); }
 #tWeap { right: calc(36px + env(safe-area-inset-right, 0px)); bottom: calc(228px + env(safe-area-inset-bottom, 0px)); }
-#tSprint, #tBoost { right: calc(220px + env(safe-area-inset-right, 0px)); bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+#tSprint, #tBoost, #tDrift { right: calc(220px + env(safe-area-inset-right, 0px)); bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
 #tAim, #tBomb { right: calc(220px + env(safe-area-inset-right, 0px)); bottom: calc(122px + env(safe-area-inset-bottom, 0px)); }
 .ttop .tb { position: static; }
 .ttop { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); display: flex; gap: 8px; left: calc(200px + env(safe-area-inset-left, 0px)); pointer-events: auto; }
@@ -294,7 +294,7 @@ body.touch.playing #touch { display: block; }
       <div><b>FEUER</b> Schießen (mit Zielhilfe)</div><div><b>EIN/AUS</b> Fahrzeug</div>
       <div><b>E</b> Shop / Mission</div><div><b>HOCH / RUNTER</b> Springen · Heli</div><div><b>TAUCHEN / AUF</b> Unter Wasser schwimmen</div><div><b>SICHT</b> Ego-Sicht umschalten</div><div><b>Kreis links</b> Waffenrad</div><div><b>Flugzeug</b> GAS +/− für Schub, Joystick hoch = Nase hoch</div>
     </div>
-    <div class="ver">Version 44</div>
+    <div class="ver">Version 45</div>
   </div>
 </div>
 
@@ -337,6 +337,7 @@ body.touch.playing #touch { display: block; }
   <button class="tb" id="tWeap">WAFFE</button>
   <button class="tb" id="tSprint">RENNEN</button>
   <button class="tb" id="tAim">ZIELEN</button>
+  <button class="tb" id="tDrift" style="display:none;border-color:#5ff3ff;color:#bff7ff">DRIFT</button>
   <button class="tb" id="tBoost" style="display:none;border-color:#ff5a20;color:#ffb37a">BOOST</button>
   <button class="tb" id="tBomb" style="display:none;border-color:#ff8a3c;color:#ffb37a">BOMBE</button>
   <div class="ttop"><button class="tb sm" id="tMap">KARTE</button><button class="tb sm" id="tView">SICHT</button><button class="tb sm" id="tChar">CREW</button><button class="tb sm" id="tGarage">GARAGE</button><button class="tb sm" id="tMenu">MENÜ</button><button class="tb sm" id="tAdmin" hidden>ADMIN</button></div>
@@ -406,12 +407,12 @@ body.touch.playing #touch { display: block; }
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/data.js?v=43"></script>
-<script src="js/world.js?v=43"></script>
-<script src="js/entities.js?v=43"></script>
-<script src="js/extra.js?v=43"></script>
-<script src="js/main.js?v=44"></script>
-<script src="js/server-config.js?v=43"></script>
-<script src="js/cfnet.js?v=43"></script>
-<script src="js/online.js?v=43"></script>
-<script src="js/account.js?v=43"></script>
+<script src="js/data.js?v=45"></script>
+<script src="js/world.js?v=45"></script>
+<script src="js/entities.js?v=45"></script>
+<script src="js/extra.js?v=45"></script>
+<script src="js/main.js?v=45"></script>
+<script src="js/server-config.js?v=45"></script>
+<script src="js/cfnet.js?v=45"></script>
+<script src="js/online.js?v=45"></script>
+<script src="js/account.js?v=45"></script>

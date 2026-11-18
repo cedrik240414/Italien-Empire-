@@ -89,7 +89,7 @@ const db = {
 const user = { id: async () => myId(), profiles: async ids => Object.fromEntries([].concat(ids).map(i => [i, { id: i, name: '', color: '#d9b45a', avatarUrl: '', email: null, isMe: i === myId(), guest: false }])) };
 
 // Konten auf dem Server
-const post = async (path, body) => { const r = await fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); let d = {}; try { d = await r.json(); } catch (e) { } if (!r.ok) throw Object.assign(new Error(d.error || ('HTTP ' + r.status)), { code: d.error || 'http', status: r.status }); return d; };
+const post = async (path, body) => { const r = await fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); let d = {}; try { d = await r.json(); } catch (e) { } if (!r.ok) throw Object.assign(new Error(d.error || ('HTTP ' + r.status)), d, { code: d.error || 'http', status: r.status }); return d; };
 const account = {
   register: (nick, ph) => post('/acc/register', { nick, ph }),
   login: (nick, ph) => post('/acc/login', { nick, ph }),
@@ -102,6 +102,8 @@ const account = {
   load: slot => post('/acc/load', { token: tok(), slot }),
   moon: open => post('/acc/moon', { token: tok(), open: open !== false }),
   state: () => post('/acc/state', {}),
+  houses: () => post('/acc/houses', {}),
+  house: (op, id, paint) => post('/acc/house', { token: tok(), op, id, paint }),
   undercover: on => post('/acc/undercover', { token: tok(), on }),
   saveBeacon: (slot, data, t) => { try { fetch(base + '/acc/save', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tok(), slot, data, t }) }).catch(() => { }); } catch (e) { } }
 };

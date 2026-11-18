@@ -479,9 +479,16 @@ IE.updateCar = function (v, inp, dt) {
   v.steer += (st - v.steer) * Math.min(1, dt * 8);
   const as = Math.abs(v.speed);
   const yawRate = v.steer * Math.sign(v.speed) * Math.min(as / 4, 1) * 1.7 * (d.grip / 2.2) * (1 - Math.min(as / (d.speed + 1), 1) * 0.45) * (inp.brake ? 1.5 : 1);
-  if (v.vy === 0 || v.pos.y - v.gy < 0.3) v.yaw -= yawRate * dt;
+  // Driften: Heck bricht aus, Auto rutscht seitlich weiter
+  const drifting = !!inp.drift && as > 8 && !v.m.tank;
+  if (v.vy === 0 || v.pos.y - v.gy < 0.3) v.yaw -= yawRate * (drifting ? 1.9 : 1) * dt;
   const f = fwd(v.yaw);
-  v.pos.x += f.x * v.speed * dt; v.pos.z += f.z * v.speed * dt;
+  if (v.moveYaw === undefined) v.moveYaw = v.yaw;
+  let dy = v.yaw - v.moveYaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+  v.moveYaw += dy * Math.min(1, dt * (drifting ? 1.7 : 10)); v.driftAng = dy; v.drifting = drifting && Math.abs(dy) > 0.12;
+  if (drifting) v.speed -= v.speed * 0.22 * dt;
+  const mf = fwd(v.moveYaw);
+  v.pos.x += mf.x * v.speed * dt; v.pos.z += mf.z * v.speed * dt;
   // Kollision (vorne + hinten)
   const hl = v.m.L / 2 - 0.9;
   let hit = false;

@@ -59,6 +59,7 @@ export class Hub {
     let b = {}; if (req.method === 'POST') { try { b = await req.json(); } catch (e) { return j({ error: 'bad_json' }, 400); } }
     const token = b.token || url.searchParams.get('token');
     if (action === 'state') return j({ moonOpen: !!(await st.get('moonOpen')) }); // öffentlich: Mond freigeschaltet?
+    if (action === 'houses') { const hs = await st.list({ prefix: 'h:' }), out = {}; for (const [k, v] of hs) out[k.slice(2)] = { slug: v.slug, nick: v.nick, paint: v.paint || 'standard' }; return j({ houses: out }); }
     if (action === 'register') {
       const nick = String(b.nick || '').trim().replace(/\s+/g, ' ');
       const slug = slugOf(nick);
@@ -81,6 +82,14 @@ export class Hub {
     if (action === 'check') return me ? j(this.pubAcc(me)) : j({ error: 'no_session' }, 401);
     if (!me) return j({ error: 'no_session' }, 401);
     if (action === 'me') return j({ ...this.pubAcc(me), grant: me.grant || 0, moonOpen: !!(await st.get('moonOpen')) });
+    if (action === 'house') { // Villen online: jede Villa kann nur EIN Spieler besitzen
+      const id = String(b.id || ''); if (!/^[a-z0-9]{1,8}$/.test(id)) return j({ error: 'bad_id' }, 400);
+      const key = 'h:' + id, cur = await st.get(key);
+      if (b.op === 'buy') { if (cur && cur.slug !== me.slug) return j({ error: 'taken', nick: cur.nick }, 409); await st.put(key, { slug: me.slug, nick: me.nick, paint: (cur && cur.paint) || 'standard', t: Date.now() }); return j({ ok: true }); }
+      if (b.op === 'sell') { if (cur && cur.slug === me.slug) await st.delete(key); return j({ ok: true }); }
+      if (b.op === 'paint') { const p = String(b.paint || ''); if (!/^[a-z]{1,16}$/.test(p)) return j({ error: 'bad_paint' }, 400); if (!cur || cur.slug !== me.slug) return j({ error: 'not_owner' }, 403); cur.paint = p; await st.put(key, cur); return j({ ok: true }); }
+      return j({ error: 'bad_op' }, 400);
+    }
     if (action === 'claim') { const g = me.grant || 0; if (g) { me.grant = 0; await st.put('a:' + me.slug, me); } return j({ grant: g }); }
     // ---- Spielstand in der Cloud (pro Konto, auf jedem Gerät) ----
     if (action === 'save') {

@@ -240,23 +240,23 @@ function buildGas(scene) {
 }
 
 // ================= VILLEN =================
-function megaExtras(g, s, v, y) {
+function megaExtras(g, s, v, y, M) {
   for (const sx of [-1, 1]) { IE.addBox(v.x + sx * 13 * s - 3 * s, v.z - 8.5 * s, v.x + sx * 13 * s + 3 * s, v.z + 0.5 * s, y + 9.5); IE.addBox(v.x + sx * 15.5 * s - 3.3, v.z - 8 * s - 3.3, v.x + sx * 15.5 * s + 3.3, v.z - 8 * s + 3.3, y + 21); }
   // dritte Etage, Seitenflügel mit Türmen, Springbrunnen, Hubschrauberlandeplatz, Tennisplatz
-  box(10 * s, 4.5, 6 * s, IE.mat.white, -1.5 * s, 13.6, -4.5 * s, g); box(11 * s, 0.5, 7 * s, IE.mat.terracotta, -1.5 * s, 16.1, -4.5 * s, g);
+  box(10 * s, 4.5, 6 * s, M.wall, -1.5 * s, 13.6, -4.5 * s, g); box(11 * s, 0.5, 7 * s, M.roof, -1.5 * s, 16.1, -4.5 * s, g);
   for (let k = -1; k <= 1; k++) box(2.2 * s, 2.8, 0.1, IE.mat.glass, k * 2.6 * s - 1.5 * s, 13.6, -1.45 * s, g);
   for (const sx of [-1, 1]) {
-    box(6 * s, 9, 9 * s, IE.mat.white, sx * 13 * s, 4.5, -4 * s, g); box(6.6 * s, 0.5, 9.6 * s, IE.mat.terracotta, sx * 13 * s, 9.2, -4 * s, g);
-    const tw = new T.Mesh(new T.CylinderGeometry(2.2 * s / 2, 2.2 * s / 2, 16, 16), IE.mat.white); tw.position.set(sx * 15.5 * s, 8, -8 * s); g.add(tw);
-    const cap = new T.Mesh(new T.ConeGeometry(2.6 * s / 2, 5, 16), IE.mat.terracotta); cap.position.set(sx * 15.5 * s, 18.5, -8 * s); g.add(cap);
+    box(6 * s, 9, 9 * s, M.wall, sx * 13 * s, 4.5, -4 * s, g); box(6.6 * s, 0.5, 9.6 * s, M.roof, sx * 13 * s, 9.2, -4 * s, g);
+    const tw = new T.Mesh(new T.CylinderGeometry(2.2 * s / 2, 2.2 * s / 2, 16, 16), M.wall); tw.position.set(sx * 15.5 * s, 8, -8 * s); g.add(tw);
+    const cap = new T.Mesh(new T.ConeGeometry(2.6 * s / 2, 5, 16), M.roof); cap.position.set(sx * 15.5 * s, 18.5, -8 * s); g.add(cap);
     for (let k = -1; k <= 1; k++) box(1.8 * s, 3, 0.1, IE.mat.glass, sx * 13 * s + k * 1.8 * s, 3, 0.55 * s, g);
   }
-  const fb = new T.Mesh(new T.CylinderGeometry(3 * s / 2, 3.4 * s / 2, 0.8, 24), IE.mat.marble); fb.position.set(-7 * s, 0.4, 9 * s); g.add(fb);
+  const fb = new T.Mesh(new T.CylinderGeometry(3 * s / 2, 3.4 * s / 2, 0.8, 24), M.marble); fb.position.set(-7 * s, 0.4, 9 * s); g.add(fb);
   const fw = new T.Mesh(new T.CylinderGeometry(2.6 * s / 2, 2.6 * s / 2, 0.2, 24), new T.MeshStandardMaterial({ color: 0x3ec5e0, roughness: 0.1 })); fw.position.set(-7 * s, 0.85, 9 * s); g.add(fw);
-  const fc = new T.Mesh(new T.CylinderGeometry(0.4, 0.6, 3, 10), IE.mat.marble); fc.position.set(-7 * s, 1.5, 9 * s); g.add(fc);
+  const fc = new T.Mesh(new T.CylinderGeometry(0.4, 0.6, 3, 10), M.marble); fc.position.set(-7 * s, 1.5, 9 * s); g.add(fc);
   const pad = new T.Mesh(new T.CylinderGeometry(7, 7, 0.3, 28), new T.MeshLambertMaterial({ color: 0x5a5c60 })); pad.position.set(16 * s, 0.2, 8 * s); g.add(pad);
   const hm = new T.Mesh(new T.PlaneGeometry(5, 6), new T.MeshBasicMaterial({ color: 0xf2f2ee })); hm.rotation.x = -Math.PI / 2; hm.position.set(16 * s, 0.37, 8 * s); g.add(hm);
-  box(10, 0.1, 18, new T.MeshLambertMaterial({ color: 0x3a6fb0 }), -14 * s, 0.1, 7 * s, g); box(10, 1, 0.1, IE.mat.white, -14 * s, 0.5, 7 * s, g);
+  box(10, 0.1, 18, new T.MeshLambertMaterial({ color: 0x3a6fb0 }), -14 * s, 0.1, 7 * s, g); box(10, 1, 0.1, M.wall, -14 * s, 0.5, 7 * s, g);
 }
 const villaSigns = {};
 function buildVillas(scene) {
@@ -272,31 +272,32 @@ function buildVillas(scene) {
   const roofMat = new T.MeshLambertMaterial({ color: 0xb75a32 }), poolMat = new T.MeshStandardMaterial({ color: 0x3ec5e0, roughness: 0.1, metalness: 0.2 });
   for (const v of IE.villas) {
     const y = v.h !== undefined ? v.h : IE.villaRoadH + 1.5, s = v.s, g = new T.Group(); g.position.set(v.x, y, v.z); scene.add(g);
-    if (v.mega) megaExtras(g, s, v, y);
+    const M = v.mats = { wall: IE.mat.white.clone(), roof: roofMat.clone(), trim: IE.mat.travertine.clone(), marble: IE.mat.marble.clone() }; v.group = g;
+    if (v.mega) megaExtras(g, s, v, y, M);
     // Hauptgebäude: 2 Etagen + Dachterrasse, Front (Glas) Richtung Meer (+z)
-    box(18 * s, 6, 10 * s, IE.mat.white, 0, 3, -3 * s, g);
-    box(14 * s, 5, 8 * s, IE.mat.white, -1.5 * s, 8.5, -4 * s, g);
-    box(19 * s, 0.5, 11 * s, roofMat, 0, 6.2, -3 * s, g); box(15 * s, 0.5, 9 * s, IE.mat.travertine, -1.5 * s, 11.2, -4 * s, g);
+    box(18 * s, 6, 10 * s, M.wall, 0, 3, -3 * s, g);
+    box(14 * s, 5, 8 * s, M.wall, -1.5 * s, 8.5, -4 * s, g);
+    box(19 * s, 0.5, 11 * s, M.roof, 0, 6.2, -3 * s, g); box(15 * s, 0.5, 9 * s, M.trim, -1.5 * s, 11.2, -4 * s, g);
     for (const sx of [-1, 1]) box(0.3, 1, 9 * s, IE.mat.glass, -1.5 * s + sx * 7.4 * s, 12, -4 * s, g);
     box(15 * s, 1, 0.3, IE.mat.glass, -1.5 * s, 12, 0.4 * s, g);
     for (let k = -3; k <= 3; k++) box(2.1 * s, 3.6, 0.1, IE.mat.glass, k * 2.5 * s, 2.7, 2.05 * s, g);
     for (let k = -2; k <= 2; k++) box(2.2 * s, 3, 0.1, IE.mat.glass, k * 2.7 * s - 1.5 * s, 8.4, 0.05 * s, g);
     // Säulen + Balkon
-    for (let k = -2; k <= 2; k++) box(0.5, 6, 0.5, IE.mat.marble, k * 4.2 * s, 3, 2.6 * s, g);
-    box(18 * s, 0.4, 2 * s, IE.mat.marble, 0, 6.3, 3 * s, g);
+    for (let k = -2; k <= 2; k++) box(0.5, 6, 0.5, M.marble, k * 4.2 * s, 3, 2.6 * s, g);
+    box(18 * s, 0.4, 2 * s, M.marble, 0, 6.3, 3 * s, g);
     // Terrasse, Pool, Liegen
-    box(20 * s, 0.3, 9 * s, IE.mat.travertine, 0, 0.15, 6.5 * s, g);
+    box(20 * s, 0.3, 9 * s, M.trim, 0, 0.15, 6.5 * s, g);
     box(10 * s, 0.25, 5 * s, poolMat, 3.5 * s, 0.25, 7 * s, g);
-    for (let k = 0; k < 3; k++) box(0.9, 0.35, 2, IE.mat.white, -6 * s + k * 1.6, 0.45, 6.5 * s, g);
-    for (const sx of [-1, 1]) box(0.4, 1.1, 9 * s, IE.mat.travertine, sx * 10 * s, 0.6, 6.5 * s, g);
-    box(20 * s, 1.1, 0.4, IE.mat.travertine, 0, 0.6, 11 * s, g);
+    for (let k = 0; k < 3; k++) box(0.9, 0.35, 2, M.wall, -6 * s + k * 1.6, 0.45, 6.5 * s, g);
+    for (const sx of [-1, 1]) box(0.4, 1.1, 9 * s, M.trim, sx * 10 * s, 0.6, 6.5 * s, g);
+    box(20 * s, 1.1, 0.4, M.trim, 0, 0.6, 11 * s, g);
     // Garage
-    box(7 * s, 3.5, 6 * s, IE.mat.white, 12 * s, 1.75, -4 * s, g); box(5 * s, 2.8, 0.1, IE.mat.dark, 12 * s, 1.4, -0.95 * s, g);
+    box(7 * s, 3.5, 6 * s, M.wall, 12 * s, 1.75, -4 * s, g); box(5 * s, 2.8, 0.1, IE.mat.dark, 12 * s, 1.4, -0.95 * s, g);
     // Tor mit Namensschild (zur Straße)
     const gz = v.side === 'n' ? 11.3 * s : -9.5 * s, gx = v.side === 'n' ? -6 * s : 4 * s;
     const st = textTex([], 512, 160, '#1b1b1b', '#d9b45a');
     const sm = new T.Mesh(new T.PlaneGeometry(4.2, 1.3), new T.MeshBasicMaterial({ map: st.t, side: T.DoubleSide })); sm.position.set(gx + 3, 1.9, gz); if (v.side !== 'n') sm.rotation.y = Math.PI; g.add(sm);
-    box(0.6, 3, 0.6, IE.mat.travertine, gx - 2.2, 1.5, gz, g); box(0.6, 3, 0.6, IE.mat.travertine, gx + 2.2, 1.5, gz, g); box(5, 0.5, 0.6, IE.mat.travertine, gx, 3.2, gz, g);
+    box(0.6, 3, 0.6, M.trim, gx - 2.2, 1.5, gz, g); box(0.6, 3, 0.6, M.trim, gx + 2.2, 1.5, gz, g); box(5, 0.5, 0.6, M.trim, gx, 3.2, gz, g);
     villaSigns[v.id] = { st, v };
     pal(v.x - 11 * s, v.z + 10 * s, 1.2); pal(v.x + 11 * s, v.z + 10 * s, 1.3); pal(v.x + 13 * s, v.z - 9 * s, 1.1);
     IE.addBox(v.x - 9 * s, v.z - 8 * s, v.x + 9 * s, v.z + 2 * s, y + 12.5);
@@ -309,10 +310,10 @@ function buildVillas(scene) {
 function drawVillaSigns() {
   const S = G() && G().S;
   for (const id in villaSigns) {
-    const { st, v } = villaSigns[id], g = st.g, own = S && (S.villas || []).includes(id);
+    const { st, v } = villaSigns[id], g = st.g, other = typeof ownedByOther === 'function' && ownedByOther(v), own = S && (S.villas || []).includes(id) && !other;
     g.fillStyle = '#1b1b1b'; g.fillRect(0, 0, 512, 160); g.fillStyle = '#d9b45a'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.font = 'bold 46px Georgia'; g.fillText(v.name, 256, 52);
-    g.font = 'bold 34px Arial'; g.fillStyle = own ? '#48e07a' : '#f3ead8'; g.fillText(own ? 'DEINE VILLA' : 'ZU VERKAUFEN · ' + (v.price / 1e6).toLocaleString('de-DE') + ' Mio. €', 256, 116);
+    g.font = 'bold 34px Arial'; g.fillStyle = own ? '#48e07a' : other ? '#ff9a7a' : '#f3ead8'; g.fillText(own ? 'DEINE VILLA' : other ? 'GEHÖRT ' + String(other.nick).toUpperCase().slice(0, 16) : 'ZU VERKAUFEN · ' + (v.price / 1e6).toLocaleString('de-DE') + ' Mio. €', 256, 116);
     st.t.needsUpdate = true;
   }
 }
@@ -340,7 +341,7 @@ IE.buildExtras = function (scene) {
   try { buildRocket(scene); } catch (e) { console.error('Rakete', e); }
   try { buildMoon(scene); } catch (e) { console.error('Mond', e); }
   try { buildTrack(scene); } catch (e) { console.error('Strecke', e); }
-  try { buildVillas(scene); } catch (e) { console.error('Villen', e); }
+  try { buildVillas(scene); IE.villas.forEach((v, i) => buildRoom(v, i, scene)); } catch (e) { console.error('Villen', e); }
   try { buildGas(scene); } catch (e) { console.error('Tankstellen', e); }
 };
 
@@ -732,7 +733,7 @@ function updateCanes(dt, on) {
 }
 // ----- Adventskalender -----
 const ADVENT = {
-  1: { m: 50000 }, 2: { car: 'xflitzer' }, 3: { m: 100000 }, 4: { m: 150000 }, 5: { m: 250000 }, 6: { car: 'xgrinch' }, 7: { m: 200000 }, 8: { car: 'xschnee' },
+  1: { m: 50000 }, 2: { car: 'xflitzer' }, 3: { m: 100000 }, 4: { paint: 'weihnachten' }, 5: { m: 250000 }, 6: { car: 'xgrinch' }, 7: { m: 200000 }, 8: { car: 'xschnee' },
   9: { m: 300000 }, 10: { m: 500000 }, 11: { m: 400000 }, 12: { car: 'xlebkuchen' }, 13: { m: 600000 }, 14: { car: 'xeis' }, 15: { m: 750000 }, 16: { m: 1000000 },
   17: { m: 1200000 }, 18: { car: 'xsanta' }, 19: { m: 1500000 }, 20: { boat: 'xmasyacht' }, 21: { m: 2000000 }, 22: { car: 'xtanne' }, 23: { m: 3000000 }, 24: { plane: 'schlitten' }
 };
@@ -745,7 +746,7 @@ const XTUNE = {
   xsanta: { paint: 0xb3001b, finish: 'glanz', rims: 0xd6b04a, neon: 0xff3b30, spoiler: true, engine: 3, turbo: 2, armor: 1 },
   xtanne: { paint: 0x1e5c2e, finish: 'glanz', rims: 0xd6b04a, neon: 0xff3b30, engine: 2, turbo: 1, armor: 0 }
 };
-function rewardText(r, g) { if (r.m) return g.fmt(r.m); if (r.car) return '🚗 ' + IE.carById[r.car].name; if (r.boat) return '⛵ ' + IE.boatById[r.boat].name; if (r.plane) return '🦌 ' + IE.planeById[r.plane].name; return ''; }
+function rewardText(r, g) { if (r.paint) return '🎨 Weihnachts-Lackierung'; if (r.m) return g.fmt(r.m); if (r.car) return '🚗 ' + IE.carById[r.car].name; if (r.boat) return '⛵ ' + IE.boatById[r.boat].name; if (r.plane) return '🦌 ' + IE.planeById[r.plane].name; return ''; }
 function openAdvent() {
   const g = G(), S = g.S, today = IE.adventDay(); S.advent = S.advent || [];
   xModal('advent', '🎄 Adventskalender', [], today ? 'Jeden Tag im Dezember ein neues Türchen – verpasste Türchen kannst du nachholen. Am 24. wartet etwas ganz Besonderes!' : 'Der Adventskalender öffnet am 1. Dezember.');
@@ -770,8 +771,9 @@ function openDoor(d) {
   if (r.car) { if (!S.cars.includes(r.car)) S.cars.push(r.car); S.tune = S.tune || {}; S.tune[r.car] = Object.assign({}, XTUNE[r.car]); }
   if (r.boat && !S.boats.includes(r.boat)) S.boats.push(r.boat);
   if (r.plane && !S.planes.includes(r.plane)) S.planes.push(r.plane);
+  if (r.paint) { S.paints = S.paints || ['standard']; if (!S.paints.includes(r.paint)) S.paints.push(r.paint); }
   g.sfx('pass'); g.saveGame(true);
-  g.banner('Türchen ' + d, rewardText(r, g), r.m ? 'Frohe Weihnachten!' : 'Hol es dir über „Meine Fahrzeuge“ (G / GARAGE)', 5);
+  g.banner('Türchen ' + d, rewardText(r, g), r.m ? 'Frohe Weihnachten!' : r.paint ? 'Im Haus-Menü deiner Villa anwenden' : 'Hol es dir über „Meine Fahrzeuge“ (G / GARAGE)', 5);
   openAdvent();
 }
 IE.openAdvent = openAdvent;
@@ -791,6 +793,182 @@ function updateBoost(dt) {
   const fl = new T.Mesh(new T.SphereGeometry(0.6 + rnd() * 0.6, 8, 6), new T.MeshBasicMaterial({ color: rnd() < 0.5 ? 0xffa040 : 0xff5a20, transparent: true, opacity: 0.85 }));
   fl.position.copy(back); g.scene.add(fl); let a = 0; const iv = setInterval(() => { a += 0.1; fl.scale.setScalar(1 + a * 2); fl.material.opacity = 0.85 * (1 - a); if (a >= 1) { clearInterval(iv); g.scene.remove(fl); fl.geometry.dispose(); fl.material.dispose(); } }, 40);
 }
+
+// ================= HÄUSER: Lackierung, eigene Räume, Möbel, Eigentum online =================
+const PAINTS_H = {
+  standard:    { name: 'Standard (Weiß)', price: 0,       wall: 0xf1ede4, roof: 0xb75a32, trim: 0xd9c8a3, marble: 0xf3efe6 },
+  herbst:      { name: 'Herbst',          price: 200000,  wall: 0xe8b06a, roof: 0x8a2a14, trim: 0x7a4a26, marble: 0xd9822b, deco: 'herbst' },
+  sommer:      { name: 'Sommer',          price: 200000,  wall: 0xfff4c2, roof: 0x18c2d8, trim: 0xf6e7b0, marble: 0xffffff, deco: 'sommer' },
+  halloween:   { name: 'Halloween',       price: 300000,  wall: 0x2a2624, roof: 0xf27a1a, trim: 0x5a1a7a, marble: 0xf27a1a, deco: 'halloween' },
+  rainbow:     { name: 'Rainbow',         price: 500000,  wall: 0xffffff, roof: 0x7a5cff, trim: 0x48e07a, marble: 0xf2c230, rainbow: true },
+  gold:        { name: 'Gold',            price: 2000000, wall: 0xe0b84a, roof: 0xb8902e, trim: 0xf2d36b, marble: 0xfff1b0 },
+  geld:        { name: 'Geld',            price: 5000000, wall: 0xffffff, roof: 0x2e8b57, trim: 0x1f5c33, marble: 0xd6b04a, money: true },
+  weihnachten: { name: 'Weihnachten',     price: -1,      wall: 0xf4f4f0, roof: 0xc8102e, trim: 0x1e5c2e, marble: 0xd6b04a, deco: 'xmas', how: 'aus dem Adventskalender' },
+  silvester:   { name: 'Silvester',       price: -1,      wall: 0x101a3a, roof: 0xd6b04a, trim: 0x2a2a5a, marble: 0xf2d36b, deco: 'silvester', how: 'spiel an Silvester oder Neujahr' }
+};
+IE.housePaints = PAINTS_H;
+let moneyTex = null;
+function getMoneyTex() {
+  if (moneyTex) return moneyTex;
+  const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+  x.fillStyle = '#3f9a52'; x.fillRect(0, 0, 128, 128); x.fillStyle = '#2e7a3e'; for (let i = 0; i < 128; i += 16) x.fillRect(0, i, 128, 2);
+  x.fillStyle = '#d8f2c0'; x.font = 'bold 34px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('€', 32, 32); x.fillText('€', 96, 96); x.font = 'bold 22px Arial'; x.fillText('500', 96, 32); x.fillText('100', 32, 96);
+  moneyTex = new T.CanvasTexture(c); moneyTex.wrapS = moneyTex.wrapT = T.RepeatWrapping; moneyTex.repeat.set(3, 2); return moneyTex;
+}
+function applyPaint(v, id) {
+  const P = PAINTS_H[id] || PAINTS_H.standard, M = v.mats; if (!M) return; v.paint = id;
+  M.wall.color.setHex(P.wall); M.roof.color.setHex(P.roof); M.trim.color.setHex(P.trim); M.marble.color.setHex(P.marble);
+  M.wall.map = P.money ? getMoneyTex() : null; M.wall.needsUpdate = true;
+  // Rainbow: jedes Wandteil eine eigene Farbe
+  let k = 0; v.group.traverse(o => { if (!o.isMesh) return; if (o.userData.rb) { o.material = M.wall; delete o.userData.rb; } if (P.rainbow && o.material === M.wall) { o.material = new T.MeshLambertMaterial({ color: new T.Color().setHSL((k++ * 0.13) % 1, 0.75, 0.6) }); o.userData.rb = true; } });
+  // Deko
+  if (v.deco) { v.group.remove(v.deco); v.deco = null; }
+  if (P.deco) {
+    const d = new T.Group(), s = v.s; v.group.add(d); v.deco = d;
+    if (P.deco === 'xmas' || P.deco === 'silvester') {
+      const cols = P.deco === 'xmas' ? [0xff3b30, 0x48e07a, 0xf2c230, 0x3a9bff] : [0xf2d36b, 0xffffff, 0xd6b04a];
+      for (let i = 0; i < 60; i++) { const t = i / 60, w = 19 * s, dd = 11 * s, per = 2 * (w + dd); let u = t * per, x, z; if (u < w) { x = -w / 2 + u; z = -3 * s - dd / 2; } else if ((u -= w) < dd) { x = w / 2; z = -3 * s - dd / 2 + u; } else if ((u -= dd) < w) { x = w / 2 - u; z = -3 * s + dd / 2; } else { u -= w; x = -w / 2; z = -3 * s + dd / 2 - u; }
+        const b = new T.Mesh(new T.SphereGeometry(0.22, 6, 4), new T.MeshBasicMaterial({ color: cols[i % cols.length] })); b.position.set(x, 6.55, z); d.add(b); }
+      if (P.deco === 'xmas') { const tr = new T.Group(); tr.position.set(-8 * s, 0, 8 * s); d.add(tr); for (let l = 0; l < 3; l++) { const cn = new T.Mesh(new T.ConeGeometry(2.2 - l * 0.6, 2.4, 10), new T.MeshLambertMaterial({ color: 0x1e5c2e })); cn.position.y = 1.4 + l * 1.4; tr.add(cn); } const st = new T.Mesh(new T.OctahedronGeometry(0.4, 0), new T.MeshBasicMaterial({ color: 0xffd84a })); st.position.y = 5.4; tr.add(st); }
+      else for (let i = 0; i < 6; i++) { const st = new T.Mesh(new T.OctahedronGeometry(0.6, 0), new T.MeshBasicMaterial({ color: 0xf2d36b })); st.position.set(-10 * s + i * 4 * s, 13 + (i % 2) * 2, -3 * s); d.add(st); }
+    } else if (P.deco === 'halloween') {
+      for (let i = 0; i < 5; i++) { const p = new T.Mesh(new T.SphereGeometry(0.7, 12, 8), new T.MeshLambertMaterial({ color: 0xf27a1a, emissive: 0x552200 })); p.scale.y = 0.8; p.position.set(-6 * s + i * 3 * s, 0.6, 10.5 * s); d.add(p); const st = new T.Mesh(new T.BoxGeometry(0.15, 0.3, 0.15), new T.MeshLambertMaterial({ color: 0x3a6a2a })); st.position.set(p.position.x, 1.25, p.position.z); d.add(st); }
+      for (let i = 0; i < 3; i++) { const gh = new T.Mesh(new T.SphereGeometry(0.8, 10, 8), new T.MeshBasicMaterial({ color: 0xf4f4f4, transparent: true, opacity: 0.7 })); gh.scale.y = 1.6; gh.position.set(-5 * s + i * 5 * s, 9 + i, 3 * s); d.add(gh); }
+    } else if (P.deco === 'herbst') {
+      for (let i = 0; i < 40; i++) { const l = new T.Mesh(new T.PlaneGeometry(0.5, 0.5), new T.MeshLambertMaterial({ color: [0xd9822b, 0x8a2a14, 0xf2c230][i % 3], side: T.DoubleSide })); l.rotation.x = -Math.PI / 2; l.rotation.z = i; l.position.set((rnd() - 0.5) * 20 * s, 0.33, 6 * s + (rnd() - 0.5) * 8 * s); d.add(l); }
+    } else if (P.deco === 'sommer') {
+      for (let i = 0; i < 3; i++) { const um = new T.Mesh(new T.ConeGeometry(1.6, 0.7, 10), new T.MeshLambertMaterial({ color: [0xff5a7a, 0x18c2d8, 0xf2c230][i] })); um.position.set(-7 * s + i * 2.5, 2.5, 4.5 * s); d.add(um); const pole = new T.Mesh(new T.CylinderGeometry(0.05, 0.05, 2.4, 6), new T.MeshLambertMaterial({ color: 0xffffff })); pole.position.set(um.position.x, 1.2, um.position.z); d.add(pole); }
+    }
+  }
+}
+// Eigentümer online (vom Server) – Villen kann dann nur EIN Spieler besitzen
+IE.houseOwners = {};
+const SRVA = () => window.IECF && IECF.account;
+const isOnline = () => window.IEonline && IEonline.active;
+const mySlug = () => window.IEaccount && IEaccount.slug;
+function ownedByOther(v) { const o = isOnline() && IE.houseOwners[v.id]; return o && o.slug !== mySlug() ? o : null; }
+function paintFor(v) { const S = G().S, o = isOnline() && IE.houseOwners[v.id]; if (o && o.slug !== mySlug()) return o.paint || 'standard'; if ((S.villas || []).includes(v.id)) return (S.housePaint && S.housePaint[v.id]) || 'standard'; return 'standard'; }
+function refreshHouses() { for (const v of IE.villas) { const p = paintFor(v); if (p !== v.paint) applyPaint(v, p); } drawVillaSigns(); }
+IE.refreshHouses = refreshHouses;
+async function syncHouses() {
+  const a = SRVA(); if (!a || !a.houses) return;
+  try {
+    const r = await a.houses(); IE.houseOwners = r.houses || {};
+    const g = G(), S = g.S;
+    if (isOnline() && mySlug()) for (const v of IE.villas) {
+      const o = IE.houseOwners[v.id], mine = (S.villas || []).includes(v.id);
+      if (mine && !o) { try { await a.house('buy', v.id); IE.houseOwners[v.id] = { slug: mySlug(), nick: IEaccount.nick, paint: paintFor(v) }; } catch (e) { } }
+      else if (mine && o && o.slug !== mySlug()) { S.villas = S.villas.filter(x => x !== v.id); S.money += v.price; g.saveGame(); g.banner('Villa gehörte schon jemand anderem', v.name + ' gehört ' + o.nick, 'Du bekommst ' + g.fmt(v.price) + ' zurück', 5); }
+    }
+  } catch (e) { }
+  refreshHouses();
+}
+setTimeout(function hp() { if (G() && G().game.state === 'play') syncHouses(); setTimeout(hp, 20000); }, 4000);
+// eigene Räume pro Villa (kein gemeinsamer Raum mehr)
+const FURN = [
+  { id: 'bett',      name: 'Kingsize-Bett',     price: 0,       x: 15, z: -11 },
+  { id: 'sofa',      name: 'Ledersofa-Ecke',    price: 50000,   x: -9, z: 3 },
+  { id: 'tv',        name: 'Riesen-Fernseher',  price: 80000,   x: -9, z: -15 },
+  { id: 'teppich',   name: 'Perserteppich',     price: 30000,   x: -9, z: -4 },
+  { id: 'bar',       name: 'Hausbar',           price: 150000,  x: 10, z: -2 },
+  { id: 'fluegel',   name: 'Konzertflügel',     price: 300000,  x: 15, z: 8 },
+  { id: 'billard',   name: 'Billardtisch',      price: 120000,  x: 1, z: 6 },
+  { id: 'aquarium',  name: 'Aquarium',          price: 250000,  x: -20, z: -6 },
+  { id: 'kamin',     name: 'Kamin',             price: 180000,  x: -1, z: -15.4 },
+  { id: 'gaming',    name: 'Gaming-PC',         price: 60000,   x: 20, z: -2 },
+  { id: 'jukebox',   name: 'Jukebox',           price: 90000,   x: -20, z: 8 },
+  { id: 'pflanzen',  name: 'Pflanzen',          price: 20000,   x: 0, z: 0 },
+  { id: 'statue',    name: 'Goldstatue',        price: 1000000, x: 1, z: -6 },
+  { id: 'tresor',    name: 'Goldtresor',        price: 2500000, x: 20, z: -14 }
+];
+IE.furniture = FURN;
+const rooms = {};
+function buildRoom(v, i, scene) {
+  const W = 44, D = 32, H = 6, ox = 5200 + (i % 4) * 80, oz = -200 + Math.floor(i / 4) * 80, y = 300;
+  const fm = new T.MeshLambertMaterial({ color: 0xd8cfbd }), wm = new T.MeshLambertMaterial({ color: 0xf6f1e6 }), grp = new T.Group(); scene.add(grp);
+  box(W, 1, D, fm, ox, y - 0.5, oz, grp); IE.addBox(ox - W / 2, oz - D / 2, ox + W / 2, oz + D / 2, y, y - 1);
+  box(W, 0.4, D, wm, ox, y + H + 0.2, oz, grp);
+  const wall = (w, d, px, pz) => { box(w, H, d, wm, px, y + H / 2, pz, grp); IE.addBox(px - w / 2, pz - d / 2, px + w / 2, pz + d / 2, y + H, y - 1); };
+  wall(W, 0.4, ox, oz - D / 2); wall(0.4, D, ox - W / 2, oz); wall(0.4, D, ox + W / 2, oz); wall(W / 2 - 1.5, 0.4, ox - W / 4 - 0.75, oz + D / 2); wall(W / 2 - 1.5, 0.4, ox + W / 4 + 0.75, oz + D / 2);
+  box(3, 3.2, 0.2, new T.MeshBasicMaterial({ color: 0x1a1410 }), ox, y + 1.6, oz + D / 2 + 0.25, grp);
+  for (const sd of [-1, 1]) box(W / 2 - 6, 3.6, 0.1, new T.MeshBasicMaterial({ color: 0x9fd4ee }), ox + sd * (W / 4 + 1.5), y + 3.2, oz + D / 2 - 0.3, grp);
+  for (const cx of [-10, 10]) { const ch = new T.Mesh(new T.SphereGeometry(0.9, 12, 8), new T.MeshBasicMaterial({ color: 0xfff1c8 })); ch.position.set(ox + cx, y + H - 1.3, oz); grp.add(ch); }
+  const furnG = new T.Group(); grp.add(furnG);
+  const it = { type: 'villa_' + v.id, name: v.name, x: ox, z: oz, y, W, D, door: { x: ox, z: oz + D / 2 - 1.8 }, counter: { x: 1e9, z: 1e9 }, item: { x: ox + 15, z: oz - 11 }, spots: [] };
+  IE.interiors[it.type] = it;
+  rooms[v.id] = { it, furnG, ox, oz, y, built: {} };
+}
+function furnMesh(f, R) {
+  const grp = new T.Group(), y = R.y, x = R.ox + f.x, z = R.oz + f.z; grp.position.set(x, y, z);
+  const b = (w, h, d, c, px, py, pz) => box(w, h, d, typeof c === 'number' ? new T.MeshLambertMaterial({ color: c }) : c, px, py + h / 2, pz, grp);
+  let col = null;
+  switch (f.id) {
+    case 'bett': b(5, 0.8, 6, 0xf6f1e6, 0, 0, 0); b(5, 0.5, 1.2, 0x7a1a24, 0, 0.8, -2.4); b(5.2, 1.8, 0.3, 0x5a3a20, 0, 0, -3.1); col = [2.5, 3, 1]; break;
+    case 'sofa': b(7, 0.9, 2, 0x2a2a2e, 0, 0, 0); b(7, 1.2, 0.5, 0x2a2a2e, 0, 0.6, 1); b(2, 0.9, 4, 0x2a2a2e, -3.5, 0, -3); col = [3.5, 1, 1]; break;
+    case 'tv': b(8, 4, 0.2, 0x0a0a0c, 0, 1.2, 0); b(7.6, 3.6, 0.05, new T.MeshBasicMaterial({ color: 0x1f6fd8 }), 0, 1.4, 0.13); b(6, 0.8, 1, 0x3a2a20, 0, 0, 0.3); col = [3, 0.6, 1]; break;
+    case 'teppich': b(9, 0.03, 6, 0x7a1a24, 0, 0.01, 0); b(8, 0.04, 5, 0xd6b04a, 0, 0.01, 0); break;
+    case 'bar': b(8, 1.1, 1.2, 0x2a1a14, 0, 0, 0); b(8, 0.08, 1.4, IE.mat.marble, 0, 1.1, 0); for (let k = 0; k < 4; k++) b(0.6, 0.8, 0.6, 0xd6b04a, -3 + k * 2, 0, 1.4); for (let k = 0; k < 6; k++) b(0.25, 0.6, 0.25, [0x2e8b57, 0x8a2a1e, 0xd6b04a][k % 3], -2.5 + k, 1.2, -0.3); col = [4, 0.7, 1.2]; break;
+    case 'fluegel': b(2.6, 1, 3.4, 0x0b0b0d, 0, 0.6, 0); b(1.2, 0.8, 0.6, 0x0b0b0d, 0, 0, -2); col = [1.3, 1.7, 1.6]; break;
+    case 'billard': b(5, 0.9, 2.8, 0x5a3a20, 0, 0, 0); b(4.6, 0.05, 2.4, 0x1e6a3a, 0, 0.9, 0); col = [2.5, 1.4, 1]; break;
+    case 'aquarium': b(1.4, 2.4, 7, new T.MeshStandardMaterial({ color: 0x3ec5e0, transparent: true, opacity: 0.6 }), 0, 0.6, 0); b(1.5, 0.6, 7.2, 0x1a1a1a, 0, 0, 0); for (let k = 0; k < 6; k++) b(0.4, 0.2, 0.15, [0xf27a1a, 0xf2c230, 0xff5a7a][k % 3], (k % 2) * 0.3 - 0.15, 1.2 + (k % 3) * 0.5, -2.5 + k); col = [0.8, 3.6, 1]; break;
+    case 'kamin': b(5, 4, 0.8, 0xbfb6a8, 0, 0, 0); b(3, 1.8, 0.2, 0x1a1410, 0, 0.3, 0.35); b(2.4, 0.8, 0.15, new T.MeshBasicMaterial({ color: 0xff8a2a }), 0, 0.4, 0.42); col = [2.5, 0.5, 1]; break;
+    case 'gaming': b(2.6, 1, 1.2, 0x1a1a1a, 0, 0, 0); b(2, 1.2, 0.08, new T.MeshBasicMaterial({ color: 0x7a5cff }), 0, 1.4, -0.3); b(0.6, 1.2, 0.8, new T.MeshBasicMaterial({ color: 0xff3bd8 }), 1.1, 0, 0); col = [1.3, 0.6, 1]; break;
+    case 'jukebox': b(1.6, 2.4, 1, 0xc8372d, 0, 0, 0); b(1.2, 1, 0.05, new T.MeshBasicMaterial({ color: 0xf2c230 }), 0, 1.3, 0.52); col = [0.8, 0.5, 1]; break;
+    case 'pflanzen': for (const [px, pz] of [[-20, 14], [20, 14], [-20, -14], [10, 14]]) { b(1, 1, 1, 0x7a5a3a, px, 0, pz); b(1.6, 2.2, 1.6, 0x3f7a35, px, 1, pz); } break;
+    case 'statue': b(1.2, 1, 1.2, IE.mat.marble, 0, 0, 0); b(0.8, 2.4, 0.8, IE.mat.gold, 0, 1, 0); col = [0.6, 0.6, 1]; break;
+    case 'tresor': b(2, 2.4, 1.6, IE.mat.gold, 0, 0, 0); const dl = new T.Mesh(new T.CylinderGeometry(0.4, 0.4, 0.1, 16), IE.mat.dark); dl.rotation.x = Math.PI / 2; dl.position.set(0, 1.2, 0.85); grp.add(dl); col = [1, 0.8, 1]; break;
+  }
+  if (col && !R.built[f.id]) IE.addBox(x - col[0], z - col[1], x + col[0], z + col[1], y + 1.2, y - 1);
+  R.built[f.id] = true;
+  return grp;
+}
+function furnishRoom(v) {
+  const R = rooms[v.id]; if (!R) return; const S = G().S; S.furn = S.furn || {};
+  const have = ['bett'].concat(S.furn[v.id] || []);
+  while (R.furnG.children.length) R.furnG.remove(R.furnG.children[0]);
+  for (const f of FURN) if (have.includes(f.id)) R.furnG.add(furnMesh(f, R));
+}
+function enterVilla(v) {
+  const g = G(), P = g.P; if (!rooms[v.id]) return;
+  furnishRoom(v);
+  g.enterInterior('villa_' + v.id, v.door.x, v.door.z + 4.5, null);
+  if (P.interior) { P.interior.villa = v; g.toast(v.name, 2); enterVilla.cool = performance.now(); }
+}
+function updateHouses() {
+  const g = G(), P = g.P, S = g.S;
+  if (!updateHouses.init && g.game.state === 'play') { updateHouses.init = true; refreshHouses(); }
+  // Silvester-Lackierung freischalten
+  const d = new Date(); if ((d.getMonth() === 11 && d.getDate() === 31) || (d.getMonth() === 0 && d.getDate() === 1)) { S.paints = S.paints || []; if (!S.paints.includes('silvester') && g.game.state === 'play') { S.paints.push('silvester'); g.saveGame(); g.banner('Frohes neues Jahr!', 'Silvester-Lackierung freigeschaltet', 'Im Haus-Menü deiner Villa', 5); } }
+  if (performance.now() - (enterVilla.cool || 0) < 1500 || P.veh || g.game.dead) return;
+  if (!P.interior) {
+    for (const v of IE.villas) if (v.door && (S.villas || []).includes(v.id) && !ownedByOther(v) && Math.hypot(P.pos.x - v.door.x, P.pos.z - v.door.z) < 1.8 && Math.abs(P.pos.y - v.y) < 3) { enterVilla(v); return; }
+  } else if (P.interior.it.type.indexOf('villa_') === 0) {
+    const it = P.interior.it; if (Math.hypot(P.pos.x - it.door.x, P.pos.z - it.door.z) < 1.3) { g.exitInterior(); enterVilla.cool = performance.now(); }
+  }
+}
+function paintMenu(v) {
+  const g = G(), S = g.S; S.paints = S.paints || ['standard']; if (!S.paints.includes('standard')) S.paints.push('standard');
+  const cur = paintFor(v), rows = [];
+  for (const [id, P] of Object.entries(PAINTS_H)) {
+    const have = S.paints.includes(id), btns = [];
+    if (have) btns.push({ label: cur === id ? 'Aktiv ✓' : 'Anwenden', buy: cur !== id, off: cur === id, fn: () => setPaint(v, id) });
+    else if (P.price >= 0) btns.push({ label: 'Kaufen · ' + g.fmt(P.price), buy: true, off: S.money < P.price, fn: () => { if (S.money < P.price) return; S.money -= P.price; S.paints.push(id); g.sfx('cash'); setPaint(v, id); } });
+    else btns.push({ label: 'Gesperrt', off: true, fn: () => { } });
+    rows.push({ name: '🎨 ' + P.name, stat: have ? 'Freigeschaltet – für alle deine Häuser' : P.price >= 0 ? 'Einmal kaufen, für alle deine Häuser' : 'Freischalten: ' + P.how, btns });
+  }
+  xModal('house', 'Lackierung · ' + v.name, rows, 'Online sehen auch die anderen Spieler die Lackierung deiner Villa.');
+}
+async function setPaint(v, id) {
+  const g = G(), S = g.S; S.housePaint = S.housePaint || {}; S.housePaint[v.id] = id; applyPaint(v, id); g.saveGame(); paintMenu(v);
+  const a = SRVA(); if (a && a.house && isOnline()) { try { await a.house('paint', v.id, id); if (IE.houseOwners[v.id]) IE.houseOwners[v.id].paint = id; } catch (e) { } }
+}
+function furnitureMenu(v) {
+  const g = G(), S = g.S; S.furn = S.furn || {}; const have = S.furn[v.id] || [], rows = [];
+  for (const f of FURN) { if (f.price === 0) continue; const own = have.includes(f.id);
+    rows.push({ name: '🛋 ' + f.name, stat: own ? 'Steht in deiner Villa' : g.fmt(f.price), btns: [{ label: own ? 'Gekauft ✓' : 'Kaufen · ' + g.fmt(f.price), buy: !own, off: own || S.money < f.price, fn: () => { if (own || S.money < f.price) return; S.money -= f.price; S.furn[v.id] = have.concat(f.id); g.sfx('cash'); g.saveGame(); furnishRoom(v); furnitureMenu(v); } }] }); }
+  xModal('house', 'Möbel · ' + v.name, rows, 'Möbel gehören zu dieser Villa. Ein Kingsize-Bett zum Ausruhen ist schon drin.');
+}
+IE.paintMenu = paintMenu; IE.furnitureMenu = furnitureMenu;
 
 // ================= SPIELLOGIK =================
 let R = null; // aktuelles Rennen
@@ -1001,24 +1179,29 @@ function buyVilla(v) {
   const g = G(), S = g.S;
   xModal('villa', v.name, [
     { name: v.name, stat: (v.mega ? 'Riesige Luxusvilla mit Türmen, Pool, Springbrunnen, Helipad & Tennisplatz' : 'Panorama-Villa über dem Golf von Neapel · Pool & Terrasse') + ' · gehört dir für immer', btns: [{ label: 'Kaufen · ' + g.fmt(v.price), buy: true, off: S.money < v.price, fn: () => {
-      if (S.money < v.price) return; S.money -= v.price; S.villas = (S.villas || []).concat(v.id); g.sfx('cash'); g.saveGame(); drawVillaSigns(); g.closeModals();
-      g.banner('Villa gekauft', v.name, 'Hier wachst du ab jetzt nach einem Krankenhaus-Besuch auf', 5); } }] },
-  ], S.money < v.price ? 'Dir fehlen noch ' + g.fmt(v.price - S.money) + '.' : 'Nach dem Kauf: E am Tor = Villa betreten. Drinnen kannst du dich ausruhen (Gesundheit voll + speichern).');
+      if (S.money < v.price) return;
+      const done = () => { S.money -= v.price; S.villas = (S.villas || []).concat(v.id); g.sfx('cash'); g.saveGame(); refreshHouses(); g.closeModals(); g.banner('Villa gekauft', v.name, 'Lauf einfach durch die Haustür hinein · Haus-Menü: E am Tor', 5); };
+      const a = SRVA();
+      if (isOnline() && a && a.house) a.house('buy', v.id).then(r => { IE.houseOwners[v.id] = { slug: mySlug(), nick: IEaccount.nick, paint: 'standard' }; done(); }).catch(e => { if (e.code === 'taken') { g.toast('Zu spät – ' + v.name + ' gehört schon ' + (e.nick || 'einem anderen Spieler'), 4); syncHouses(); } else g.toast('Server-Fehler beim Kauf – versuch es nochmal', 3); });
+      else done(); } }] },
+  ], S.money < v.price ? 'Dir fehlen noch ' + g.fmt(v.price - S.money) + '.' : 'Nach dem Kauf: einfach durch die Haustür hineinlaufen. Am Tor (E) gibt es das Haus-Menü mit Lackierung und Möbeln. Online gehört die Villa dann nur dir.');
 }
 const SELL_RATE = 0.7; // Verkauf: 70 % vom Kaufpreis
 function villaMenu(v) {
   const g = G(), S = g.S, P = g.P, sell = Math.round(v.price * SELL_RATE);
   xModal('villa', v.name, [
-    { name: 'Villa betreten', stat: 'Drinnen kannst du dich ausruhen (Gesundheit voll + speichern)', btns: [{ label: 'Betreten', buy: true, fn: () => { g.closeModals(); g.enterInterior('villa', v.gate.x, v.gate.z, null); if (P.interior) { P.interior.villa = v; g.toast(v.name, 2); } } }] },
+    { name: 'Villa betreten', stat: 'Oder einfach durch die Haustür laufen', btns: [{ label: 'Betreten', buy: true, fn: () => { g.closeModals(); enterVilla(v); } }] },
+    { name: '🎨 Lackierung', stat: 'Aktuell: ' + (PAINTS_H[paintFor(v)] || PAINTS_H.standard).name, btns: [{ label: 'Ändern', fn: () => paintMenu(v) }] },
+    { name: '🛋 Möbel', stat: ((S.furn && S.furn[v.id]) || []).length + ' von ' + (FURN.length - 1) + ' gekauft', btns: [{ label: 'Einrichten', fn: () => furnitureMenu(v) }] },
     { name: 'Villa verkaufen', stat: 'Du bekommst ' + g.fmt(sell) + ' (70 % vom Kaufpreis ' + g.fmt(v.price) + ')', btns: [{ label: 'Verkaufen · ' + g.fmt(sell), fn: () => {
       xModal('villa', v.name + ' verkaufen?', [{ name: 'Wirklich verkaufen?', stat: 'Die Villa gehört dir danach nicht mehr. Du bekommst ' + g.fmt(sell) + '.', btns: [
-        { label: 'Ja, verkaufen', buy: true, fn: () => { if (!(S.villas || []).includes(v.id)) return; S.villas = S.villas.filter(id => id !== v.id); S.money += sell; g.sfx('cash'); g.saveGame(); drawVillaSigns(); g.closeModals(); g.banner('Villa verkauft', v.name, '+ ' + g.fmt(sell), 4); } },
+        { label: 'Ja, verkaufen', buy: true, fn: () => { if (!(S.villas || []).includes(v.id)) return; S.villas = S.villas.filter(id => id !== v.id); S.money += sell; g.sfx('cash'); g.saveGame(); const a = SRVA(); if (isOnline() && a && a.house) a.house('sell', v.id).catch(() => { }); delete IE.houseOwners[v.id]; refreshHouses(); g.closeModals(); g.banner('Villa verkauft', v.name, '+ ' + g.fmt(sell), 4); } },
         { label: 'Abbrechen', fn: () => villaMenu(v) }] }]);
     } }] }
-  ]);
+  ], 'Haus-Menü');
 }
 IE.villaHome = function (pos) {
-  const S = G().S, own = IE.villas.filter(v => (S.villas || []).includes(v.id) && v.gate); if (!own.length) return null;
+  const S = G().S, own = IE.villas.filter(v => (S.villas || []).includes(v.id) && v.gate && !ownedByOther(v)); if (!own.length) return null;
   own.sort((a, b) => Math.hypot(a.x - pos.x, a.z - pos.z) - Math.hypot(b.x - pos.x, b.z - pos.z)); return own[0];
 };
 
@@ -1137,6 +1320,19 @@ function updateChute() {
     chuteMesh.visible = false; g.scene.add(chuteMesh);
   }
   chuteMesh.visible = !!P.chute; if (P.chute) { chuteMesh.position.copy(P.pos); chuteMesh.rotation.y = P.yaw; }
+}
+
+// Reifenqualm beim Driften
+let smokeT = 0;
+function updateDriftSmoke(dt) {
+  const g = G(), v = g.P.veh; smokeT -= dt; if (!v || v.type !== 'car' || !v.drifting || smokeT > 0) return; smokeT = 0.05;
+  const f = fwd(v.yaw);
+  for (const sd of [-1, 1]) {
+    const x = v.pos.x - f.x * v.m.L * 0.35 + f.z * sd * v.m.W * 0.45, z = v.pos.z - f.z * v.m.L * 0.35 - f.x * sd * v.m.W * 0.45;
+    const sm = new T.Mesh(new T.SphereGeometry(0.4, 6, 4), new T.MeshBasicMaterial({ color: 0xdedede, transparent: true, opacity: 0.6, depthWrite: false }));
+    sm.position.set(x, v.pos.y + 0.3, z); g.scene.add(sm); let a = 0;
+    const iv = setInterval(() => { a += 0.06; sm.scale.setScalar(1 + a * 5); sm.position.y += 0.05; sm.material.opacity = 0.6 * (1 - a); if (a >= 1) { clearInterval(iv); g.scene.remove(sm); sm.geometry.dispose(); sm.material.dispose(); } }, 40);
+  }
 }
 // ================= MEINE FAHRZEUGE (gekaufte Fahrzeuge herholen) =================
 function freeSpot(cx, cz, r, need) {
@@ -1283,7 +1479,7 @@ IE.openSecurity = openSecurity;
 IE.extraPrompt = function () {
   const g = G(), P = g.P; if (!g) return '';
   if (launch) return '';
-  if (P.interior) { const it = P.interior.it; if (it.type === 'backrooms' && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 3.2) return g.S.backroomsLoot ? 'Die Truhe ist leer …' : '<b>E</b> · Truhe öffnen'; if (it.type === 'villa' && P.interior.villa && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4) return '<b>E</b> · Ausruhen (Gesundheit voll + speichern)'; return ''; }
+  if (P.interior) { const it = P.interior.it; if (it.type === 'backrooms' && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 3.2) return g.S.backroomsLoot ? 'Die Truhe ist leer …' : '<b>E</b> · Truhe öffnen'; if (it.type.indexOf('villa') === 0 && P.interior.villa && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4.5) return '<b>E</b> · Ausruhen (Gesundheit voll + speichern)'; if (it.type.indexOf('villa_') === 0 && Math.hypot(P.pos.x - it.door.x, P.pos.z - it.door.z) > 3) return '<b>E</b> · Haus-Menü (Möbel & Lackierung)'; return ''; }
   if (!P.veh && rocket && Math.hypot(P.pos.x - RK.x, P.pos.z - RK.z) < 30) return IE.moonOpen() ? '<b>E</b> · Mit der Rakete zum Mond fliegen' : isAdm() ? '<b>E</b> · ★ Admin: Rakete jetzt für ALLE starten (Countdown ' + fmtCD(RK.launch - Date.now()) + ')' : 'Mondrakete · Start in ' + fmtCD(RK.launch - Date.now());
   if (!P.veh && IE.onMoon && Math.hypot(P.pos.x - MOON.x, P.pos.z - MOON.z) < 16) return '<b>E</b> · Zurück zur Erde fliegen';
   if (P.veh && P.veh.type === 'car' && IE.raceStart && Math.hypot(P.veh.pos.x - IE.raceStart.x, P.veh.pos.z - IE.raceStart.z) < 16 && (!R || R.state === 'lobby')) return '<b>E</b> · Rennen fahren / Spieler einladen';
@@ -1292,7 +1488,7 @@ IE.extraPrompt = function () {
   if (!P.veh) {
     if (rob) return '';
     const s = nearGas(P.pos); if (s) { if (g.game.time < s.cool) return 'Die Kasse ist noch leer – komm später wieder'; return g.S.cur && g.S.cur !== 'faust' ? '<b>E</b> · Tankstelle überfallen' : 'Mit einer Waffe kannst du die Tankstelle überfallen'; }
-    const v = nearVilla(P.pos); if (v) return (g.S.villas || []).includes(v.id) ? `<b>E</b> · ${v.name} (betreten / verkaufen)` : `<b>E</b> · ${v.name} kaufen · ${g.fmt(v.price)}`;
+    const v = nearVilla(P.pos); if (v) { const o = ownedByOther(v); if (o) return v.name + ' gehört ' + o.nick; return (g.S.villas || []).includes(v.id) ? `<b>E</b> · Haus-Menü ${v.name}` : `<b>E</b> · ${v.name} kaufen · ${g.fmt(v.price)}`; }
   }
   return '';
 };
@@ -1302,7 +1498,7 @@ IE.extraAct = function () {
   if (P.interior && P.interior.it.type === 'backrooms' && Math.hypot(P.pos.x - P.interior.it.item.x, P.pos.z - P.interior.it.item.z) < 3.2) { if (!g.S.backroomsLoot) { g.S.backroomsLoot = true; g.addMoney(100000000, true); g.sfx('cash'); g.banner('JACKPOT', 'Die Truhe der Backrooms', '+ ' + g.fmt(100000000), 6); g.saveGame(true); } return true; }
   if (!P.veh && !P.interior && rocket && Math.hypot(P.pos.x - RK.x, P.pos.z - RK.z) < 30) { if (!IE.moonOpen() && isAdm() && window.IEaccount && IEaccount.unlockMoon) IEaccount.unlockMoon(); if (IE.moonOpen() || isAdm()) startLaunch(true); else g.toast('Die Rakete startet am 25. November um 16:00 Uhr', 3); return true; }
   if (!P.veh && IE.onMoon && Math.hypot(P.pos.x - MOON.x, P.pos.z - MOON.z) < 16) { startLaunch(false); return true; }
-  if (P.interior) { const it = P.interior.it; if (it.type === 'villa' && P.interior.villa && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4) { P.health = Math.max(P.health, g.maxHP()); g.saveGame(); g.toast('Ausgeruht · Spiel gespeichert', 2.5); g.sfx('pass'); return true; } return false; }
+  if (P.interior) { const it = P.interior.it; if (it.type.indexOf('villa') === 0 && P.interior.villa && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4.5) { P.health = Math.max(P.health, g.maxHP()); g.saveGame(); g.toast('Ausgeruht · Spiel gespeichert', 2.5); g.sfx('pass'); return true; } if (it.type.indexOf('villa_') === 0 && P.interior.villa && Math.hypot(P.pos.x - it.door.x, P.pos.z - it.door.z) > 3) { villaMenu(P.interior.villa); return true; } return false; }
   if (P.veh && P.veh.type === 'car' && IE.raceStart && Math.hypot(P.veh.pos.x - IE.raceStart.x, P.veh.pos.z - IE.raceStart.z) < 16 && (!R || R.state === 'lobby')) {
     if (g.mission.active) { g.toast('Erst die Mission beenden', 2); return true; }
     if (P.veh.speed > 6) { g.toast('Halte an, um das Rennmenü zu öffnen', 2); return true; }
@@ -1313,7 +1509,7 @@ IE.extraAct = function () {
     const s = nearGas(P.pos);
     if (s) { if (g.game.time >= s.cool && g.S.cur && g.S.cur !== 'faust' && !rob) { rob = { s, t: 0 }; g.setWanted(Math.max(g.game.wanted, 2)); g.toast('Hände hoch! Das ist ein Überfall!', 2.5); g.sfx('shot', 0.6); } return true; }
     const v = nearVilla(P.pos);
-    if (v) { if ((g.S.villas || []).includes(v.id)) villaMenu(v); else buyVilla(v); return true; }
+    if (v) { if (ownedByOther(v)) { g.toast(v.name + ' gehört ' + ownedByOther(v).nick, 2.5); return true; } if ((g.S.villas || []).includes(v.id)) villaMenu(v); else buyVilla(v); return true; }
   }
   return false;
 };
@@ -1322,7 +1518,7 @@ function bizTick(dt) {
   for (const s of IE.shops) { if (s.type !== 'biz') continue; const b = S.biz[s.id]; if (!b) continue; const D = IE.bizDefs[s.biz], inc = D.inc * (1 + 0.5 * (b.lv - 1)); b.cash = Math.min(inc * 120, (b.cash || 0) + inc / 60 * dt); }
 }
 IE.extraUpdate = function (dt) {
-  bizTick(dt); guardManager(dt); updateBombs(dt); updateXmas(dt); updateBoost(dt); updateChute(); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
+  bizTick(dt); guardManager(dt); updateBombs(dt); updateXmas(dt); updateBoost(dt); updateChute(); updateDriftSmoke(dt); updateHouses(); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
   if (IE.raceBeam) IE.raceBeam.visible = !R;
   updateRace(dt); updateRob(dt);
 };
@@ -1335,7 +1531,7 @@ IE.mapPOIs = function () {
   const S = G() && G().S, out = [];
   if (IE.raceStart) out.push({ x: IE.raceStart.x, z: IE.raceStart.z, kind: 'race', label: 'Rennstrecke' });
   out.push({ x: RK.x, z: RK.z, kind: 'rocket', label: 'Mondrakete' });
-  for (const v of IE.villas) out.push({ x: v.x, z: v.z, kind: S && (S.villas || []).includes(v.id) ? 'villaOwn' : 'villa' });
+  for (const v of IE.villas) out.push({ x: v.x, z: v.z, kind: S && (S.villas || []).includes(v.id) && !ownedByOther(v) ? 'villaOwn' : 'villa' });
   for (const s of gas) out.push({ x: s.x, z: s.z, kind: 'gas' });
   return out;
 };
