@@ -318,7 +318,27 @@ function drawVillaSigns() {
 }
 IE.drawVillaSigns = drawVillaSigns;
 
+// ================= STRASSE ZUR RENNSTRECKE =================
+const extraRoadCells = new Set(); const ERC = 6;
+IE.onExtraRoad = (x, z) => extraRoadCells.has(Math.round(x / ERC) + ',' + Math.round(z / ERC));
+function buildTrackRoad(scene) {
+  const road = openPolyline(IE.trackRoad, 4); withDirs(road, false); IE.trackRoadPts = road;
+  // Höhen glätten, damit die Straße nicht jede Bodenwelle mitnimmt
+  for (const p of road) p.h = IE.groundH(p.x, p.z);
+  scene.add(new T.Mesh(ribbon(road, -5, 5, 0.18, false), new T.MeshLambertMaterial({ color: 0x45474b })));
+  scene.add(new T.Mesh(ribbon(road.filter((p, i) => (i % 6) < 3), -0.2, 0.2, 0.21, false), new T.MeshBasicMaterial({ color: 0xf2f2ee })));
+  for (const p of road) for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) extraRoadCells.add((Math.round(p.x / ERC) + dx) + ',' + (Math.round(p.z / ERC) + dz));
+  // Wegweiser
+  const sgn = textTex([{ t: '🏁 AUTODROMO', f: 'bold 54px Arial' }, { t: '→ ' + Math.round(road[road.length - 1].s / 100) / 10 + ' km', f: 'bold 40px Arial' }], 512, 200, '#1f4fb0', '#fff');
+  const p0 = road[3], sm = new T.Mesh(new T.PlaneGeometry(5, 2), new T.MeshBasicMaterial({ map: sgn.t, side: T.DoubleSide }));
+  sm.position.set(p0.x + p0.dz * 7, IE.groundH(p0.x, p0.z) + 3.4, p0.z - p0.dx * 7); sm.rotation.y = Math.atan2(p0.dx, p0.dz); scene.add(sm);
+  box(0.25, 3, 0.25, IE.mat.dark, sm.position.x, sm.position.y - 1.5, sm.position.z, scene);
+}
 IE.buildExtras = function (scene) {
+  try { buildTrackRoad(scene); } catch (e) { console.error('Straße', e); }
+  try { buildBackrooms(scene); } catch (e) { console.error('Backrooms', e); }
+  try { buildRocket(scene); } catch (e) { console.error('Rakete', e); }
+  try { buildMoon(scene); } catch (e) { console.error('Mond', e); }
   try { buildTrack(scene); } catch (e) { console.error('Strecke', e); }
   try { buildVillas(scene); } catch (e) { console.error('Villen', e); }
   try { buildGas(scene); } catch (e) { console.error('Tankstellen', e); }
@@ -378,6 +398,206 @@ IE.addScorch = function (p, radius) {
     add(new T.Vector3(cx, Math.max(p.y, gy + r * 0.6), cz), nv, r * 0.9);
   }
 };
+// ================= BACKROOMS (geheimer Sprung-Punkt) =================
+const BR = { x: 4300, z: 0, y: 400, n: 16, cell: 8 };
+BR.W = BR.n * BR.cell; BR.D = BR.n * BR.cell;
+IE.backroomsSpot = { x: IE.track.x, z: IE.track.z }; // mitten im Innenfeld der Rennstrecke (die Stelle vom Foto)
+function seeded(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+let brChest = null;
+function buildBackrooms(scene) {
+  const n = BR.n, c = BR.cell, x0 = BR.x - BR.W / 2, z0 = BR.z - BR.D / 2, y = BR.y, H = 4;
+  const wallMat = new T.MeshLambertMaterial({ color: 0xd6c56c }), floorMat = new T.MeshLambertMaterial({ color: 0xb3a156 }), ceilMat = new T.MeshLambertMaterial({ color: 0xd8d0a0 });
+  const fl = box(BR.W, 1, BR.D, floorMat, BR.x, y - 0.5, BR.z, scene); IE.addBox(x0, z0, x0 + BR.W, z0 + BR.D, y, y - 1);
+  box(BR.W, 0.3, BR.D, ceilMat, BR.x, y + H + 0.15, BR.z, scene);
+  // Labyrinth (immer gleich)
+  const rnd2 = seeded(424242), vis = new Uint8Array(n * n), wallE = new Uint8Array(n * n).fill(1), wallS = new Uint8Array(n * n).fill(1);
+  const stack = [[0, n - 1]]; vis[(n - 1) * n] = 1;
+  while (stack.length) {
+    const [i, j] = stack[stack.length - 1], nb = [];
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const a = i + di, b = j + dj; if (a >= 0 && b >= 0 && a < n && b < n && !vis[b * n + a]) nb.push([a, b, di, dj]); }
+    if (!nb.length) { stack.pop(); continue; }
+    const [a, b, di, dj] = nb[(rnd2() * nb.length) | 0]; vis[b * n + a] = 1;
+    if (di === 1) wallE[j * n + i] = 0; if (di === -1) wallE[j * n + a] = 0; if (dj === 1) wallS[j * n + i] = 0; if (dj === -1) wallS[b * n + i] = 0;
+    stack.push([a, b]);
+  }
+  for (let k = 0; k < n * n / 6; k++) { const i = (rnd2() * (n - 1)) | 0, j = (rnd2() * (n - 1)) | 0; if (rnd2() < 0.5) wallE[j * n + i] = 0; else wallS[j * n + i] = 0; } // ein paar Schleifen
+  const walls = [];
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    if (i < n - 1 && wallE[j * n + i]) walls.push([x0 + (i + 1) * c, z0 + j * c + c / 2, 0.6, c + 0.6]);
+    if (j < n - 1 && wallS[j * n + i]) walls.push([x0 + i * c + c / 2, z0 + (j + 1) * c, c + 0.6, 0.6]);
+  }
+  walls.push([x0, BR.z, 0.6, BR.D], [x0 + BR.W, BR.z, 0.6, BR.D], [BR.x, z0, BR.W, 0.6]);
+  walls.push([x0 + c + BR.W / 2, z0 + BR.D, BR.W - c, 0.6]); // Südwand mit Tür in der ersten Zelle
+  const im = new T.InstancedMesh(new T.BoxGeometry(1, 1, 1), wallMat, walls.length), M4 = new T.Matrix4();
+  walls.forEach((w, k) => { M4.makeScale(w[2], H, w[3]); M4.setPosition(w[0], y + H / 2, w[1]); im.setMatrixAt(k, M4); IE.addBox(w[0] - w[2] / 2, w[1] - w[3] / 2, w[0] + w[2] / 2, w[1] + w[3] / 2, y + H, y - 1); });
+  scene.add(im);
+  // Neonröhren
+  const lm = new T.InstancedMesh(new T.BoxGeometry(2.2, 0.08, 0.5), new T.MeshBasicMaterial({ color: 0xfffbe0 }), n * n); let li = 0;
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) if ((i + j) % 2 === 0) { M4.makeTranslation(x0 + i * c + c / 2, y + H - 0.05, z0 + j * c + c / 2); lm.setMatrixAt(li++, M4); }
+  lm.count = li; scene.add(lm);
+  // Ausgang (Tür) in der Südwand bei Zelle (0, n-1)
+  const door = { x: x0 + c / 2, z: z0 + BR.D - 1.8 };
+  box(3, 3.2, 0.2, new T.MeshBasicMaterial({ color: 0x1a1410 }), door.x, y + 1.6, z0 + BR.D + 0.15, scene);
+  const ex = textTex([{ t: 'EXIT', f: 'bold 80px Arial' }], 256, 100, '#0b3d1a', '#5dff7a');
+  const exm = new T.Mesh(new T.PlaneGeometry(1.6, 0.6), new T.MeshBasicMaterial({ map: ex.t })); exm.position.set(door.x, y + 3.6, z0 + BR.D - 0.35); exm.rotation.y = Math.PI; scene.add(exm);
+  // Truhe in der entferntesten Ecke
+  const cx = x0 + (n - 1) * c + c / 2, cz = z0 + c / 2, ch = new T.Group(); ch.position.set(cx, y, cz); scene.add(ch);
+  box(1.6, 0.9, 1, new T.MeshLambertMaterial({ color: 0x6b4423 }), 0, 0.45, 0, ch); const lid = box(1.64, 0.35, 1.04, new T.MeshLambertMaterial({ color: 0x7a5030 }), 0, 1.05, 0, ch);
+  box(1.66, 0.12, 0.2, IE.mat.gold, 0, 0.7, 0.45, ch); box(0.3, 0.3, 0.06, IE.mat.gold, 0, 0.75, 0.53, ch);
+  const glow = new T.Mesh(new T.SphereGeometry(0.5, 12, 8), new T.MeshBasicMaterial({ color: 0xffe27a, transparent: true, opacity: 0.6 })); glow.position.y = 1.2; ch.add(glow);
+  IE.addBox(cx - 0.8, cz - 0.5, cx + 0.8, cz + 0.5, y + 1.2, y - 1);
+  brChest = { x: cx, z: cz, lid, glow };
+  IE.interiors.backrooms = { type: 'backrooms', name: 'Backrooms', x: BR.x, z: BR.z, y, W: BR.W, D: BR.D, door, counter: { x: 1e9, z: 1e9 }, item: { x: cx, z: cz }, spots: [] };
+  // geheimer gelber Fleck am Sprungpunkt
+  const sp = IE.backroomsSpot, pm = new T.Mesh(new T.PlaneGeometry(2.4, 2.4), new T.MeshLambertMaterial({ color: 0xd6c56c, polygonOffset: true, polygonOffsetFactor: -3 }));
+  pm.rotation.x = -Math.PI / 2; pm.position.set(sp.x, IE.groundH(sp.x, sp.z) + 0.05, sp.z); scene.add(pm);
+}
+function updateBackrooms(dt) {
+  const g = G(), P = g.P, S = g.S;
+  if (brChest) { const open = !!S.backroomsLoot; brChest.lid.rotation.x = open ? -1.1 : 0; brChest.lid.position.z = open ? -0.35 : 0; brChest.glow.visible = !open; }
+  if (P.interior || P.veh || g.game.dead || P.fly) return;
+  const sp = IE.backroomsSpot;
+  if (P.vy > 4 && Math.hypot(P.pos.x - sp.x, P.pos.z - sp.z) < 2.2 && !updateBackrooms.cool) {
+    updateBackrooms.cool = true; setTimeout(() => updateBackrooms.cool = false, 3000);
+    g.enterInterior('backrooms', sp.x + 4, sp.z + 4, null); g.banner('???', 'Die Backrooms', 'Irgendwo hier ist eine Truhe … finde den Ausgang (EXIT)', 5); g.sfx('fail');
+  }
+}
+
+// ================= MONDRAKETE + MOND =================
+const RK = IE.rocket; let rocket = null, launch = null, boardTex = null;
+const MOON = { x: 12000, z: 0, base: 60, R: 1700 };
+IE.onMoon = false;
+function rocketGroup(scale) {
+  const g = new T.Group(), s = scale || 1, white = new T.MeshLambertMaterial({ color: 0xf4f4f0 }), black = new T.MeshLambertMaterial({ color: 0x1a1a1a });
+  const cyl = (r1, r2, h, m, y) => { const c = new T.Mesh(new T.CylinderGeometry(r1 * s, r2 * s, h * s, 24), m); c.position.y = y * s; g.add(c); return c; };
+  cyl(8, 8, 70, white, 35); cyl(8.05, 8.05, 6, black, 20); cyl(8.05, 8.05, 6, black, 60);
+  cyl(6.5, 8, 6, white, 73); cyl(6.5, 6.5, 40, white, 96); cyl(6.55, 6.55, 4, black, 110);
+  cyl(5, 6.5, 5, white, 118.5); cyl(5, 5, 22, white, 132); cyl(2.5, 5, 10, IE.mat.dark, 148); cyl(0.4, 2.5, 14, white, 160);
+  for (let k = 0; k < 4; k++) { const f = new T.Mesh(new T.BoxGeometry(0.8 * s, 16 * s, 8 * s), black); const a = k * Math.PI / 2; f.position.set(Math.sin(a) * 9 * s, 8 * s, Math.cos(a) * 9 * s); f.rotation.y = a; g.add(f); }
+  for (let k = 0; k < 5; k++) { const e = new T.Mesh(new T.CylinderGeometry(1.4 * s, 2.4 * s, 5 * s, 12), IE.mat.dark); const a = k / 5 * Math.PI * 2; e.position.set(Math.sin(a) * 4 * s * (k ? 1 : 0), -2.5 * s, Math.cos(a) * 4 * s * (k ? 1 : 0)); g.add(e); }
+  const fl = textTex([{ t: 'ITALIA', f: 'bold 90px Arial' }], 512, 128, '#f4f4f0', '#1f4fb0'); const lab = new T.Mesh(new T.CylinderGeometry(6.56 * s, 6.56 * s, 10 * s, 24, 1, true, -0.5, 1), new T.MeshBasicMaterial({ map: fl.t })); lab.position.y = 92 * s; g.add(lab);
+  return g;
+}
+function buildRocket(scene) {
+  const y = RK.h, pad = box(70, 2, 70, IE.mat.concrete, RK.x, y - 0.9, RK.z, scene);
+  rocket = rocketGroup(1); rocket.position.set(RK.x, y + 5, RK.z); scene.add(rocket);
+  // Startturm
+  const red = new T.MeshLambertMaterial({ color: 0xc8372d });
+  const tx = RK.x + 20, tz = RK.z;
+  for (const [ox, oz] of [[-4, -4], [4, -4], [-4, 4], [4, 4]]) box(1, 175, 1, red, tx + ox, y + 87.5, tz + oz, scene);
+  for (let h = 10; h < 175; h += 12) { box(9, 0.6, 0.6, red, tx, y + h, tz - 4, scene); box(9, 0.6, 0.6, red, tx, y + h, tz + 4, scene); box(0.6, 0.6, 9, red, tx - 4, y + h, tz, scene); box(0.6, 0.6, 9, red, tx + 4, y + h, tz, scene); }
+  for (const h of [70, 110, 140]) box(12, 1, 2, red, tx - 9, y + h, tz, scene);
+  IE.addBox(tx - 5, tz - 5, tx + 5, tz + 5, y + 175); IE.addBox(RK.x - 9, RK.z - 9, RK.x + 9, RK.z + 9, y + 170);
+  // Countdown-Tafel (Richtung Süden / Mailand)
+  boardTex = textTex([], 1024, 360, '#0b0d12', '#f2c230');
+  const bx = RK.x, bz = RK.z + 50;
+  for (const ox of [-20, 20]) box(1.2, 26, 1.2, IE.mat.dark, bx + ox, y + 13, bz, scene);
+  const bm = new T.Mesh(new T.PlaneGeometry(42, 15), new T.MeshBasicMaterial({ map: boardTex.t, side: T.DoubleSide })); bm.position.set(bx, y + 24, bz); scene.add(bm);
+  drawBoard();
+  IE.rocketBoard = { x: bx, z: bz };
+}
+const fmtCD = ms => { if (ms <= 0) return 'BEREIT ZUM START'; const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60; return (d ? d + ' T  ' : '') + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0'); };
+IE.moonOpen = () => Date.now() >= RK.launch;
+function drawBoard() {
+  if (!boardTex) return; const g = boardTex.g, open = IE.moonOpen();
+  g.fillStyle = '#0b0d12'; g.fillRect(0, 0, 1024, 360); g.strokeStyle = '#f2c230'; g.lineWidth = 8; g.strokeRect(8, 8, 1008, 344);
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#f3ead8'; g.font = 'bold 54px Arial'; g.fillText('MISSIONE LUNA', 512, 70);
+  g.fillStyle = open ? '#48e07a' : '#f2c230'; g.font = 'bold 110px Courier New, monospace'; g.fillText(fmtCD(RK.launch - Date.now()), 512, 185);
+  g.fillStyle = '#9aa0a8'; g.font = 'bold 36px Arial'; g.fillText(open ? 'Der Mond ist freigeschaltet – steig ein!' : 'Start: 25. November · 16:00 Uhr', 512, 295);
+  boardTex.t.needsUpdate = true;
+}
+// Mond-Gelände
+const craters = (() => { const r = seeded(777), out = []; for (let k = 0; k < 70; k++) { const a = r() * 6.28, d = Math.sqrt(r()) * MOON.R * 0.95; out.push({ x: MOON.x + Math.cos(a) * d, z: MOON.z + Math.sin(a) * d, r: 18 + Math.pow(r(), 2) * 160, dep: 0.25 + r() * 0.25 }); } return out; })();
+function moonH(x, z) {
+  const dx = x - MOON.x, dz = z - MOON.z, d = Math.hypot(dx, dz);
+  let h = MOON.base + Math.sin(x * 0.004) * 6 + Math.cos(z * 0.0047) * 6 + Math.sin((x + z) * 0.011) * 2.5;
+  if (d < 120) h = h + (MOON.base - h) * IE.smooth(120, 60, d); // flache Landezone
+  for (const c of craters) { const cd = Math.hypot(x - c.x, z - c.z); if (cd > c.r * 1.6) continue; const t = cd / c.r; h += t < 1 ? -c.r * c.dep * (1 - t * t) + c.r * 0.08 : c.r * 0.08 * Math.exp(-((t - 1) * (t - 1)) / 0.08); }
+  if (d > MOON.R) h += Math.min(140, Math.pow(d - MOON.R, 1.2) * 0.25); // niedriges Ringgebirge am Rand
+  return h;
+}
+const _gh = IE.groundH, _isLand = IE.isLand;
+IE.groundH = (x, z) => x > 9000 ? moonH(x, z) : _gh(x, z);
+IE.isLand = (x, z) => x > 9000 ? true : _isLand(x, z);
+let moonGems = [], stars = null, earth = null, moonRocket = null;
+function buildMoon(scene) {
+  const size = 4400, seg = 220, geo = new T.PlaneGeometry(size, size, seg, seg); geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position, col = new Float32Array(pos.count * 3), r = seeded(99);
+  for (let i = 0; i < pos.count; i++) { const x = pos.getX(i) + MOON.x, z = pos.getZ(i) + MOON.z, h = moonH(x, z); pos.setY(i, h); const v = 0.33 + (h - MOON.base) * 0.0015 + r() * 0.05; col.set([v, v, v * 1.02], i * 3); }
+  geo.setAttribute('color', new T.BufferAttribute(col, 3)); geo.computeVertexNormals();
+  const m = new T.Mesh(geo, new T.MeshLambertMaterial({ vertexColors: true })); m.position.set(MOON.x, 0, MOON.z); scene.add(m);
+  // Sterne + Erde (folgen der Kamera)
+  const sp = new Float32Array(2500 * 3); for (let i = 0; i < 2500; i++) { const a = r() * 6.28, b = Math.acos(r() * 2 - 1) * 0.5, R2 = 7000; sp.set([Math.sin(b) * Math.cos(a) * R2, Math.cos(b) * R2, Math.sin(b) * Math.sin(a) * R2], i * 3); }
+  const sg = new T.BufferGeometry(); sg.setAttribute('position', new T.BufferAttribute(sp, 3));
+  stars = new T.Points(sg, new T.PointsMaterial({ color: 0xffffff, size: 14, sizeAttenuation: true, fog: false })); stars.visible = false; scene.add(stars);
+  const et = document.createElement('canvas'); et.width = 256; et.height = 128; const eg = et.getContext('2d'); eg.fillStyle = '#1d5fb0'; eg.fillRect(0, 0, 256, 128);
+  for (let k = 0; k < 40; k++) { eg.fillStyle = k % 3 ? '#3e8a3a' : '#f2f2f2'; eg.beginPath(); eg.ellipse(r() * 256, r() * 128, 6 + r() * 26, 4 + r() * 12, r() * 3, 0, 7); eg.fill(); }
+  earth = new T.Mesh(new T.SphereGeometry(420, 32, 16), new T.MeshBasicMaterial({ map: new T.CanvasTexture(et), fog: false })); earth.visible = false; scene.add(earth);
+  // Landeplatz mit Rakete, Mondbasis, Flagge
+  const y0 = moonH(MOON.x, MOON.z);
+  moonRocket = rocketGroup(0.45); moonRocket.position.set(MOON.x, y0 + 2, MOON.z); scene.add(moonRocket);
+  IE.addBox(MOON.x - 5, MOON.z - 5, MOON.x + 5, MOON.z + 5, y0 + 75);
+  const domeMat = new T.MeshLambertMaterial({ color: 0xe8e8ec }), glassD = new T.MeshStandardMaterial({ color: 0x88ccff, transparent: true, opacity: 0.55, metalness: 0.4, roughness: 0.1 });
+  for (const [ox, oz, rr] of [[60, -30, 14], [85, -10, 10], [62, 8, 9]]) {
+    const yb = moonH(MOON.x + ox, MOON.z + oz), d = new T.Mesh(new T.SphereGeometry(rr, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), ox === 60 ? glassD : domeMat); d.position.set(MOON.x + ox, yb, MOON.z + oz); scene.add(d);
+    IE.addBox(MOON.x + ox - rr * 0.7, MOON.z + oz - rr * 0.7, MOON.x + ox + rr * 0.7, MOON.z + oz + rr * 0.7, yb + rr * 0.8);
+  }
+  for (let k = 0; k < 6; k++) { const px = MOON.x + 40 + k * 7, pz = MOON.z + 40, yb = moonH(px, pz); box(0.3, 2, 0.3, IE.mat.dark, px, yb + 1, pz, scene); const pn = box(5, 0.15, 3, new T.MeshStandardMaterial({ color: 0x1f3f8a, metalness: 0.6, roughness: 0.3 }), px, yb + 2.2, pz, scene); pn.rotation.x = -0.5; }
+  const fy = moonH(MOON.x - 25, MOON.z + 15); box(0.15, 6, 0.15, IE.mat.white, MOON.x - 25, fy + 3, MOON.z + 15, scene);
+  const flag = textTex([], 96, 64, '#fff', '#000'); flag.g.fillStyle = '#009246'; flag.g.fillRect(0, 0, 32, 64); flag.g.fillStyle = '#ce2b37'; flag.g.fillRect(64, 0, 32, 64); flag.t.needsUpdate = true;
+  const fm = new T.Mesh(new T.PlaneGeometry(3, 2), new T.MeshBasicMaterial({ map: flag.t, side: T.DoubleSide })); fm.position.set(MOON.x - 23.5, fy + 5, MOON.z + 15); scene.add(fm);
+  // Mondsteine (je 2 Mio. €, einmalig)
+  const gm = new T.MeshBasicMaterial({ color: 0x5ff3ff }), r3 = seeded(31337);
+  for (let k = 0; k < 12; k++) { const a = r3() * 6.28, d = 200 + r3() * (MOON.R - 300), x = MOON.x + Math.cos(a) * d, z = MOON.z + Math.sin(a) * d, yb = moonH(x, z);
+    const gem = new T.Mesh(new T.OctahedronGeometry(1.6, 0), gm); gem.position.set(x, yb + 2, z); scene.add(gem);
+    const beam = new T.Mesh(new T.CylinderGeometry(0.8, 0.8, 120, 8, 1, true), new T.MeshBasicMaterial({ color: 0x5ff3ff, transparent: true, opacity: 0.18, depthWrite: false, side: T.DoubleSide })); beam.position.set(x, yb + 60, z); scene.add(beam);
+    moonGems.push({ id: 'g' + k, x, z, y: yb, gem, beam }); }
+  IE.moonGems = moonGems;
+}
+function setMoon(on) {
+  const g = G(); IE.onMoon = on;
+  IE.sky.visible = !on; g.scene.background = on ? new T.Color(0x02030a) : null;
+  stars.visible = earth.visible = on;
+  if (on) { updateBackrooms.prevMoonCh = g.game.ch.moon; g.game.ch.moon = true; } else g.game.ch.moon = !!updateBackrooms.prevMoonCh;
+}
+function startLaunch(toMoon) {
+  const g = G(), P = g.P;
+  if (g.P.veh) { g.toast('Erst aussteigen', 2); return; }
+  launch = { t: 0, toMoon, from: toMoon ? rocket : moonRocket, y0: (toMoon ? rocket : moonRocket).position.y };
+  P.h.group.visible = false; g.closeModals(); g.sfx('beep');
+  g.banner(toMoon ? 'Missione Luna' : 'Rückflug', toMoon ? 'Start in 3 … 2 … 1' : 'Kurs auf die Erde', '', 3);
+}
+function updateLaunch(dt) {
+  if (!launch) return;
+  const g = G(), P = g.P, L = launch; L.t += dt;
+  const up = L.t < 1.5 ? 0 : Math.pow(L.t - 1.5, 2) * 14; L.from.position.y = L.y0 + up;
+  P.pos.set(L.from.position.x + 10, L.from.position.y + 30 * (L.toMoon ? 1 : 0.45), L.from.position.z + 26); P.vy = 0;
+  g.cam.pitch = 0.05 - Math.min(0.5, L.t * 0.08);
+  if (L.t > 1.5 && Math.random() < 0.8) { const sm = new T.Mesh(new T.SphereGeometry(3 + Math.random() * 4, 8, 6), new T.MeshBasicMaterial({ color: Math.random() < 0.3 ? 0xffa040 : 0xcfcfcf, transparent: true, opacity: 0.7 })); sm.position.set(L.from.position.x + (Math.random() - 0.5) * 8, L.from.position.y - 3, L.from.position.z + (Math.random() - 0.5) * 8); g.scene.add(sm); let a = 0; const iv = setInterval(() => { a += 0.05; sm.scale.setScalar(1 + a * 4); sm.material.opacity = 0.7 * (1 - a); if (a >= 1) { clearInterval(iv); g.scene.remove(sm); sm.geometry.dispose(); sm.material.dispose(); } }, 50); }
+  if (L.t > 6) {
+    L.from.position.y = L.y0; launch = null; P.h.group.visible = true;
+    if (L.toMoon) { setMoon(true); g.teleportTo(MOON.x + 20, moonH(MOON.x + 20, MOON.z + 20), MOON.z + 20); if (g.P.fly) g.setFly(false); spawnRover(); g.banner('Willkommen auf dem Mond', 'Geringe Schwerkraft · 12 Mondsteine zu finden', 'Zurück zur Erde: E an der Rakete', 6); }
+    else { setMoon(false); g.teleportTo(RK.x + 30, RK.h, RK.z + 30); if (g.P.fly) g.setFly(false); g.banner('Zurück auf der Erde', 'Mondrakete · Mailand', '', 3); }
+  }
+}
+function spawnRover() { const g = G(); for (const v of IE.vehicles) if (v.moonRover && !v.driver) v.removeMe = true; const v = IE.spawnCar(g.scene, 'rally', MOON.x - 18, MOON.z + 30, 0, { color: 0xf2f2ee }); v.moonRover = true; v.owned = true; v.def = Object.assign({}, v.def, { name: 'Mond-Rover', speed: 32, kind: 'suv' }); }
+function updateMoon(dt) {
+  const g = G(), P = g.P, S = g.S;
+  if ((performance.now() / 1000 | 0) !== updateMoon.sec) { updateMoon.sec = performance.now() / 1000 | 0; drawBoard(); }
+  // Auf dem Mond? (z. B. nach Teleport/Laden)
+  const onM = (P.veh ? P.veh.pos.x : P.pos.x) > 9000;
+  if (onM !== IE.onMoon && stars) setMoon(onM);
+  if (!IE.onMoon) return;
+  stars.position.copy(g.camera.position); earth.position.set(g.camera.position.x - 2500, g.camera.position.y + 3200, g.camera.position.z - 4200);
+  S.moonGems = S.moonGems || [];
+  for (const m of moonGems) {
+    const got = S.moonGems.includes(m.id); m.gem.visible = m.beam.visible = !got; if (got) continue;
+    m.gem.rotation.y += dt * 2; m.gem.position.y = m.y + 2 + Math.sin(performance.now() / 400) * 0.4;
+    const pp = P.veh ? P.veh.pos : P.pos;
+    if (Math.hypot(pp.x - m.x, pp.z - m.z) < 4) { S.moonGems.push(m.id); g.addMoney(2000000, true); g.sfx('cash'); g.banner('Mondstein gefunden', S.moonGems.length + ' / 12', '+ ' + g.fmt(2000000), 3); g.saveGame(); }
+  }
+}
+
 // ================= SPIELLOGIK =================
 let R = null; // aktuelles Rennen
 let rob = null; // laufender Überfall
@@ -749,7 +969,10 @@ IE.openSecurity = openSecurity;
 // ----- Hooks für main.js -----
 IE.extraPrompt = function () {
   const g = G(), P = g.P; if (!g) return '';
-  if (P.interior) { const it = P.interior.it; if (it.type === 'villa' && P.interior.villa && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4) return '<b>E</b> · Ausruhen (Gesundheit voll + speichern)'; return ''; }
+  if (launch) return '';
+  if (P.interior) { const it = P.interior.it; if (it.type === 'backrooms' && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 3.2) return g.S.backroomsLoot ? 'Die Truhe ist leer …' : '<b>E</b> · Truhe öffnen'; if (it.type === 'villa' && P.interior.villa && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4) return '<b>E</b> · Ausruhen (Gesundheit voll + speichern)'; return ''; }
+  if (!P.veh && rocket && Math.hypot(P.pos.x - RK.x, P.pos.z - RK.z) < 30) return IE.moonOpen() ? '<b>E</b> · Mit der Rakete zum Mond fliegen' : 'Mondrakete · Start in ' + fmtCD(RK.launch - Date.now());
+  if (!P.veh && IE.onMoon && Math.hypot(P.pos.x - MOON.x, P.pos.z - MOON.z) < 16) return '<b>E</b> · Zurück zur Erde fliegen';
   if (P.veh && P.veh.type === 'car' && IE.raceStart && Math.hypot(P.veh.pos.x - IE.raceStart.x, P.veh.pos.z - IE.raceStart.z) < 16 && (!R || R.state === 'lobby')) return '<b>E</b> · Rennen fahren / Spieler einladen';
   { const hv = hangarSaveTarget(); if (hv) return `<b>E</b> · ${hv.def.name} im Hangar speichern`; }
   if (R && R.state === 'lobby' && R.host) return '';
@@ -762,6 +985,10 @@ IE.extraPrompt = function () {
 };
 IE.extraAct = function () {
   const g = G(), P = g.P;
+  if (launch) return true;
+  if (P.interior && P.interior.it.type === 'backrooms' && Math.hypot(P.pos.x - P.interior.it.item.x, P.pos.z - P.interior.it.item.z) < 3.2) { if (!g.S.backroomsLoot) { g.S.backroomsLoot = true; g.addMoney(100000000, true); g.sfx('cash'); g.banner('JACKPOT', 'Die Truhe der Backrooms', '+ ' + g.fmt(100000000), 6); g.saveGame(true); } return true; }
+  if (!P.veh && !P.interior && rocket && Math.hypot(P.pos.x - RK.x, P.pos.z - RK.z) < 30) { if (IE.moonOpen()) startLaunch(true); else g.toast('Die Rakete startet am 25. November um 16:00 Uhr', 3); return true; }
+  if (!P.veh && IE.onMoon && Math.hypot(P.pos.x - MOON.x, P.pos.z - MOON.z) < 16) { startLaunch(false); return true; }
   if (P.interior) { const it = P.interior.it; if (it.type === 'villa' && P.interior.villa && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4) { P.health = Math.max(P.health, g.maxHP()); g.saveGame(); g.toast('Ausgeruht · Spiel gespeichert', 2.5); g.sfx('pass'); return true; } return false; }
   if (P.veh && P.veh.type === 'car' && IE.raceStart && Math.hypot(P.veh.pos.x - IE.raceStart.x, P.veh.pos.z - IE.raceStart.z) < 16 && (!R || R.state === 'lobby')) {
     if (g.mission.active) { g.toast('Erst die Mission beenden', 2); return true; }
@@ -782,17 +1009,19 @@ function bizTick(dt) {
   for (const s of IE.shops) { if (s.type !== 'biz') continue; const b = S.biz[s.id]; if (!b) continue; const D = IE.bizDefs[s.biz], inc = D.inc * (1 + 0.5 * (b.lv - 1)); b.cash = Math.min(inc * 120, (b.cash || 0) + inc / 60 * dt); }
 }
 IE.extraUpdate = function (dt) {
-  bizTick(dt); guardManager(dt);
+  bizTick(dt); guardManager(dt); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
   if (IE.raceBeam) IE.raceBeam.visible = !R;
   updateRace(dt); updateRob(dt);
 };
 IE.mapBase = function (g, s, x0, z0) {
   if (IE.trackPts) { g.strokeStyle = '#2b2d31'; g.lineWidth = 3; g.beginPath(); IE.trackPts.forEach((p, i) => { const x = (p.x - x0) * s, y = (p.z - z0) * s; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); g.stroke(); }
+  if (IE.trackRoadPts) { g.strokeStyle = '#f2d36b'; g.lineWidth = 2; g.beginPath(); IE.trackRoadPts.forEach((p, i) => { const x = (p.x - x0) * s, y = (p.z - z0) * s; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); }
   if (IE.villaRoadPts) { g.strokeStyle = '#f2d36b'; g.lineWidth = 2; g.beginPath(); IE.villaRoadPts.forEach((p, i) => { const x = (p.x - x0) * s, y = (p.z - z0) * s; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); }
 };
 IE.mapPOIs = function () {
   const S = G() && G().S, out = [];
   if (IE.raceStart) out.push({ x: IE.raceStart.x, z: IE.raceStart.z, kind: 'race', label: 'Rennstrecke' });
+  out.push({ x: RK.x, z: RK.z, kind: 'rocket', label: 'Mondrakete' });
   for (const v of IE.villas) out.push({ x: v.x, z: v.z, kind: S && (S.villas || []).includes(v.id) ? 'villaOwn' : 'villa' });
   for (const s of gas) out.push({ x: s.x, z: s.z, kind: 'gas' });
   return out;

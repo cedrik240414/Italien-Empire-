@@ -445,7 +445,7 @@ IE.updateCar = function (v, inp, dt) {
   const d = v.def;
   if (v.dead) { inp = { x: 0, y: 0, brake: true }; }
   const thr = inp.y || 0, st = inp.x || 0;
-  const onRoad = IE.nearRoad(v.pos.x, v.pos.z) || v.inCity;
+  const onRoad = IE.nearRoad(v.pos.x, v.pos.z) || v.inCity || (IE.onExtraRoad && IE.onExtraRoad(v.pos.x, v.pos.z));
   if (!isFinite(v.speed)) v.speed = 0;
   const maxS = Math.max(0.5, d.speed * (onRoad || d.kind === 'suv' ? 1 : 0.7) * (v.drown ? 0 : 1));
   if (thr > 0) v.speed += (v.speed < 0 ? 30 : d.accel * (1 - Math.max(0, v.speed) / maxS * 0.6)) * thr * dt;

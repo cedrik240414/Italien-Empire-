@@ -239,7 +239,7 @@ function onKill(msg) {
     if (data.killer === O.mePeer && !msg.sameTab) {
       const f = farmLog(msg.peer, 'k');
       if (f.blocked) { G().toast('Kill-Farming erkannt – für ' + peerName(msg.peer) + ' gibt es gerade keine Belohnung', 4); }
-      else { O.kills++; const pay = 10000; G().addMoney(pay); G().toast('Abschuss! + ' + G().fmt(pay), 2.5); saveStats(); }
+      else { O.kills++; const pay = 250000; G().addMoney(pay); G().toast('Abschuss! + ' + G().fmt(pay), 2.5); saveStats(); }
     }
   } else addFeed(msg.peer === O.mePeer ? 'Du bist gestorben' : `${peerName(msg.peer)} ist gestorben`);
 }

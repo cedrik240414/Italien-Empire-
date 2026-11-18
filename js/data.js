@@ -201,6 +201,11 @@ IE.flatZones = [ { x: IE.base.x, z: IE.base.z, hw: IE.base.hw, hd: IE.base.hd, h
 // Rennstrecke: große Ebene an der Nordost-Adria (gegenüber von Italien), weit weg von Städten
 IE.track = { name: 'Autodromo dell\'Adriatico', x: 1550, z: -1700, hw: 380, hd: 235, h: 20 };
 IE.flatZones.push({ x: IE.track.x, z: IE.track.z, hw: IE.track.hw, hd: IE.track.hd, h: IE.track.h, f: 120 });
+// Mondrakete hinter den Bergen nördlich von Mailand – Start am 25.11.2026 um 16:00 Uhr (deutsche Zeit)
+IE.rocket = { x: -980, z: -2150, h: 22, launch: Date.UTC(2026, 10, 25, 15, 0, 0) };
+IE.flatZones.push({ x: IE.rocket.x, z: IE.rocket.z, hw: 70, hd: 70, h: IE.rocket.h, f: 40 });
+// Straße von Venedig zur Rennstrecke
+IE.trackRoad = [[-68, -1400], [-40, -1460], [60, -1505], [300, -1520], [600, -1520], [880, -1530], [1040, -1610], [1140, -1700], [1170, -1800], [1200, -1880], [1250, -1895]];
 // Villenstraße am Hang über Neapel (Blick auf Stadt und Golf)
 IE.villaRoad = [[395, 235], [388, 200], [382, 160], [380, 120], [384, 92], [400, 112], [425, 135], [460, 147], [500, 152], [540, 154], [580, 155], [620, 153], [660, 152], [700, 152]];
 IE.villaRoadH = 58;

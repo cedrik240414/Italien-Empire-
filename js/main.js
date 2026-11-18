@@ -1498,8 +1498,8 @@ function buildMapCanvas() {
 }
 const w2m = (x, z) => ({ x: (x - IE.grid.x0) * MAP.s, y: (z - IE.grid.z0) * MAP.s });
 function icon(g, x, y, kind, size) {
-  const col = { biz: '#48e07a', bizOwn: '#48e07a', luxury: '#d6b04a', race: '#ff4fd8', villa: '#d9b45a', villaOwn: '#48e07a', gas: '#ff9a3c', plane: '#f2c230', weapon: '#e94b3c', car: '#3aa0ff', heli: '#48e07a', boat: '#35d6e8', base: '#a9c25a', wreck: '#f2c94c', wreckGot: '#6b6b6b', mission: '#f2c230', wp: '#ff5fd2', target: '#f2c230' }[kind];
-  const ch = { biz: '♦', bizOwn: '♦', luxury: '€', race: 'R', villa: 'V', villaOwn: '⌂', gas: 'T', plane: '✈', weapon: 'W', car: 'A', heli: 'H', boat: 'B', base: '✪', wreck: '$', wreckGot: '$', mission: 'M', wp: '•', target: '★' }[kind];
+  const col = { rocket: '#ff8a3c', biz: '#48e07a', bizOwn: '#48e07a', luxury: '#d6b04a', race: '#ff4fd8', villa: '#d9b45a', villaOwn: '#48e07a', gas: '#ff9a3c', plane: '#f2c230', weapon: '#e94b3c', car: '#3aa0ff', heli: '#48e07a', boat: '#35d6e8', base: '#a9c25a', wreck: '#f2c94c', wreckGot: '#6b6b6b', mission: '#f2c230', wp: '#ff5fd2', target: '#f2c230' }[kind];
+  const ch = { rocket: '▲', biz: '♦', bizOwn: '♦', luxury: '€', race: 'R', villa: 'V', villaOwn: '⌂', gas: 'T', plane: '✈', weapon: 'W', car: 'A', heli: 'H', boat: 'B', base: '✪', wreck: '$', wreckGot: '$', mission: 'M', wp: '•', target: '★' }[kind];
   g.fillStyle = '#111'; g.beginPath(); g.arc(x, y, size, 0, 7); g.fill(); g.strokeStyle = col; g.lineWidth = Math.max(1.5, size * 0.22); g.stroke();
   g.fillStyle = col; g.font = `bold ${size * 1.15}px Barlow Condensed, Arial`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(ch, x, y + 0.5);
 }
@@ -1515,6 +1515,11 @@ function missionTarget() {
 function drawMini() {
   const cv = $('miniC'), g = cv.getContext('2d'), W = cv.width, R = W / 2;
   g.clearRect(0, 0, W, W);
+  if (IE.onMoon && !P.interior) {
+    g.fillStyle = '#0b0d14'; g.beginPath(); g.arc(R, R, R - 4, 0, 7); g.fill(); g.strokeStyle = '#9aa0a8'; g.lineWidth = 6; g.stroke();
+    g.fillStyle = '#f3ead8'; g.font = 'bold 34px Barlow Condensed, Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('MOND', R, R - 18);
+    g.font = '600 26px Barlow Condensed, Arial'; g.fillStyle = '#5ff3ff'; g.fillText('Mondsteine ' + ((S.moonGems || []).length) + ' / 12', R, R + 20); return;
+  }
   if (P.interior) {
     g.fillStyle = '#171b22'; g.beginPath(); g.arc(R, R, R - 4, 0, 7); g.fill(); g.strokeStyle = '#d9b45a'; g.lineWidth = 6; g.stroke();
     g.fillStyle = '#f3ead8'; g.font = 'bold 34px Barlow Condensed, Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('INNEN', R, R - 18);
@@ -1579,7 +1584,7 @@ function drawBig() {
   g.save(); g.translate(tx(p.x), ty(p.y)); g.rotate(-P.yaw + Math.PI); g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = 2 * dpr;
   g.beginPath(); g.moveTo(0, -9 * dpr); g.lineTo(7 * dpr, 7 * dpr); g.lineTo(0, 3 * dpr); g.lineTo(-7 * dpr, 7 * dpr); g.closePath(); g.stroke(); g.fill(); g.restore();
   // Legende
-  const items = [['race', 'Rennstrecke'], ['villa', 'Villa (kaufbar)'], ['gas', 'Tankstelle'], ['plane', 'Flughafen & Hangar'], ['weapon', 'Waffenladen'], ['car', 'Autohaus'], ['luxury', 'Luxus-Autohaus'], ['biz', 'Geschäft (kaufbar)'], ['heli', 'Helikopterplatz'], ['boat', 'Bootsladen & Hafen'], ['base', 'Militärbasis'], ['wreck', 'Schiffswrack (tauchen)'], ['mission', 'Mission'], ['wp', 'Wegpunkt']];
+  const items = [['rocket', 'Mondrakete'], ['race', 'Rennstrecke'], ['villa', 'Villa (kaufbar)'], ['gas', 'Tankstelle'], ['plane', 'Flughafen & Hangar'], ['weapon', 'Waffenladen'], ['car', 'Autohaus'], ['luxury', 'Luxus-Autohaus'], ['biz', 'Geschäft (kaufbar)'], ['heli', 'Helikopterplatz'], ['boat', 'Bootsladen & Hafen'], ['base', 'Militärbasis'], ['wreck', 'Schiffswrack (tauchen)'], ['mission', 'Mission'], ['wp', 'Wegpunkt']];
   g.fillStyle = 'rgba(13,15,19,0.7)'; g.fillRect(6 * dpr, 6 * dpr, 160 * dpr, (items.length * 20 + 10) * dpr);
   items.forEach((it, i) => { icon(g, 20 * dpr, (20 + i * 20) * dpr, it[0], 7 * dpr); g.fillStyle = '#fff'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = `600 ${13 * dpr}px Barlow Condensed, Arial`; g.fillText(it[1], 34 * dpr, (21 + i * 20) * dpr); });
   $('mapZoom').textContent = MV.zoom.toFixed(1) + '×';
@@ -1723,13 +1728,13 @@ function updateCamera(dt) {
   camera.lookAt(cam.target);
   underwaterFx();
 }
-const FOG_Z = new T.Color(0x5d6655), FOG_AIR = new T.Color(0xd5d2c8), FOG_SEA = new T.Color(0x0e5a70);
+const FOG_MOON = new T.Color(0x02030a), FOG_Z = new T.Color(0x5d6655), FOG_AIR = new T.Color(0xd5d2c8), FOG_SEA = new T.Color(0x0e5a70);
 function underwaterFx() {
   const uw = camera.position.y < -0.05 && IE.groundH(camera.position.x, camera.position.z) < camera.position.y;
   game.uw = uw;
   $('under').hidden = !uw;
   if (uw) { scene.fog.color.copy(FOG_SEA); scene.fog.near = 1; scene.fog.far = 48; }
-  else scene.fog.color.copy(game.ch.zombies ? FOG_Z : FOG_AIR);
+  else scene.fog.color.copy(IE.onMoon ? FOG_MOON : game.ch.zombies ? FOG_Z : FOG_AIR);
 }
 
 // ---------- HUD ----------
@@ -1870,7 +1875,7 @@ function frameBody() {
   // Sonne folgt dem Spieler (Schatten)
   sun.position.set(P.pos.x + SUN_DIR.x * 300, P.pos.y + SUN_DIR.y * 300, P.pos.z + SUN_DIR.z * 300); sun.target.position.copy(P.pos);
   IE.sky.position.copy(camera.position);
-  const alt = camera.position.y; if (!game.uw) { if (game.ch.zombies) { scene.fog.near = 40; scene.fog.far = 420 + alt * 2; } else { scene.fog.near = 500 + alt * 2; scene.fog.far = 3200 + alt * 6; } }
+  const alt = camera.position.y; if (!game.uw) { if (IE.onMoon) { scene.fog.near = 900; scene.fog.far = 6000; } else if (game.ch.zombies) { scene.fog.near = 40; scene.fog.far = 420 + alt * 2; } else { scene.fog.near = 500 + alt * 2; scene.fog.far = 3200 + alt * 6; } }
   engineSound(P.veh && !P.veh.dead ? P.veh : null);
   updateHUD(dt);
   drawMini();
