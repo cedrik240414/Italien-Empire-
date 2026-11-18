@@ -5,7 +5,9 @@
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
 const H = { ...CORS, 'content-type': 'application/json; charset=utf-8' };
 const ROOM_RE = /^[a-z0-9][a-z0-9_.-]{0,47}$/;
-const SUPER_ADMINS = ['crim', 'crimhotdog24']; // "Crim" / "Crim Hotdog24" – können nicht entfernt oder gebannt werden
+const SUPER_ADMINS = ['crim', 'crimhotdog24', 'entity2806']; // "Crim" / "Crim Hotdog24" / "Entity_2806" – können nicht entfernt oder gebannt werden
+const HIDDEN_ADMINS = ['entity2806']; // geheime Admins: für andere Spieler nicht als Admin sichtbar
+const isHidden = slug => HIDDEN_ADMINS.includes(slug);
 const isSuper = slug => SUPER_ADMINS.includes(slug);
 const j = (o, status) => new Response(JSON.stringify(o), { status: status || 200, headers: H });
 const slugOf = n => String(n || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]/g, '').slice(0, 16);
@@ -44,7 +46,9 @@ export class Hub {
     const a = await this.state.storage.get('a:' + s.slug); if (!a) return null;
     return a;
   }
-  pubAcc(a) { return { nick: a.nick, slug: a.slug, admin: !!a.admin || isSuper(a.slug), superAdmin: isSuper(a.slug), banned: !!a.banned }; }
+  pubAcc(a) { return { nick: a.nick, slug: a.slug, admin: !!a.admin || isSuper(a.slug), superAdmin: isSuper(a.slug), banned: !!a.banned, hidden: isHidden(a.slug) }; }
+  // so sehen ANDERE einen Spieler (geheime Admins erscheinen als normale Spieler)
+  pubOther(a) { const p = this.pubAcc(a); if (p.hidden) { p.admin = false; p.superAdmin = false; } delete p.hidden; return p; }
   async newSession(a) {
     const token = rnd(32); await this.state.storage.put('s:' + token, { slug: a.slug, exp: Date.now() + 1000 * 60 * 60 * 24 * 60 });
     return token;
@@ -98,7 +102,7 @@ export class Hub {
     if (action === 'list') {
       const accs = [...(await st.list({ prefix: 'a:' })).values()];
       const board = await st.list({ prefix: 'p:' });
-      return j({ players: accs.map(a => { const p = board.get('p:' + a.slug) || {}; return { ...this.pubAcc(a), kills: p.kills || 0, deaths: p.deaths || 0, jobs: p.jobs || 0, money: p.money || 0, grant: a.grant || 0 }; }) });
+      return j({ players: accs.map(a => { const p = board.get('p:' + a.slug) || {}; return { ...(a.slug === me.slug ? this.pubAcc(a) : this.pubOther(a)), kills: p.kills || 0, deaths: p.deaths || 0, jobs: p.jobs || 0, money: p.money || 0, grant: a.grant || 0 }; }) });
     }
     if (action === 'act') {
       const t = await st.get('a:' + slugOf(b.target)); if (!t) return j({ error: 'unknown_target' }, 404);
@@ -111,7 +115,7 @@ export class Hub {
       else if (b.what === 'unban') t.banned = false;
       else return j({ error: 'bad_action' }, 400);
       await st.put('a:' + t.slug, t);
-      return j({ ok: true, player: this.pubAcc(t) });
+      return j({ ok: true, player: t.slug === me.slug ? this.pubAcc(t) : this.pubOther(t) });
     }
     return j({ error: 'not_found' }, 404);
   }
@@ -125,7 +129,7 @@ export class Hub {
       const sort = ['kills', 'money', 'jobs', 'deaths'].includes(q) ? q : 'kills', lim = Math.min(300, Math.max(1, +url.searchParams.get('limit') || 30));
       const accs = await st.list({ prefix: 'a:' });
       const all = [...(await st.list({ prefix: 'p:' })).values()].filter(v => { const a = accs.get('a:' + v.id); return a && !a.banned; })
-        .map(v => { const a = accs.get('a:' + v.id); return { ...v, nick: a.nick, admin: !!a.admin || isSuper(a.slug) }; });
+        .map(v => { const a = accs.get('a:' + v.id); return { ...v, nick: a.nick, admin: (!!a.admin || isSuper(a.slug)) && !isHidden(a.slug) }; });
       all.sort((a, b) => (b[sort] || 0) - (a[sort] || 0));
       return j({ docs: all.slice(0, lim).map(v => ({ id: v.id, data: pub(v) })) });
     }
@@ -174,7 +178,7 @@ export class Hub {
       if (now - (this.sweepT || 0) > 10000) { this.sweepT = now; for (const [p, x] of [...this.s]) if (x !== me && now - (x.seen || x.t) > 30000) { this.s.delete(p); try { x.ws.close(4003, 'stale'); } catch (e) { } this.bc({ t: 'leave', peer: p }); } }
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
       if (m.t === 'presence' && m.p && typeof m.p === 'object' && !Array.isArray(m.p)) {
-        me.presence = Object.assign({}, m.p, { uid: 'a_' + me.slug, nm: me.nick, adm: me.adm });
+        me.presence = Object.assign({}, m.p, { uid: 'a_' + me.slug, nm: me.nick, adm: who.hidden ? 0 : me.adm });
         this.bc({ t: 'presence', peer, presence: me.presence });
       } else if (m.t === 'emit' && typeof m.topic === 'string' && /^[a-z][a-z0-9_.-]{0,47}$/.test(m.topic)) {
         if (m.topic === 'admin' && !me.adm) return;
