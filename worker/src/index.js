@@ -74,7 +74,7 @@ export class Hub {
     const me = await this.session(token);
     if (action === 'check') return me ? j(this.pubAcc(me)) : j({ error: 'no_session' }, 401);
     if (!me) return j({ error: 'no_session' }, 401);
-    if (action === 'me') return j({ ...this.pubAcc(me), grant: me.grant || 0 });
+    if (action === 'me') return j({ ...this.pubAcc(me), grant: me.grant || 0, moonOpen: !!(await st.get('moonOpen')) });
     if (action === 'claim') { const g = me.grant || 0; if (g) { me.grant = 0; await st.put('a:' + me.slug, me); } return j({ grant: g }); }
     // ---- Spielstand in der Cloud (pro Konto, auf jedem Gerät) ----
     if (action === 'save') {
@@ -93,6 +93,7 @@ export class Hub {
     // ---- Admin ----
     const isAdmin = me.admin || isSuper(me.slug);
     if (!isAdmin || (me.banned && !isSuper(me.slug))) return j({ error: 'not_admin' }, 403);
+    if (action === 'moon') { await st.put('moonOpen', Date.now()); return j({ ok: true }); } // Admin schaltet den Mond für alle frei
     if (action === 'list') {
       const accs = [...(await st.list({ prefix: 'a:' })).values()];
       const board = await st.list({ prefix: 'p:' });

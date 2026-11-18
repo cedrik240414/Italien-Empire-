@@ -496,13 +496,13 @@ function buildRocket(scene) {
   IE.rocketBoard = { x: bx, z: bz };
 }
 const fmtCD = ms => { if (ms <= 0) return 'BEREIT ZUM START'; const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60; return (d ? d + ' T  ' : '') + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0'); };
-IE.moonOpen = () => Date.now() >= RK.launch;
+IE.moonOpen = () => Date.now() >= RK.launch || !!IE.moonUnlocked;
 const isAdm = () => !!(window.IEaccount && IEaccount.admin);
 function drawBoard() {
   if (!boardTex) return; const g = boardTex.g, open = IE.moonOpen();
   g.fillStyle = '#0b0d12'; g.fillRect(0, 0, 1024, 360); g.strokeStyle = '#f2c230'; g.lineWidth = 8; g.strokeRect(8, 8, 1008, 344);
   g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#f3ead8'; g.font = 'bold 54px Arial'; g.fillText('MISSIONE LUNA', 512, 70);
-  g.fillStyle = open ? '#48e07a' : '#f2c230'; g.font = 'bold 110px Courier New, monospace'; g.fillText(fmtCD(RK.launch - Date.now()), 512, 185);
+  g.fillStyle = open ? '#48e07a' : '#f2c230'; g.font = 'bold 110px Courier New, monospace'; g.fillText(fmtCD(open ? 0 : RK.launch - Date.now()), 512, 185);
   g.fillStyle = '#9aa0a8'; g.font = 'bold 36px Arial'; g.fillText(open ? 'Der Mond ist freigeschaltet – steig ein!' : 'Start: 25. November · 16:00 Uhr', 512, 295);
   boardTex.t.needsUpdate = true;
 }
@@ -1057,7 +1057,7 @@ IE.extraPrompt = function () {
   const g = G(), P = g.P; if (!g) return '';
   if (launch) return '';
   if (P.interior) { const it = P.interior.it; if (it.type === 'backrooms' && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 3.2) return g.S.backroomsLoot ? 'Die Truhe ist leer …' : '<b>E</b> · Truhe öffnen'; if (it.type === 'villa' && P.interior.villa && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4) return '<b>E</b> · Ausruhen (Gesundheit voll + speichern)'; return ''; }
-  if (!P.veh && rocket && Math.hypot(P.pos.x - RK.x, P.pos.z - RK.z) < 30) return IE.moonOpen() ? '<b>E</b> · Mit der Rakete zum Mond fliegen' : isAdm() ? '<b>E</b> · ★ Admin: Rakete jetzt starten (Countdown ' + fmtCD(RK.launch - Date.now()) + ')' : 'Mondrakete · Start in ' + fmtCD(RK.launch - Date.now());
+  if (!P.veh && rocket && Math.hypot(P.pos.x - RK.x, P.pos.z - RK.z) < 30) return IE.moonOpen() ? '<b>E</b> · Mit der Rakete zum Mond fliegen' : isAdm() ? '<b>E</b> · ★ Admin: Rakete jetzt für ALLE starten (Countdown ' + fmtCD(RK.launch - Date.now()) + ')' : 'Mondrakete · Start in ' + fmtCD(RK.launch - Date.now());
   if (!P.veh && IE.onMoon && Math.hypot(P.pos.x - MOON.x, P.pos.z - MOON.z) < 16) return '<b>E</b> · Zurück zur Erde fliegen';
   if (P.veh && P.veh.type === 'car' && IE.raceStart && Math.hypot(P.veh.pos.x - IE.raceStart.x, P.veh.pos.z - IE.raceStart.z) < 16 && (!R || R.state === 'lobby')) return '<b>E</b> · Rennen fahren / Spieler einladen';
   { const hv = hangarSaveTarget(); if (hv) return `<b>E</b> · ${hv.def.name} im Hangar speichern`; }
@@ -1073,7 +1073,7 @@ IE.extraAct = function () {
   const g = G(), P = g.P;
   if (launch) return true;
   if (P.interior && P.interior.it.type === 'backrooms' && Math.hypot(P.pos.x - P.interior.it.item.x, P.pos.z - P.interior.it.item.z) < 3.2) { if (!g.S.backroomsLoot) { g.S.backroomsLoot = true; g.addMoney(100000000, true); g.sfx('cash'); g.banner('JACKPOT', 'Die Truhe der Backrooms', '+ ' + g.fmt(100000000), 6); g.saveGame(true); } return true; }
-  if (!P.veh && !P.interior && rocket && Math.hypot(P.pos.x - RK.x, P.pos.z - RK.z) < 30) { if (IE.moonOpen() || isAdm()) startLaunch(true); else g.toast('Die Rakete startet am 25. November um 16:00 Uhr', 3); return true; }
+  if (!P.veh && !P.interior && rocket && Math.hypot(P.pos.x - RK.x, P.pos.z - RK.z) < 30) { if (!IE.moonOpen() && isAdm() && window.IEaccount && IEaccount.unlockMoon) IEaccount.unlockMoon(); if (IE.moonOpen() || isAdm()) startLaunch(true); else g.toast('Die Rakete startet am 25. November um 16:00 Uhr', 3); return true; }
   if (!P.veh && IE.onMoon && Math.hypot(P.pos.x - MOON.x, P.pos.z - MOON.z) < 16) { startLaunch(false); return true; }
   if (P.interior) { const it = P.interior.it; if (it.type === 'villa' && P.interior.villa && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4) { P.health = Math.max(P.health, g.maxHP()); g.saveGame(); g.toast('Ausgeruht · Spiel gespeichert', 2.5); g.sfx('pass'); return true; } return false; }
   if (P.veh && P.veh.type === 'car' && IE.raceStart && Math.hypot(P.veh.pos.x - IE.raceStart.x, P.veh.pos.z - IE.raceStart.z) < 16 && (!R || R.state === 'lobby')) {

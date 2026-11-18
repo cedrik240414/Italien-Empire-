@@ -65,6 +65,7 @@ async function claudeAdminInit() {
   if (cUser) { try { if (await cUser.isOwner() || await cUser.canEdit()) { A.admin = true; A.claudeAdmin = true; showAdminUI(); IEgame.toast('★ Du bist Admin (Besitzer des Spiels)', 3); } } catch (e) { } }
   if (!db || !myId) return;
   try {
+    db.collection('admin').doc('moon').onSnapshot(sn => { if (sn.exists && sn.data().open) A.setMoon(); }, () => { });
     db.collection('admin').doc('bans').onSnapshot(sn => {
       cBans = (sn.exists && sn.data().list) || [];
       if (cBans.includes(myId) && !A.claudeAdmin) { if (window.IEonline && IEonline.active) IEonline.leave(); A.onBanned(); }
@@ -155,6 +156,13 @@ function logout() {
   try { sessionStorage.removeItem('italienEmpire_session'); localStorage.removeItem(TOKEN_KEY); } catch (e) { }
   location.reload();
 }
+// Mond für alle freischalten (Admin startet die Rakete vorzeitig)
+A.setMoon = function () { if (IEgame.IE.moonUnlocked) return; IEgame.IE.moonUnlocked = true; IEgame.banner('Der Mond ist offen!', 'Ein Admin hat die Mondrakete gestartet', 'Flieg mit der Rakete bei Mailand zum Mond', 5); };
+A.unlockMoon = async function () {
+  IEgame.IE.moonUnlocked = true;
+  try { if (SRV()) await SRV().moon(); else if (db && A.claudeAdmin) await db.collection('admin').doc('moon').set({ open: true, t: Date.now() }); } catch (e) { }
+  try { if (window.IEonline && IEonline.adminMoon) IEonline.adminMoon(); } catch (e) { }
+};
 A.onBanned = function () {
   try { localStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem('italienEmpire_session'); } catch (e) { }
   alertBox('Du wurdest von einem Admin gebannt.');
@@ -169,6 +177,7 @@ function startPoll() {
     try {
       const me = await SRV().me();
       if (me.banned && !me.superAdmin) { A.onBanned(); return; }
+      if (me.moonOpen) A.setMoon();
       if (me.admin !== A.admin) { A.admin = me.admin; showAdminUI(); IEgame.toast(A.admin ? 'Du bist jetzt Admin!' : 'Deine Admin-Rechte wurden entfernt', 4); }
       if (me.grant) { const c = await SRV().claim(); if (c.grant) applyGrant(c.grant); }
     } catch (e) { if (e && e.status === 401) { try { localStorage.removeItem(TOKEN_KEY); } catch (er) { } } }

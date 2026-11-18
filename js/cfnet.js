@@ -99,6 +99,7 @@ const account = {
   act: (target, what, amount) => post('/acc/act', { token: tok(), target, what, amount }),
   save: (slot, data, t) => post('/acc/save', { token: tok(), slot, data, t }),
   load: slot => post('/acc/load', { token: tok(), slot }),
+  moon: () => post('/acc/moon', { token: tok() }),
   saveBeacon: (slot, data, t) => { try { fetch(base + '/acc/save', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tok(), slot, data, t }) }).catch(() => { }); } catch (e) { } }
 };
 window.IECF = { use: async n => (n === 'room' ? lobby : n === 'db' ? db : n === 'user' ? user : null), server: base, account };
