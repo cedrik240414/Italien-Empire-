@@ -313,11 +313,25 @@ function drawVillaSigns() {
     const { st, v } = villaSigns[id], g = st.g, other = typeof ownedByOther === 'function' && ownedByOther(v), own = S && (S.villas || []).includes(id) && !other;
     g.fillStyle = '#1b1b1b'; g.fillRect(0, 0, 512, 160); g.fillStyle = '#d9b45a'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.font = 'bold 46px Georgia'; g.fillText(v.name, 256, 52);
-    g.font = 'bold 34px Arial'; g.fillStyle = own ? '#48e07a' : other ? '#ff9a7a' : '#f3ead8'; g.fillText(own ? 'DEINE VILLA' : other ? 'GEHÖRT ' + String(other.nick).toUpperCase().slice(0, 16) : 'ZU VERKAUFEN · ' + (v.price / 1e6).toLocaleString('de-DE') + ' Mio. €', 256, 116);
+    g.font = 'bold 34px Arial'; const myNick = (window.IEaccount && IEaccount.nick) || 'dir', owner = own ? myNick : other ? other.nick : null;
+    g.fillStyle = own ? '#48e07a' : other ? '#ff9a7a' : '#f3ead8'; g.fillText(owner ? 'GEHÖRT ' + String(owner).toUpperCase().slice(0, 16) : 'ZU VERKAUFEN · ' + (v.price / 1e6).toLocaleString('de-DE') + ' Mio. €', 256, 116);
+    ownerLabel(v, owner, own);
     st.t.needsUpdate = true;
   }
 }
 IE.drawVillaSigns = drawVillaSigns;
+// schwebendes Namensschild über jeder Villa: wem sie gehört (für alle sichtbar)
+function ownerLabel(v, owner, own) {
+  if (!v.group) return;
+  const key = (owner || '') + '|' + !!own; if (v.labelKey === key) return; v.labelKey = key;
+  if (v.label) { v.group.remove(v.label); v.label.material.map.dispose(); v.label.material.dispose(); v.label = null; }
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128; const x = c.getContext('2d');
+  x.fillStyle = 'rgba(13,15,19,0.78)'; x.fillRect(0, 10, 512, 108); x.fillStyle = owner ? (own ? '#48e07a' : '#d9b45a') : '#9aa0a8'; x.fillRect(0, 10, 10, 108);
+  x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#d9b45a'; x.font = 'bold 34px Georgia'; x.fillText(v.name, 261, 42);
+  x.fillStyle = owner ? '#ffffff' : '#c8c8c8'; x.font = 'bold 40px Arial'; x.fillText(owner ? '🏠 Gehört ' + String(owner).slice(0, 16) : 'Zu verkaufen · ' + (v.price / 1e6).toLocaleString('de-DE') + ' Mio. €', 261, 88);
+  const sp = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(c), depthTest: true, transparent: true }));
+  const s = v.s; sp.scale.set(14 * Math.min(s, 2), 3.5 * Math.min(s, 2), 1); sp.position.set(0, (v.mega ? 26 : 16), -3 * s); v.group.add(sp); v.label = sp;
+}
 
 // ================= STRASSE ZUR RENNSTRECKE =================
 const extraRoadCells = new Set(); const ERC = 6;
