@@ -605,6 +605,193 @@ function updateMoon(dt) {
   }
 }
 
+// ================= WEIHNACHTEN (Dezember) =================
+const XM = { test: false, built: false, on: false, snow: false, lights: null, trees: null, flakes: null, terrCol: null, treeCols: [], canes: [], caneT: 5 };
+const dayHash = d => { const x = Math.sin(d * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); };
+IE.xmasActive = () => XM.test || new Date().getMonth() === 11;
+IE.snowToday = () => { if (XM.test) return true; const d = new Date(); if (d.getMonth() !== 11) return false; const day = d.getDate(); return [6, 13, 20, 24, 25, 26, 31].includes(day) || dayHash(day) < 0.45; };
+IE.adventDay = () => { if (XM.test) return 24; const d = new Date(); return d.getMonth() === 11 ? Math.min(24, d.getDate()) : 0; };
+function buildXmas() {
+  if (XM.built) return; XM.built = true;
+  const g = G(), scene = g.scene;
+  // Lichterketten an den Häusern der Städte
+  const cols = [0xff3b30, 0x48e07a, 0xf2c230, 0x3a9bff, 0xffffff], seen = new Set(), pts = [];
+  for (const c of IE.cities) {
+    for (let x = c.x - c.r; x <= c.x + c.r; x += 16) for (let z = c.z - c.r; z <= c.z + c.r; z += 16) {
+      if (Math.hypot(x - c.x, z - c.z) > c.r) continue;
+      for (const b of IE.collAt(x, z)) {
+        if (b.t !== 'box' || seen.has(b) || b.online) continue; seen.add(b);
+        const gy = IE.groundH((b.minx + b.maxx) / 2, (b.minz + b.maxz) / 2), hh = b.top - gy;
+        if (hh < 4 || hh > 70 || pts.length > 26000) continue;
+        const per = 2 * ((b.maxx - b.minx) + (b.maxz - b.minz)), n = Math.min(24, Math.floor(per / 2.2));
+        for (let k = 0; k < n; k++) {
+          let t = k / n * per, px, pz; const w = b.maxx - b.minx, d = b.maxz - b.minz;
+          if (t < w) { px = b.minx + t; pz = b.minz - 0.2; } else if ((t -= w) < d) { px = b.maxx + 0.2; pz = b.minz + t; } else if ((t -= d) < w) { px = b.maxx - t; pz = b.maxz + 0.2; } else { t -= w; px = b.minx - 0.2; pz = b.maxz - t; }
+          pts.push(px, b.top - 0.25 - (k % 2) * 0.2, pz);
+        }
+      }
+    }
+  }
+  const im = new T.InstancedMesh(new T.SphereGeometry(0.18, 6, 4), new T.MeshBasicMaterial({ color: 0xffffff }), pts.length / 3), M4 = new T.Matrix4(), cc = new T.Color();
+  for (let i = 0; i < pts.length / 3; i++) { M4.makeTranslation(pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2]); im.setMatrixAt(i, M4); im.setColorAt(i, cc.setHex(cols[i % cols.length])); }
+  im.visible = false; scene.add(im); XM.lights = im;
+  // großer Weihnachtsbaum in jeder Stadt
+  const trees = new T.Group(); trees.visible = false; scene.add(trees);
+  const green = new T.MeshLambertMaterial({ color: 0x1e5c2e }), star = new T.MeshBasicMaterial({ color: 0xffd84a });
+  for (const c of IE.cities) {
+    let x = c.cx !== undefined ? c.cx : c.x, z = c.cz !== undefined ? c.cz : c.z;
+    for (let k = 0; k < 20 && IE.blockedAt(x, z, 4); k++) { x += 7; z += 5; }
+    const y = IE.groundH(x, z), t = new T.Group(); t.position.set(x, y, z); trees.add(t);
+    box(1.2, 3, 1.2, new T.MeshLambertMaterial({ color: 0x5a3a20 }), 0, 1.5, 0, t);
+    for (let l = 0; l < 4; l++) { const cn = new T.Mesh(new T.ConeGeometry(6 - l * 1.3, 6, 12), green); cn.position.y = 5 + l * 3.6; t.add(cn); }
+    const st = new T.Mesh(new T.OctahedronGeometry(1.1, 0), star); st.position.y = 20; t.add(st);
+    for (let k = 0; k < 40; k++) { const a = k * 2.4, h = 4 + (k / 40) * 14, r = (6 - (h - 4) / 3.6 * 1.3) * 0.95; const b2 = new T.Mesh(new T.SphereGeometry(0.35, 8, 6), new T.MeshBasicMaterial({ color: cols[k % cols.length] })); b2.position.set(Math.cos(a) * r, h, Math.sin(a) * r); t.add(b2); }
+    for (let k = 0; k < 6; k++) { const a = k / 6 * 6.28; box(1.2, 1, 1.2, new T.MeshLambertMaterial({ color: cols[k % 4] }), Math.cos(a) * 4, 0.5, Math.sin(a) * 4, t); }
+    IE.addBox(x - 2, z - 2, x + 2, z + 2, y + 20);
+  }
+  XM.trees = trees;
+  // Schneeflocken um die Kamera
+  const N = 2500, fp = new Float32Array(N * 3); for (let i = 0; i < N; i++) fp.set([(rnd() - 0.5) * 160, rnd() * 80, (rnd() - 0.5) * 160], i * 3);
+  const fg = new T.BufferGeometry(); fg.setAttribute('position', new T.BufferAttribute(fp, 3));
+  XM.flakes = new T.Points(fg, new T.PointsMaterial({ color: 0xffffff, size: 0.45, transparent: true, opacity: 0.9 })); XM.flakes.visible = false; XM.flakes.frustumCulled = false; scene.add(XM.flakes);
+}
+function setSnow(on) {
+  const g = G(); XM.snow = on;
+  const tg = IE.terrain && IE.terrain.geometry, ca = tg && tg.attributes.color;
+  if (ca) {
+    if (!XM.terrCol) XM.terrCol = ca.array.slice();
+    const pos = tg.attributes.position;
+    for (let i = 0; i < ca.count; i++) {
+      const o = XM.terrCol, h = pos.getY(i);
+      if (on && h > 0.9) { const f = 0.88; ca.setXYZ(i, o[i * 3] + (0.95 - o[i * 3]) * f, o[i * 3 + 1] + (0.97 - o[i * 3 + 1]) * f, o[i * 3 + 2] + (1.0 - o[i * 3 + 2]) * f); }
+      else ca.setXYZ(i, o[i * 3], o[i * 3 + 1], o[i * 3 + 2]);
+    }
+    ca.needsUpdate = true;
+  }
+  // Bäume und Dächer weiß überzuckern
+  if (!XM.treeCols.length) g.scene.traverse(o => { if (o.isInstancedMesh && o.instanceColor && o !== XM.lights) { const c = o.instanceColor.array; if (c[1] > c[0] && c[1] > c[2]) XM.treeCols.push({ o, c: c.slice() }); } }); // nur grüne (Bäume)
+  for (const t of XM.treeCols) { const a = t.o.instanceColor.array; for (let i = 0; i < a.length; i++) a[i] = on ? t.c[i] + (0.92 - t.c[i]) * 0.6 : t.c[i]; t.o.instanceColor.needsUpdate = true; }
+  if (IE.mat.terracotta) { if (!XM.roofCol) XM.roofCol = IE.mat.terracotta.color.getHex(); IE.mat.terracotta.color.setHex(on ? 0xeef2f6 : XM.roofCol); }
+  if (XM.flakes) XM.flakes.visible = on;
+}
+function updateXmas(dt) {
+  const g = G(), P = g.P, on = IE.xmasActive() && !IE.onMoon;
+  if (on && !XM.built) buildXmas();
+  if (XM.built) { XM.lights.visible = on; XM.trees.visible = on; }
+  const snow = on && IE.snowToday();
+  if (snow !== XM.snow) setSnow(snow);
+  if (XM.flakes && XM.flakes.visible) {
+    const a = XM.flakes.geometry.attributes.position, c = g.camera.position;
+    XM.flakes.position.set(Math.floor(c.x / 160) * 160, 0, Math.floor(c.z / 160) * 160);
+    const ox = XM.flakes.position.x, oz = XM.flakes.position.z;
+    for (let i = 0; i < a.count; i++) {
+      let y = a.getY(i) - dt * 4, x = a.getX(i) + Math.sin(y * 0.3 + i) * dt * 0.6;
+      if (y < c.y - 30) y += 80; if (y > c.y + 50) y -= 80;
+      let wx = ox + x; if (wx < c.x - 80) x += 160; if (wx > c.x + 80) x -= 160;
+      let wz = oz + a.getZ(i); if (wz < c.z - 80) a.setZ(i, a.getZ(i) + 160); if (wz > c.z + 80) a.setZ(i, a.getZ(i) - 160);
+      a.setX(i, x); a.setY(i, y);
+    }
+    a.needsUpdate = true;
+  }
+  if (XM.lights && XM.lights.visible) { const t = performance.now() / 600 | 0; if (t !== XM.blink) { XM.blink = t; XM.lights.material.color.setScalar(t % 2 ? 1 : 0.75); } }
+  updateCanes(dt, on);
+  // Hinweis auf neues Türchen
+  if (on && g.game.state === 'play' && !XM.told) { XM.told = true; const d = IE.adventDay(), S = g.S; if (d && !(S.advent || []).includes(d)) setTimeout(() => g.toast('🎄 Im Adventskalender wartet Türchen ' + d + ' auf dich (Menü → Adventskalender)', 5), 4000); }
+  const pb = $('pAdvent'); if (pb) pb.hidden = !on;
+}
+// ----- Zuckerstangen mit Geld -----
+let caneTex = null;
+function caneMesh() {
+  if (!caneTex) { const c = document.createElement('canvas'); c.width = 64; c.height = 256; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 64, 256); x.fillStyle = '#e0102a'; for (let i = -64; i < 256; i += 32) { x.beginPath(); x.moveTo(0, i); x.lineTo(64, i + 32); x.lineTo(64, i + 48); x.lineTo(0, i + 16); x.fill(); } caneTex = new T.CanvasTexture(c); caneTex.wrapS = caneTex.wrapT = T.RepeatWrapping; caneTex.repeat.set(1, 3); }
+  const path = new T.CurvePath(); path.add(new T.LineCurve3(new T.Vector3(0, 0, 0), new T.Vector3(0, 2.2, 0)));
+  const arc = new T.EllipseCurve(0.45, 2.2, 0.45, 0.45, Math.PI, 0, true); const ap = arc.getPoints(12).map(p => new T.Vector3(p.x, p.y, 0));
+  const pts = [new T.Vector3(0, 0, 0), new T.Vector3(0, 1.1, 0)].concat(ap);
+  const m = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 40, 0.16, 8, false), new T.MeshLambertMaterial({ map: caneTex, emissive: 0x330000 }));
+  const g = new T.Group(); g.add(m);
+  const glow = new T.Mesh(new T.CylinderGeometry(0.6, 0.6, 40, 8, 1, true), new T.MeshBasicMaterial({ color: 0xff6a7a, transparent: true, opacity: 0.15, depthWrite: false, side: T.DoubleSide })); glow.position.y = 20; g.add(glow);
+  return g;
+}
+function updateCanes(dt, on) {
+  const g = G(), P = g.P;
+  for (let i = XM.canes.length - 1; i >= 0; i--) {
+    const c = XM.canes[i], pp = P.veh ? P.veh.pos : P.pos, d = Math.hypot(pp.x - c.x, pp.z - c.z);
+    c.m.rotation.y += dt * 1.5;
+    if (!on || d > 450) { g.scene.remove(c.m); XM.canes.splice(i, 1); continue; }
+    if (d < 3.5 && Math.abs(pp.y - c.y) < 4) {
+      const amt = 10000 + Math.round(rnd() * 9) * 10000; g.addMoney(amt); g.sfx('cash'); g.banner('Zuckerstange!', '🍬', '+ ' + g.fmt(amt), 2.5);
+      g.scene.remove(c.m); XM.canes.splice(i, 1); g.saveGame();
+    }
+  }
+  if (!on || P.interior || g.game.state !== 'play') return;
+  XM.caneT -= dt;
+  if (XM.caneT <= 0 && XM.canes.length < 6) {
+    XM.caneT = 25 + rnd() * 35;
+    const pp = P.veh ? P.veh.pos : P.pos;
+    for (let k = 0; k < 10; k++) { const a = rnd() * 6.28, r = 40 + rnd() * 110, x = pp.x + Math.cos(a) * r, z = pp.z + Math.sin(a) * r; if (!IE.isLand(x, z) || IE.blockedAt(x, z, 1.5)) continue; const y = IE.groundH(x, z), m = caneMesh(); m.position.set(x, y, z); g.scene.add(m); XM.canes.push({ m, x, z, y }); break; }
+  }
+}
+// ----- Adventskalender -----
+const ADVENT = {
+  1: { m: 50000 }, 2: { car: 'xflitzer' }, 3: { m: 100000 }, 4: { m: 150000 }, 5: { m: 250000 }, 6: { car: 'xgrinch' }, 7: { m: 200000 }, 8: { car: 'xschnee' },
+  9: { m: 300000 }, 10: { m: 500000 }, 11: { m: 400000 }, 12: { car: 'xlebkuchen' }, 13: { m: 600000 }, 14: { car: 'xeis' }, 15: { m: 750000 }, 16: { m: 1000000 },
+  17: { m: 1200000 }, 18: { car: 'xsanta' }, 19: { m: 1500000 }, 20: { boat: 'xmasyacht' }, 21: { m: 2000000 }, 22: { car: 'xtanne' }, 23: { m: 3000000 }, 24: { plane: 'schlitten' }
+};
+const XTUNE = {
+  xflitzer: { paint: 0xc8102e, finish: 'glanz', rims: 0xf4f4f0, neon: 0x48e07a, spoiler: true, engine: 2, turbo: 1, armor: 0 },
+  xgrinch: { paint: 0x3fa535, finish: 'matt', rims: 0xd33a2c, neon: 0x48e07a, engine: 1, turbo: 1, armor: 2 },
+  xschnee: { paint: 0xf2f6fb, finish: 'glanz', rims: 0x9fd8f2, neon: 0x5ff3ff, engine: 1, turbo: 0, armor: 1 },
+  xlebkuchen: { paint: 0x8a5a2b, finish: 'matt', rims: 0xd6b04a, neon: 0xf2c230, spoiler: true, engine: 2, turbo: 1, armor: 0 },
+  xeis: { paint: 0x9fd8f2, finish: 'chrom', rims: 0xf4f4f0, neon: 0x5ff3ff, spoiler: true, engine: 3, turbo: 2, armor: 0 },
+  xsanta: { paint: 0xb3001b, finish: 'glanz', rims: 0xd6b04a, neon: 0xff3b30, spoiler: true, engine: 3, turbo: 2, armor: 1 },
+  xtanne: { paint: 0x1e5c2e, finish: 'glanz', rims: 0xd6b04a, neon: 0xff3b30, engine: 2, turbo: 1, armor: 0 }
+};
+function rewardText(r, g) { if (r.m) return g.fmt(r.m); if (r.car) return '🚗 ' + IE.carById[r.car].name; if (r.boat) return '⛵ ' + IE.boatById[r.boat].name; if (r.plane) return '🦌 ' + IE.planeById[r.plane].name; return ''; }
+function openAdvent() {
+  const g = G(), S = g.S, today = IE.adventDay(); S.advent = S.advent || [];
+  xModal('advent', '🎄 Adventskalender', [], today ? 'Jeden Tag im Dezember ein neues Türchen – verpasste Türchen kannst du nachholen. Am 24. wartet etwas ganz Besonderes!' : 'Der Adventskalender öffnet am 1. Dezember.');
+  const box2 = $('xRows'); box2.innerHTML = '';
+  const grid = document.createElement('div'); grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px;padding:14px 22px';
+  const order = [7, 15, 3, 21, 11, 1, 18, 9, 24, 5, 13, 20, 2, 16, 8, 23, 12, 4, 19, 10, 6, 22, 14, 17];
+  for (const d of order) {
+    const open = S.advent.includes(d), can = d <= today && !open, r = ADVENT[d];
+    const b = document.createElement('button');
+    b.style.cssText = `height:92px;border-radius:10px;border:2px solid ${d === 24 ? '#d6b04a' : can ? '#48e07a' : 'rgba(243,234,216,0.25)'};background:${open ? '#1d3a2a' : d === 24 ? '#7a0c14' : (d % 3 === 0 ? '#8a1020' : d % 3 === 1 ? '#1e5c2e' : '#1f3f8a')};color:#f3ead8;font-family:var(--f-hud);font-size:${open ? 14 : 34}px;font-weight:700;opacity:${d > today ? 0.45 : 1};cursor:${can ? 'pointer' : 'default'};line-height:1.1;padding:4px`;
+    b.innerHTML = open ? `<div style="font-size:13px;color:#d6b04a">${d}.</div>${rewardText(r, g)}` : String(d);
+    b.disabled = !can;
+    b.onclick = () => openDoor(d);
+    grid.appendChild(b);
+  }
+  box2.appendChild(grid);
+}
+function openDoor(d) {
+  const g = G(), S = g.S, r = ADVENT[d]; S.advent = S.advent || []; if (S.advent.includes(d) || d > IE.adventDay()) return;
+  S.advent.push(d);
+  if (r.m) g.addMoney(r.m, true);
+  if (r.car) { if (!S.cars.includes(r.car)) S.cars.push(r.car); S.tune = S.tune || {}; S.tune[r.car] = Object.assign({}, XTUNE[r.car]); }
+  if (r.boat && !S.boats.includes(r.boat)) S.boats.push(r.boat);
+  if (r.plane && !S.planes.includes(r.plane)) S.planes.push(r.plane);
+  g.sfx('pass'); g.saveGame(true);
+  g.banner('Türchen ' + d, rewardText(r, g), r.m ? 'Frohe Weihnachten!' : 'Hol es dir über „Meine Fahrzeuge“ (G / GARAGE)', 5);
+  openAdvent();
+}
+IE.openAdvent = openAdvent;
+// ----- Boost für Flugzeuge -----
+let boostCool = 0;
+IE.planeBoost = function () {
+  const g = G(), v = g.P.veh; if (!v || v.type !== 'plane' || v.dead) return;
+  if (v.onGround && v.speed < 10) { g.toast('Erst rollen oder abheben', 1.5); return; }
+  if (boostCool > 0) { g.toast('Boost lädt … ' + Math.ceil(boostCool) + ' s', 1); return; }
+  v.boostT = 3; boostCool = 8; g.sfx('boom', 0.3); g.toast('🔥 BOOST!', 1.2);
+};
+function updateBoost(dt) {
+  boostCool = Math.max(0, boostCool - dt);
+  const g = G(), v = g.P.veh; if (!v || v.type !== 'plane' || !(v.boostT > 0)) return;
+  v.boostT -= dt; const top = v.def.speed * 1.8; v.speed += (top - v.speed) * Math.min(1, dt * 2.5);
+  const f = fwd(v.yaw), back = new T.Vector3(v.pos.x - f.x * v.m.L * 0.55, v.pos.y + (v.m.gearH || 1) + 0.8, v.pos.z - f.z * v.m.L * 0.55);
+  const fl = new T.Mesh(new T.SphereGeometry(0.6 + rnd() * 0.6, 8, 6), new T.MeshBasicMaterial({ color: rnd() < 0.5 ? 0xffa040 : 0xff5a20, transparent: true, opacity: 0.85 }));
+  fl.position.copy(back); g.scene.add(fl); let a = 0; const iv = setInterval(() => { a += 0.1; fl.scale.setScalar(1 + a * 2); fl.material.opacity = 0.85 * (1 - a); if (a >= 1) { clearInterval(iv); g.scene.remove(fl); fl.geometry.dispose(); fl.material.dispose(); } }, 40);
+}
+
 // ================= SPIELLOGIK =================
 let R = null; // aktuelles Rennen
 let rob = null; // laufender Überfall
@@ -969,6 +1156,10 @@ function openGarage() {
 }
 IE.openGarage = openGarage;
 function wireGarage() {
+  const b4 = $('pAdvent'); if (b4) b4.addEventListener('click', () => { if (G() && G().game.state === 'play') openAdvent(); });
+  const b5 = $('tBoost'); if (b5) b5.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); IE.planeBoost(); });
+  const b6 = $('adXmas'); if (b6) b6.addEventListener('click', () => { XM.test = !XM.test; b6.textContent = XM.test ? 'Weihnachten testen: An' : 'Weihnachten testen: Aus'; XM.told = false; });
+  addEventListener('keydown', e => { if (e.code === 'KeyX' && !e.repeat && G() && G().game.state === 'play') IE.planeBoost(); });
   const b3 = $('pSecurity'); if (b3) b3.addEventListener('click', () => { if (G() && G().game.state === 'play') openSecurity(); });
   const b1 = $('pGarage'), b2 = $('tGarage');
   if (b1) b1.addEventListener('click', () => { if (G() && G().game.state === 'play') openGarage(); });
@@ -1096,7 +1287,7 @@ function bizTick(dt) {
   for (const s of IE.shops) { if (s.type !== 'biz') continue; const b = S.biz[s.id]; if (!b) continue; const D = IE.bizDefs[s.biz], inc = D.inc * (1 + 0.5 * (b.lv - 1)); b.cash = Math.min(inc * 120, (b.cash || 0) + inc / 60 * dt); }
 }
 IE.extraUpdate = function (dt) {
-  bizTick(dt); guardManager(dt); updateBombs(dt); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
+  bizTick(dt); guardManager(dt); updateBombs(dt); updateXmas(dt); updateBoost(dt); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
   if (IE.raceBeam) IE.raceBeam.visible = !R;
   updateRace(dt); updateRob(dt);
 };

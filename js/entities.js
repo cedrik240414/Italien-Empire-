@@ -249,7 +249,30 @@ IE.makePlane = function (def) {
   const mesh = (geo, mat, x, y, z) => { const m = new T.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; g.add(m); return m; };
   const k = def.kind; let prop = null, L, W, gearH;
   const fus = (len, r0, r1) => { const c = new T.CylinderGeometry(r1, r0, len, 14); c.rotateZ(-Math.PI / 2); return c; };
-  if (k === 'prop' || k === 'stunt' || k === 'sea') {
+  if (k === 'sleigh') {
+    // Rentierschlitten: roter Schlitten mit goldenen Kufen, Geschenkesack und 8 Rentieren
+    L = 18; W = 5; gearH = 0.5;
+    const red = bm, gold = am, brown = lam(0x7a4a26), dark = lam(0x3a2414), white = lam(0xf4f4f0);
+    mesh(new T.BoxGeometry(3.6, 1.1, 2.0), red, 0, gearH + 0.9, 0);
+    mesh(new T.BoxGeometry(1.2, 1.9, 2.0), red, -1.4, gearH + 1.3, 0);
+    const curl = mesh(new T.TorusGeometry(0.5, 0.18, 8, 16, Math.PI), red, 1.9, gearH + 1.3, 0); curl.rotation.y = Math.PI / 2;
+    mesh(new T.BoxGeometry(3.7, 0.12, 2.05), gold, 0, gearH + 1.48, 0);
+    for (const sz of [-1, 1]) { mesh(new T.BoxGeometry(4.6, 0.12, 0.14), gold, 0.2, 0.1, sz * 0.9); const tip = mesh(new T.TorusGeometry(0.35, 0.07, 6, 12, Math.PI), gold, 2.5, 0.45, sz * 0.9); tip.rotation.z = -Math.PI / 2; for (const sx of [-1.2, 1.0]) mesh(new T.BoxGeometry(0.1, 0.5, 0.1), gold, sx, 0.4, sz * 0.9); }
+    const sack = mesh(new T.SphereGeometry(0.75, 12, 10), brown, -1.3, gearH + 2.3, 0); sack.scale.set(1, 1.2, 1);
+    for (const [gx, gz, c] of [[-0.6, 0.5, 0x2e8b57], [-0.5, -0.5, 0x1f4fb0], [-1.9, 0.4, 0xd6b04a]]) mesh(new T.BoxGeometry(0.5, 0.5, 0.5), lam(c), gx, gearH + 1.75, gz);
+    // 4 Paare Rentiere vor dem Schlitten
+    for (let r = 0; r < 4; r++) for (const sz of [-0.55, 0.55]) {
+      const x = 4.5 + r * 2.6, y = gearH + 1.2;
+      mesh(new T.BoxGeometry(1.5, 0.7, 0.55), brown, x, y, sz);
+      mesh(new T.BoxGeometry(0.3, 0.75, 0.3), brown, x + 0.85, y + 0.45, sz);
+      mesh(new T.BoxGeometry(0.55, 0.35, 0.35), brown, x + 1.15, y + 0.8, sz);
+      mesh(new T.SphereGeometry(0.12, 8, 6), r === 3 ? new T.MeshBasicMaterial({ color: 0xff2020 }) : dark, x + 1.45, y + 0.78, sz);
+      for (const a of [-1, 1]) { const an = mesh(new T.BoxGeometry(0.06, 0.55, 0.06), lam(0xd8c8a0), x + 1.0, y + 1.2, sz + a * 0.15); an.rotation.x = a * 0.5; }
+      for (const lx of [-0.55, 0.55]) mesh(new T.BoxGeometry(0.14, 0.9, 0.14), dark, x + lx, y - 0.75, sz);
+      mesh(new T.BoxGeometry(0.2, 0.2, 0.2), white, x - 0.8, y + 0.15, sz);
+    }
+    for (const sz of [-0.55, 0.55]) mesh(new T.BoxGeometry(9, 0.05, 0.05), gold, 5.8, gearH + 1.3, sz);
+  } else if (k === 'prop' || k === 'stunt' || k === 'sea') {
     L = 8; W = 11; gearH = k === 'sea' ? 1.6 : 1.2;
     mesh(fus(7, 0.75, 0.35), bm, -0.6, gearH + 0.6, 0);
     const nose = mesh(new T.SphereGeometry(0.75, 12, 10), bm, 2.9, gearH + 0.6, 0); nose.scale.x = 0.8;

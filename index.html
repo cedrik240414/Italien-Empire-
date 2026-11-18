@@ -232,7 +232,7 @@ body.touch.playing #touch { display: block; }
 #tEnter { right: calc(30px + env(safe-area-inset-right, 0px)); bottom: calc(26px + env(safe-area-inset-bottom, 0px)); }
 #tAct { right: calc(130px + env(safe-area-inset-right, 0px)); bottom: calc(204px + env(safe-area-inset-bottom, 0px)); }
 #tWeap { right: calc(36px + env(safe-area-inset-right, 0px)); bottom: calc(228px + env(safe-area-inset-bottom, 0px)); }
-#tSprint { right: calc(220px + env(safe-area-inset-right, 0px)); bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+#tSprint, #tBoost { right: calc(220px + env(safe-area-inset-right, 0px)); bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
 #tAim, #tBomb { right: calc(220px + env(safe-area-inset-right, 0px)); bottom: calc(122px + env(safe-area-inset-bottom, 0px)); }
 .ttop .tb { position: static; }
 .ttop { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); display: flex; gap: 8px; left: calc(200px + env(safe-area-inset-left, 0px)); pointer-events: auto; }
@@ -294,7 +294,7 @@ body.touch.playing #touch { display: block; }
       <div><b>FEUER</b> Schießen (mit Zielhilfe)</div><div><b>EIN/AUS</b> Fahrzeug</div>
       <div><b>E</b> Shop / Mission</div><div><b>HOCH / RUNTER</b> Springen · Heli</div><div><b>TAUCHEN / AUF</b> Unter Wasser schwimmen</div><div><b>SICHT</b> Ego-Sicht umschalten</div><div><b>Kreis links</b> Waffenrad</div><div><b>Flugzeug</b> GAS +/− für Schub, Joystick hoch = Nase hoch</div>
     </div>
-    <div class="ver">Version 39</div>
+    <div class="ver">Version 40</div>
   </div>
 </div>
 
@@ -337,6 +337,7 @@ body.touch.playing #touch { display: block; }
   <button class="tb" id="tWeap">WAFFE</button>
   <button class="tb" id="tSprint">RENNEN</button>
   <button class="tb" id="tAim">ZIELEN</button>
+  <button class="tb" id="tBoost" style="display:none;border-color:#ff5a20;color:#ffb37a">BOOST</button>
   <button class="tb" id="tBomb" style="display:none;border-color:#ff8a3c;color:#ffb37a">BOMBE</button>
   <div class="ttop"><button class="tb sm" id="tMap">KARTE</button><button class="tb sm" id="tView">SICHT</button><button class="tb sm" id="tChar">CREW</button><button class="tb sm" id="tGarage">GARAGE</button><button class="tb sm" id="tMenu">MENÜ</button><button class="tb sm" id="tAdmin" hidden>ADMIN</button></div>
 </div>
@@ -352,6 +353,7 @@ body.touch.playing #touch { display: block; }
     <button class="btn ghost" id="adFly" style="font-size:15px;padding:6px 12px">Flugmodus: Aus</button>
     <label for="adSpeed" style="font-size:15px;color:var(--muted)">Tempo</label><input type="range" id="adSpeed" min="20" max="600" step="10" value="120" style="width:140px"><span id="adSpeedV" style="font-size:15px;min-width:76px">432 km/h</span>
     <button class="btn ghost" id="adGod" style="font-size:15px;padding:6px 12px">Unsterblich: Aus</button>
+    <button class="btn ghost" id="adXmas" style="font-size:15px;padding:6px 12px">Weihnachten testen: Aus</button>
     <button class="btn ghost" id="adMoon" style="font-size:15px;padding:6px 12px">Mond: gesperrt</button>
     <button class="btn" id="adYacht" style="font-size:15px;padding:6px 12px">Flug-Yacht spawnen</button></span></div>
   <div class="hint" style="padding-bottom:6px">Flugmodus: Joystick/WASD fliegt in Blickrichtung, HOCH/RUNTER (Leertaste/Shift) steigt und sinkt. Geld geben und nehmen kommt beim Spieler innerhalb von 15 Sekunden an (beim Nehmen nie unter 0 €).</div>
@@ -377,7 +379,7 @@ body.touch.playing #touch { display: block; }
     <div class="opt"><span>Crew-Aufträge <small style="color:var(--muted);font-size:14px">· starten für alle in der Lobby</small></span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" id="onPassive" style="font-size:15px;padding:6px 12px">Passivmodus: Aus</button><button class="btn ghost" id="onBoard2" style="font-size:15px;padding:6px 12px">Rangliste</button></span></div>
     <div id="onJobs" class="jobs"></div>
   </div>
-  <div class="opt"><span>Skins, Upgrades &amp; Admin</span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn" id="pGarage" style="font-size:16px;padding:6px 14px">Meine Fahrzeuge (G)</button><button class="btn" id="pSecurity" style="font-size:16px;padding:6px 14px">Security</button><button class="btn" id="pSkins" style="font-size:16px;padding:6px 14px">Skins</button><button class="btn" id="pUp" style="font-size:16px;padding:6px 14px">Upgrades</button><button class="btn ghost" id="pAdmin" style="font-size:16px;padding:6px 14px" hidden>Admin-Panel</button></span></div>
+  <div class="opt"><span>Skins, Upgrades &amp; Admin</span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn" id="pGarage" style="font-size:16px;padding:6px 14px">Meine Fahrzeuge (G)</button><button class="btn" id="pSecurity" style="font-size:16px;padding:6px 14px">Security</button><button class="btn" id="pAdvent" style="font-size:16px;padding:6px 14px;background:#8a1020;border-color:#d6b04a" hidden>🎄 Adventskalender</button><button class="btn" id="pSkins" style="font-size:16px;padding:6px 14px">Skins</button><button class="btn" id="pUp" style="font-size:16px;padding:6px 14px">Upgrades</button><button class="btn ghost" id="pAdmin" style="font-size:16px;padding:6px 14px" hidden>Admin-Panel</button></span></div>
   <div class="opt"><span>Steuerung <small style="color:var(--muted);font-size:14px">· Tastatur &amp; Maus: WASD, Maus umsehen, Links schießen, Rechts zielen</small></span><span><button class="btn ghost" id="optCtrl" style="font-size:16px;padding:6px 14px">Touch</button></span></div>
   <div class="opt"><span>Grafik</span><span><button class="btn ghost" id="optGfx" style="font-size:16px;padding:6px 14px">Hoch</button></span></div>
   <div class="opt"><label for="optSens">Kamera-Empfindlichkeit</label><input type="range" id="optSens" min="0.3" max="2.5" step="0.1" value="1"></div>
@@ -403,12 +405,12 @@ body.touch.playing #touch { display: block; }
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/data.js?v=39"></script>
-<script src="js/world.js?v=39"></script>
-<script src="js/entities.js?v=39"></script>
-<script src="js/extra.js?v=39"></script>
-<script src="js/main.js?v=39"></script>
-<script src="js/server-config.js?v=39"></script>
-<script src="js/cfnet.js?v=39"></script>
-<script src="js/online.js?v=39"></script>
-<script src="js/account.js?v=39"></script>
+<script src="js/data.js?v=40"></script>
+<script src="js/world.js?v=40"></script>
+<script src="js/entities.js?v=40"></script>
+<script src="js/extra.js?v=40"></script>
+<script src="js/main.js?v=40"></script>
+<script src="js/server-config.js?v=40"></script>
+<script src="js/cfnet.js?v=40"></script>
+<script src="js/online.js?v=40"></script>
+<script src="js/account.js?v=40"></script>

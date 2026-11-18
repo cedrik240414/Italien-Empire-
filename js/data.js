@@ -175,6 +175,14 @@ IE.cars = [
   { id: 'imperatore', name: 'Imperatore Limousine', price: 6000000, speed: 78, accel: 26, grip: 2.6, color: 0x0b0b0d, kind: 'limo', luxury: true },
   { id: 'oro',      name: 'Oro Assoluto (vergoldet)', price: 9000000, speed: 106, accel: 46, grip: 3.0, color: 0xd6b04a, kind: 'super', luxury: true },
   { id: 'aquila',   name: 'Aquila Hyper 2000 PS', price: 15000000, speed: 120, accel: 58, grip: 3.4, color: 0x14161a, kind: 'super', luxury: true },
+  // Weihnachtsautos (nur aus dem Adventskalender)
+  { id: 'xflitzer', name: 'Weihnachtsflitzer',   price: 0, speed: 92, accel: 40, grip: 2.9, color: 0xc8102e, kind: 'super', xmas: true },
+  { id: 'xgrinch',  name: 'Grinch-Monster',      price: 0, speed: 62, accel: 30, grip: 2.8, color: 0x3fa535, kind: 'suv', xmas: true },
+  { id: 'xschnee',  name: 'Schneeraupe',         price: 0, speed: 60, accel: 26, grip: 3.4, color: 0xf2f6fb, kind: 'suv', xmas: true },
+  { id: 'xlebkuchen', name: 'Lebkuchen GT',      price: 0, speed: 84, accel: 34, grip: 2.7, color: 0x8a5a2b, kind: 'sport', xmas: true },
+  { id: 'xeis',     name: 'Eiskönig',            price: 0, speed: 100, accel: 44, grip: 3.0, color: 0x9fd8f2, kind: 'super', xmas: true },
+  { id: 'xsanta',   name: 'Santa GT',            price: 0, speed: 96, accel: 42, grip: 3.0, color: 0xb3001b, kind: 'sport', xmas: true },
+  { id: 'xtanne',   name: 'Tannenbaum Cabrio',   price: 0, speed: 78, accel: 32, grip: 2.6, color: 0x1e5c2e, kind: 'cabrio', xmas: true },
   { id: 'jeep',     name: 'Militärjeep',     price: 0, speed: 44, accel: 18, grip: 2.5, color: 0x4f5a34, kind: 'suv', military: true },
   { id: 'panzer',   name: 'Carro Armato (Panzer)', price: 0, speed: 17, accel: 7, grip: 2.6, color: 0x55603a, kind: 'tank', military: true }
 ];
@@ -193,6 +201,7 @@ IE.boats = [
   { id: 'gommone', name: 'Gommone (Schlauchboot)', price: 25000, speed: 26, accel: 12, color: 0x2a2a2a, accent: 0xe05a20, kind: 'gommone' },
   { id: 'riva',    name: 'Motoscafo Riva',  price: 95000,  speed: 46, accel: 18, color: 0x7a4422, accent: 0xf3efe6, kind: 'riva' },
   { id: 'offshore',name: 'Offshore Veloce', price: 240000, speed: 62, accel: 24, color: 0xd11f2a, accent: 0xffffff, kind: 'speed' },
+  { id: 'xmasyacht', name: 'Weihnachts-Yacht', price: 0, speed: 34, accel: 9, color: 0xb3001b, accent: 0xd6b04a, kind: 'yacht', xmas: true },
   { id: 'yacht',   name: 'Yacht Azzurra',   price: 750000, speed: 30, accel: 8,  color: 0xf6f6f2, accent: 0x1b3d6e, kind: 'yacht' }
 ];
 IE.boatById = {}; IE.boats.forEach(b => IE.boatById[b.id] = b);
@@ -248,6 +257,7 @@ IE.planes = [
   { id: 'freccia',  name: 'Freccia Tricolore (Kunstflug-Jet)', price: 780000, speed: 140, minSpeed: 38, turn: 1.9, color: 0x1f4fb0, accent: 0xf2f2f2, kind: 'fighter' },
   { id: 'anfibio',  name: 'Anfibio Grande',          price: 420000,  speed: 82,  minSpeed: 26, turn: 0.9, color: 0xc8372d, accent: 0xf2f2ee, kind: 'sea' },
   { id: 'jetxl',    name: 'Jet Executive XL',        price: 2400000, speed: 175, minSpeed: 45, turn: 0.85, color: 0x1a1a1a, accent: 0xd9b45a, kind: 'jet' },
+  { id: 'schlitten', name: 'Rentierschlitten', price: 0, speed: 100, minSpeed: 16, turn: 1.7, color: 0xc8102e, accent: 0xd6b04a, kind: 'sleigh', xmas: true },
   { id: 'caccia',   name: 'Caccia (Kampfjet)',       price: 3500000,       speed: 190, minSpeed: 45, turn: 1.4, color: 0x7b8590, accent: 0x4a5236, kind: 'fighter', armed: true, military: true }
 ];
 IE.planeById = {}; IE.planes.forEach(p => IE.planeById[p.id] = p);
@@ -256,7 +266,7 @@ IE.helis = [
   { id: 'libellula', name: 'Libellula',  price: 60000,   speed: 55, climb: 18, color: 0x1e7fc8 },
   { id: 'aquila',    name: 'Aquila 109', price: 180000,  speed: 72, climb: 24, color: 0x222222 },
   { id: 'falco',     name: 'Falco Executive', price: 520000, speed: 92, climb: 30, color: 0xb8902e },
-  { id: 'predatore', name: 'Predatore (Kampfhubschrauber)', price: 0, speed: 80, climb: 26, color: 0x4a5236, armed: true, military: true }
+  { id: 'predatore', name: 'Predatore (Kampfhubschrauber)', price: 2500000, speed: 80, climb: 26, color: 0x4a5236, armed: true, military: true }
 ];
 IE.heliById = {}; IE.helis.forEach(h => IE.heliById[h.id] = h);
 

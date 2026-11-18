@@ -1054,7 +1054,7 @@ function spawnCityTraffic(c, pp) {
 }
 
 // ---------- Spawner (Verkehr, Passanten, Polizei) ----------
-function civCar(fancy) { const l = IE.cars.filter(c => !c.military && !c.luxury && (fancy ? c.price >= 90000 : c.price < 90000)); return l[(Math.random() * l.length) | 0]; }
+function civCar(fancy) { const l = IE.cars.filter(c => !c.military && !c.luxury && !c.xmas && (fancy ? c.price >= 90000 : c.price < 90000)); return l[(Math.random() * l.length) | 0]; }
 function inBase(p, m) { const B = IE.base; return Math.abs(p.x - B.x) < B.hw + (m || 0) && Math.abs(p.z - B.z) < B.hd + (m || 0); }
 function baseAndHarbor() {
   const pp = P.pos, B = IE.base, dB = Math.hypot(pp.x - B.x, pp.z - B.z);
@@ -1422,7 +1422,7 @@ function renderShop() {
     row('Erste-Hilfe-Set', `Gesundheit ${Math.round(P.health)} / ${maxHP()}`, [{ t: 'Kaufen · € 500', buy: true, dis: S.money < 500 || P.health >= maxHP(), f: () => { S.money -= 500; P.health = maxHP(); sfx('cash'); } }]);
   } else if (s.type === 'plane') {
     $('shopT').textContent = 'Hangar Moretti · Flughafen'; $('shopHint').textContent = 'Steuerung: Leertaste / GAS + = Schub, Shift / GAS − = weniger Schub. Joystick bzw. W/S = Nase hoch/runter, A/D = Kurve. Zum Starten auf die Startbahn rollen, Vollgas geben und ab Abhebegeschwindigkeit hochziehen.';
-    for (const pl of IE.planes.filter(p => !p.military || p.price > 0 || S.planes.includes(p.id))) {
+    for (const pl of IE.planes.filter(p => (!p.military || p.price > 0 || S.planes.includes(p.id)) && (!p.xmas || S.planes.includes(p.id)))) {
       const own = S.planes.includes(pl.id);
       row(pl.name, `Höchstgeschwindigkeit ${Math.round(pl.speed * 3.6)} km/h · Abheben ab ${Math.round(pl.minSpeed * 3.6)} km/h${pl.kind === 'sea' ? ' · landet auch auf Wasser' : ''}`, own ?
         [{ t: 'Auswählen', buy: true, f: () => { spawnOwnedPlane(pl.id, s); closeModals(); } }] :
@@ -1430,7 +1430,7 @@ function renderShop() {
     }
   } else if (s.type === 'boat') {
     $('shopT').textContent = 'Nautica · ' + city; $('shopHint').textContent = 'Gekaufte Boote liegen automatisch am Steg jedes Hafens, den du besuchst. Mit SHIFT / TAUCHEN kannst du im Wasser abtauchen – unter Wasser liegen Schiffswracks mit Schätzen.';
-    for (const b of IE.boats) {
+    for (const b of IE.boats.filter(b => !b.xmas || S.boats.includes(b.id))) {
       const own = S.boats.includes(b.id);
       row(b.name, `Höchstgeschwindigkeit ${Math.round(b.speed * 3.6)} km/h${own ? ' · liegt im Hafen' : ''}`, own ?
         [{ t: 'Zum Steg bringen', buy: true, f: () => { for (const v of IE.vehicles) if (v.type === 'boat' && v.def.id === b.id && !v.driver) v.removeMe = true; setTimeout(() => spawnT = 0, 50); closeModals(); toast(b.name + ' wird an den Steg gebracht'); } }] :
@@ -1439,7 +1439,7 @@ function renderShop() {
   } else if (s.type === 'car' || s.type === 'luxury') {
     const lux = s.type === 'luxury';
     $('shopT').textContent = (lux ? 'Lusso Automobili · ' : 'Autosalone · ') + city; $('shopHint').textContent = lux ? 'Die exklusivsten Autos Italiens. Gekaufte Autos kannst du jederzeit über „Meine Fahrzeuge“ herholen.' : 'Gekaufte Autos kannst du in jedem Autosalone kostenlos abholen – oder über „Meine Fahrzeuge“ herholen.';
-    for (const c of IE.cars.filter(c => !c.military && !!c.luxury === lux)) {
+    for (const c of IE.cars.filter(c => !c.military && !!c.luxury === lux && (!c.xmas || S.cars.includes(c.id)))) {
       const own = S.cars.includes(c.id);
       row(c.name, `Höchstgeschwindigkeit ${Math.round(c.speed * 3.6)} km/h · Beschleunigung ${c.accel}`, own ?
         [{ t: 'Tuning', f: () => { closeModals(); IE.openTuning(c.id); } }, { t: 'Abholen', buy: true, f: () => { spawnOwnedCar(c.id, s); closeModals(); } }] :
@@ -1462,7 +1462,7 @@ function renderShop() {
     }
   } else {
     $('shopT').textContent = 'Eliporto · ' + city; $('shopHint').textContent = 'Gekaufte Helikopter kannst du an jedem Helikopterplatz spawnen. HOCH/RUNTER (Leertaste/Shift) zum Steigen und Sinken.';
-    for (const h of IE.helis.filter(h => !h.military || S.helis.includes(h.id))) {
+    for (const h of IE.helis.filter(h => !h.military || h.price > 0 || S.helis.includes(h.id))) {
       const own = S.helis.includes(h.id);
       row(h.name, `Höchstgeschwindigkeit ${Math.round(h.speed * 3.6)} km/h · Steigrate ${h.climb} m/s`, own ?
         [{ t: 'Spawnen', buy: true, f: () => { spawnOwnedHeli(h.id, s); closeModals(); } }] :
@@ -1799,7 +1799,7 @@ function updateHUD(dt) {
     } else if (P.veh.type === 'heli' && P.veh.rotor < 0.75) pr = 'Rotor läuft an …';
     else if (P.veh.type === 'plane' && P.veh.onGround && P.veh.speed < P.veh.def.minSpeed) pr = isTouch ? 'GAS + halten · ab ' + Math.round(P.veh.def.minSpeed * 3.6) + ' km/h Joystick hoch = abheben' : 'Leertaste = Gas · ab ' + Math.round(P.veh.def.minSpeed * 3.6) + ' km/h W = abheben';
     else if (P.veh.m.tank) pr = 'Kanone: Feuer · Turm folgt der Kamera';
-    else if (P.veh.def.armed) pr = isTouch ? 'Bordkanone: FEUER · Bomben: BOMBE' : 'Bordkanone: Linksklick · Bomben: B';
+    else if (P.veh.def.armed) pr = isTouch ? 'Bordkanone: FEUER · Bomben: BOMBE · BOOST' : 'Bordkanone: Linksklick · Bomben: B · Boost: X';
   }
   pr = pr.replace('<b>F</b>', isTouch ? '<b>EIN/AUS</b>' : '<b>E</b>');
   $('prompt').hidden = !pr; if (pr) $('prompt').innerHTML = pr;
@@ -1815,6 +1815,7 @@ function updateHUD(dt) {
     $('tSprint').style.display = P.veh ? 'none' : ''; $('tAim').style.display = P.veh ? 'none' : '';
     $('tFire').style.display = (inH || (P.veh && P.veh.type === 'plane')) && !P.veh.def.armed ? 'none' : '';
     $('tBomb').style.display = P.veh && (inH || P.veh.type === 'plane') && P.veh.def.armed ? '' : 'none';
+    $('tBoost').style.display = P.veh && P.veh.type === 'plane' ? '' : 'none';
   }
 }
 
