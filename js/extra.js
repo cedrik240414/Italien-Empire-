@@ -829,6 +829,54 @@ IE.villaHome = function (pos) {
 };
 
 
+
+// ================= AUTO-TUNING (Custom-Autos) =================
+const PAINTS = [0xd33a2c, 0xf27a1a, 0xf2c230, 0x6fbf2a, 0x2e8b57, 0x18c2d8, 0x1f4fb0, 0x5a1a7a, 0xd0569a, 0xf4f4f0, 0x7c8a8e, 0x111114];
+const FINISH = { glanz: { name: 'Glanz', price: 0, m: 0.55, r: 0.35 }, matt: { name: 'Matt', price: 10000, m: 0.1, r: 0.9 }, chrom: { name: 'Chrom', price: 50000, m: 1, r: 0.05 }, gold: { name: 'Gold', price: 250000, m: 1, r: 0.15, color: 0xd6b04a } };
+const NEONS = [0x5ff3ff, 0xff4fd8, 0x48e07a, 0xf2c230, 0xff3b30, 0x7a5cff];
+const tuneOf = id => { const S = G().S; S.tune = S.tune || {}; return S.tune[id] || (S.tune[id] = { engine: 0, turbo: 0, armor: 0 }); };
+IE.applyTune = function (v) {
+  if (!v || v.type !== 'car' || !v.m || v.m.tank) return;
+  const S = G().S, t = S.tune && S.tune[v.def.id]; if (!t) return;
+  const base = IE.carById[v.def.id]; if (!base) return;
+  const f = FINISH[t.finish || 'glanz'];
+  if (v.m.bodyMat) { v.m.bodyMat.color.setHex(f.color || (t.paint !== undefined ? t.paint : base.color)); v.m.bodyMat.metalness = f.m; v.m.bodyMat.roughness = f.r; v.m.bodyMat.needsUpdate = true; }
+  if (t.rims !== undefined && v.m.wheels) { const rm = new T.MeshStandardMaterial({ color: t.rims, metalness: 0.8, roughness: 0.25 }); v.m.wheels.forEach(w => { if (w.children[1]) w.children[1].material = rm; }); }
+  if (v.m.spoiler) { v.m.inner.remove(v.m.spoiler); v.m.spoiler = null; }
+  if (t.spoiler && v.m.inner) {
+    const sp = new T.Group(), y = (v.m.topY || 1.2) * 0.75 + 0.35, x = -v.m.L / 2 + 0.35;
+    const wing = new T.Mesh(new T.BoxGeometry(0.5, 0.07, v.m.W * 0.92), v.m.bodyMat); wing.position.set(x, y, 0); sp.add(wing);
+    for (const sz of [-1, 1]) { const st = new T.Mesh(new T.BoxGeometry(0.08, 0.35, 0.06), new T.MeshLambertMaterial({ color: 0x1a1a1a })); st.position.set(x, y - 0.18, sz * v.m.W * 0.3); sp.add(st); }
+    v.m.inner.add(sp); v.m.spoiler = sp;
+  }
+  if (v.m.neon) { v.group.remove(v.m.neon); v.m.neon = null; }
+  if (t.neon !== undefined && t.neon !== null) {
+    const n = new T.Mesh(new T.PlaneGeometry(v.m.W + 0.6, v.m.L + 0.4), new T.MeshBasicMaterial({ color: t.neon, transparent: true, opacity: 0.55, depthWrite: false })); n.rotation.x = -Math.PI / 2; n.position.y = 0.06; v.group.add(n); v.m.neon = n;
+  }
+  v.def = Object.assign({}, base, { speed: base.speed * (1 + 0.07 * (t.engine || 0)), accel: base.accel * (1 + 0.15 * (t.turbo || 0)) });
+  const mh = 1000 * (1 + 0.4 * (t.armor || 0)); if (v.maxHealth !== mh) { v.health = v.health / (v.maxHealth || 1000) * mh; v.maxHealth = mh; }
+};
+const _spawnCar = IE.spawnCar;
+IE.spawnCar = function (scene, id, x, z, yaw, opts) { const v = _spawnCar(scene, id, x, z, yaw, opts); if (opts && opts.owned) try { IE.applyTune(v); } catch (e) { } return v; };
+function retune(id) { for (const v of IE.vehicles) if (v.type === 'car' && v.def.id === id && (v.owned || v === G().P.veh)) IE.applyTune(v); }
+function openTuning(id) {
+  const g = G(), S = g.S, c = IE.carById[id], t = tuneOf(id), rows = [];
+  const pay = (price, fn) => { if (S.money < price) { g.toast('Nicht genug Geld', 2); return; } S.money -= price; fn(); g.sfx('cash'); retune(id); g.saveGame(); openTuning(id); };
+  rows.push({ name: '🎨 Lackfarbe', stat: '€ 2.000 pro Lackierung', btns: PAINTS.map(col => ({ label: '■', fn: () => pay(2000, () => { t.paint = col; if (t.finish === 'gold') t.finish = 'glanz'; }) })) });
+  rows.push({ name: '✨ Lackart', stat: 'Aktuell: ' + FINISH[t.finish || 'glanz'].name, btns: Object.entries(FINISH).map(([k, f]) => ({ label: f.name + (f.price ? ' · ' + g.fmt(f.price) : ''), buy: (t.finish || 'glanz') === k, fn: () => pay(f.price, () => { t.finish = k; }) })) });
+  rows.push({ name: '⚙ Felgen', stat: '€ 5.000', btns: [0xd8d8d8, 0x111114, 0xd6b04a, 0xd33a2c, 0x1f4fb0, 0x5ff3ff].map(col => ({ label: '●', fn: () => pay(5000, () => { t.rims = col; }) })) });
+  rows.push({ name: '🛫 Heckspoiler', stat: t.spoiler ? 'Eingebaut' : '€ 15.000', btns: [{ label: t.spoiler ? 'Ausbauen' : 'Einbauen · € 15.000', buy: !t.spoiler, fn: () => t.spoiler ? (t.spoiler = false, retune(id), g.saveGame(), openTuning(id)) : pay(15000, () => { t.spoiler = true; }) }] });
+  rows.push({ name: '💡 Neon-Unterbodenbeleuchtung', stat: '€ 25.000', btns: NEONS.map(col => ({ label: '◆', fn: () => pay(25000, () => { t.neon = col; }) })).concat(t.neon !== undefined && t.neon !== null ? [{ label: 'Aus', fn: () => { t.neon = null; retune(id); g.saveGame(); openTuning(id); } }] : []) });
+  const lvl = (key, name, max, unit, info) => { const l = t[key] || 0, price = unit * (l + 1); rows.push({ name, stat: `Stufe ${l} / ${max} · ${info(l)}`, btns: l >= max ? [{ label: 'Maximum', off: true, fn: () => { } }] : [{ label: `Stufe ${l + 1} · ${g.fmt(price)}`, buy: true, fn: () => pay(price, () => { t[key] = l + 1; }) }] }); };
+  lvl('engine', '🔧 Motor-Tuning', 5, 25000 + c.price * 0.05, l => 'Höchstgeschwindigkeit ' + Math.round(c.speed * (1 + 0.07 * l) * 3.6) + ' km/h');
+  lvl('turbo', '💨 Turbo', 3, 40000 + c.price * 0.05, l => 'Beschleunigung +' + (15 * l) + ' %');
+  lvl('armor', '🛡 Panzerung', 5, 30000, l => 'Haltbarkeit +' + (40 * l) + ' %');
+  xModal('tuning', 'Tuning · ' + c.name, rows, 'Das Tuning gilt für dein ' + c.name + ' – auch wenn du es später neu herholst. Änderungen siehst du sofort, wenn du gerade in diesem Auto sitzt.');
+  // Farbknöpfe einfärben
+  const btns = document.querySelectorAll('#xRows .row'); const colorize = (rowI, cols) => { const bs = btns[rowI] && btns[rowI].querySelectorAll('button'); if (bs) cols.forEach((col, i) => { if (bs[i]) { bs[i].style.color = '#' + col.toString(16).padStart(6, '0'); bs[i].style.fontSize = '22px'; bs[i].style.padding = '2px 10px'; } }); };
+  colorize(0, PAINTS); colorize(2, [0xd8d8d8, 0x111114, 0xd6b04a, 0xd33a2c, 0x1f4fb0, 0x5ff3ff]); colorize(4, NEONS);
+}
+IE.openTuning = openTuning;
 // ================= MEINE FAHRZEUGE (gekaufte Fahrzeuge herholen) =================
 function freeSpot(cx, cz, r, need) {
   for (let k = 0; k < 24; k++) {
@@ -871,7 +919,7 @@ function deliver(kind, id, air) {
 function openGarage() {
   const g = G(), S = g.S, rows = [];
   const cars = IE.cars.filter(c => (S.cars || []).includes(c.id)), helis = IE.helis.filter(h => (S.helis || []).includes(h.id)), boats = IE.boats.filter(b => (S.boats || []).includes(b.id)), planes = IE.planes.filter(p => (S.planes || []).includes(p.id));
-  for (const c of cars) rows.push({ name: '🚗 ' + c.name, stat: 'Auto · ' + Math.round(c.speed * 3.6) + ' km/h', btns: [{ label: 'Herholen', buy: true, fn: () => deliver('car', c.id) }] });
+  for (const c of cars) rows.push({ name: '🚗 ' + c.name, stat: 'Auto · ' + Math.round(c.speed * 3.6 * (1 + 0.07 * ((S.tune && S.tune[c.id] && S.tune[c.id].engine) || 0))) + ' km/h', btns: [{ label: 'Tuning', fn: () => openTuning(c.id) }, { label: 'Herholen', buy: true, fn: () => deliver('car', c.id) }] });
   for (const h of helis) rows.push({ name: '🚁 ' + h.name, stat: 'Helikopter', btns: [{ label: 'Herholen', buy: true, fn: () => deliver('heli', h.id) }] });
   for (const p of planes) rows.push({ name: '✈ ' + p.name, stat: 'Flugzeug', btns: [{ label: 'Am Boden', fn: () => deliver('plane', p.id, false) }, { label: 'In der Luft', buy: true, fn: () => deliver('plane', p.id, true) }] });
   for (const b of boats) rows.push({ name: '⛵ ' + b.name, stat: 'Boot · kommt ins nächste Wasser', btns: [{ label: 'Herholen', buy: true, fn: () => deliver('boat', b.id) }] });

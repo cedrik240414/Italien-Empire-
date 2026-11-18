@@ -260,6 +260,16 @@ function closeModals() { document.body.classList.remove('modalopen'); ['shopModa
 
 // ---------- Waffenrad ----------
 const GUN_SVG = {
+  revolver: '<rect x="20" y="12" width="36" height="7" rx="2"/><circle cx="30" cy="18" r="6"/><rect x="18" y="20" width="10" height="16" rx="2" transform="rotate(14 23 28)"/>',
+  deagle: '<rect x="14" y="10" width="46" height="11" rx="2"/><rect x="20" y="19" width="11" height="18" rx="2" transform="rotate(12 25 28)"/>',
+  uzi: '<rect x="20" y="12" width="40" height="11" rx="2"/><rect x="36" y="21" width="7" height="17"/><rect x="58" y="15" width="8" height="4"/>',
+  ak: '<rect x="8" y="12" width="60" height="8" rx="2"/><path d="M36 19 l6 0 l6 15 l-7 2 z"/><rect x="2" y="13" width="10" height="9" rx="2"/><rect x="66" y="14" width="10" height="3"/>',
+  kampf: '<rect x="8" y="12" width="64" height="8" rx="2"/><rect x="30" y="19" width="12" height="12" rx="3"/><rect x="2" y="14" width="10" height="9" rx="2"/>',
+  lmg: '<rect x="6" y="11" width="66" height="9" rx="2"/><rect x="28" y="19" width="16" height="10" rx="2"/><rect x="60" y="20" width="2" height="12"/><rect x="66" y="20" width="2" height="12"/>',
+  heavysniper: '<rect x="2" y="17" width="76" height="7" rx="2"/><rect x="22" y="7" width="26" height="7" rx="3"/><rect x="70" y="14" width="8" height="12" rx="1"/>',
+  granat: '<rect x="14" y="10" width="40" height="14" rx="5"/><rect x="50" y="13" width="22" height="8" rx="2"/><rect x="24" y="22" width="9" height="13" rx="2"/>',
+  rpg: '<rect x="2" y="13" width="64" height="9" rx="3"/><path d="M64 10 l14 7 l-14 7 z"/><rect x="22" y="21" width="7" height="12"/><rect x="40" y="21" width="7" height="10"/>',
+  laser: '<rect x="8" y="11" width="56" height="12" rx="6"/><rect x="62" y="14" width="14" height="6" rx="3"/><rect x="26" y="22" width="9" height="13" rx="2"/><circle cx="20" cy="17" r="3" fill="#5ff3ff"/>',
   faust: '<rect x="24" y="10" width="30" height="22" rx="7"/><rect x="28" y="6" width="6" height="10" rx="3"/><rect x="35" y="5" width="6" height="10" rx="3"/><rect x="42" y="6" width="6" height="10" rx="3"/>',
   pistola: '<rect x="18" y="12" width="40" height="9" rx="2"/><rect x="22" y="19" width="10" height="17" rx="2" transform="rotate(12 27 27)"/>',
   mitra: '<rect x="12" y="12" width="54" height="10" rx="2"/><rect x="40" y="20" width="8" height="15"/><rect x="24" y="20" width="8" height="13" rx="2"/><rect x="62" y="15" width="10" height="4"/>',
@@ -273,6 +283,7 @@ function openWheel() {
   if (P.veh) { toast('Im Fahrzeug nicht möglich'); return; }
   const ring = $('wheelRing'); ring.innerHTML = '';
   const list = IE.weapons.filter(w => S.weapons[w.id] !== undefined), n = list.length;
+  ring.style.setProperty('--wr', n > 9 ? 'min(40vmin, 290px)' : '');
   list.forEach((w, i) => {
     const own = S.weapons[w.id] !== undefined, a = -Math.PI / 2 + i / n * Math.PI * 2;
     const b = document.createElement('button'); b.className = 'wslot' + (S.cur === w.id ? ' cur' : '') + (own ? '' : ' locked');
@@ -301,7 +312,8 @@ function buildPlayerModel() {
   P.h = IE.makeHuman(sk ? sk.look : IE.chars[S.char]); scene.add(P.h.group);
   updateGunModel();
 }
-function updateGunModel() { const w = IE.weaponById[S.cur]; IE.setGunLen(P.h, !w || w.id === 'faust' ? 0 : w.id === 'pistola' ? 0.28 : w.id === 'mitra' ? 0.45 : w.id === 'cecchino' ? 1.1 : w.id === 'minigun' ? 1.0 : 0.8, w && w.id === 'minigun' ? 2.6 : 1); }
+const GUN_LEN = { pistola: 0.28, revolver: 0.32, deagle: 0.36, mitra: 0.45, uzi: 0.38, cecchino: 1.1, heavysniper: 1.35, minigun: 1.0, rpg: 1.2, granat: 0.7, laser: 0.9, lmg: 1.0 };
+function updateGunModel() { const w = IE.weaponById[S.cur]; IE.setGunLen(P.h, !w || w.id === 'faust' ? 0 : GUN_LEN[w.id] || 0.8, w && (w.id === 'minigun' || w.id === 'rpg') ? 2.6 : w && w.id === 'granat' ? 2 : 1); }
 function placePlayer(x, z) {
   const p = { x, z };
   for (let i = 0; i < 4; i++) IE.pushOut(p, 0.5, IE.groundH(p.x, p.z), 1.8);
@@ -318,9 +330,11 @@ function bubble(x, y, z) {
   }
 }
 const tracerMat = new T.LineBasicMaterial({ color: 0xffe9a8, transparent: true, opacity: 0.9 });
-function tracer(a, b) {
-  const g = new T.BufferGeometry().setFromPoints([a, b]); const l = new T.Line(g, tracerMat); scene.add(l);
-  effects.push({ o: l, t: 0, life: 0.06, kill() { scene.remove(l); g.dispose(); } });
+const tracerMats = {};
+function tracer(a, b, color, life) {
+  const mat = color ? (tracerMats[color] = tracerMats[color] || new T.LineBasicMaterial({ color })) : tracerMat;
+  const g = new T.BufferGeometry().setFromPoints([a, b]); const l = new T.Line(g, mat); scene.add(l);
+  effects.push({ o: l, t: 0, life: life || 0.06, kill() { scene.remove(l); g.dispose(); } });
 }
 const flashGeo = new T.SphereGeometry(0.12, 6, 4), flashMat = new T.MeshBasicMaterial({ color: 0xffd27a });
 function flash(p) { const m = new T.Mesh(flashGeo, flashMat); m.position.copy(p); scene.add(m); effects.push({ o: m, t: 0, life: 0.05, kill() { scene.remove(m); } }); }
@@ -561,14 +575,15 @@ function playerShoot(dt) {
       return;
     }
     const end = ray.o.clone().addScaledVector(d, Math.min(bestT, w.range + skip));
-    if (k === 0 || w.pellets > 1) tracer(muzzle, end);
+    if (k === 0 || w.pellets > 1) tracer(muzzle, end, w.laser ? 0x5ff3ff : w.explode ? 0xffa040 : undefined, w.laser || w.explode ? 0.15 : undefined);
+    if (w.explode && k === 0) { explosion(end.clone(), w.explode); if (ONL()) IEonline.blast(end, w.explode * 1.4, w.dmg); }
     if (!hitN && !hitV && !hitR && bestT < w.range + skip && IE.addBulletHole) IE.addBulletHole(end, d);
     if (hitR) { IEonline.sendHit(hitR, w.dmg); flashHit(); }
     if (hitN) { damageNPC(hitN, w.dmg * (head ? 2.5 : 1) * dmgMult(), true); flashHit(); }
     if (game.ch.boom && k === 0 && game.time - (game.boomT || 0) > 0.18) { game.boomT = game.time; explosion(end.clone(), 3.5); }
     if (hitV) { hitV.health -= w.dmg * 1.4 * dmgMult(); hitV.shotT = game.time; flashHit(); if (hitV.police) setWanted(Math.max(game.wanted, 1)); if (hitV.traffic && hitV.driver === 'npc' && hitV.ai) { hitV.ai.panic = 6; } }
   }
-  flash(muzzle); sfx('shot', w.id === 'cecchino' ? 1.2 : w.id === 'pistola' ? 0.6 : 0.8);
+  flash(muzzle); sfx('shot', w.scope || w.explode ? 1.2 : w.id === 'pistola' ? 0.6 : 0.8);
   // Passanten in der Nähe geraten in Panik; Schüsse in der Stadt locken Polizei
   let witnesses = 0;
   for (const n of IE.npcs) if (n.kind === 'ped' && !n.dead && n.pos.distanceTo(P.pos) < 40) { n.state = 'flee'; n.timer = 8; n.alert = true; witnesses++; }
@@ -1425,7 +1440,7 @@ function renderShop() {
     for (const c of IE.cars.filter(c => !c.military && !!c.luxury === lux)) {
       const own = S.cars.includes(c.id);
       row(c.name, `Höchstgeschwindigkeit ${Math.round(c.speed * 3.6)} km/h · Beschleunigung ${c.accel}`, own ?
-        [{ t: 'Abholen', buy: true, f: () => { spawnOwnedCar(c.id, s); closeModals(); } }] :
+        [{ t: 'Tuning', f: () => { closeModals(); IE.openTuning(c.id); } }, { t: 'Abholen', buy: true, f: () => { spawnOwnedCar(c.id, s); closeModals(); } }] :
         [{ t: 'Kaufen · ' + fmt(c.price), buy: true, dis: S.money < c.price, f: () => { S.money -= c.price; S.cars.push(c.id); sfx('cash'); spawnOwnedCar(c.id, s); closeModals(); toast(c.name + ' gekauft!'); } }], c.color);
     }
   } else if (s.type === 'biz') {
@@ -1672,7 +1687,7 @@ $('optReset').addEventListener('click', () => {
 // ---------- Kamera ----------
 const tmpV = new T.Vector3();
 function updateCamera(dt) {
-  const sens = 0.0026 * opts.sens * (inp.aim && S.cur === 'cecchino' ? 0.3 : 1);
+  const sens = 0.0026 * opts.sens * (inp.aim && (IE.weaponById[S.cur] || {}).scope ? 0.3 : 1);
   if (!uiOpen()) { cam.yaw -= inp.lookX * sens; cam.pitch = clamp(cam.pitch + inp.lookY * sens, opts.fp ? -1.3 : -0.6, opts.fp ? 1.3 : 1.25); }
   inp.lookX = inp.lookY = 0;
   let tgt, dist, h;
@@ -1686,7 +1701,7 @@ function updateCamera(dt) {
     tgt = P.pos; h = 1.55;
     const aiming = (inp.aim || P.aimT > 0 || inp.fire) && S.cur !== 'faust';
     dist = aiming ? 3.2 : P.under ? 4 : 5.2;
-    const scope = inp.aim && S.cur === 'cecchino';
+    const scope = inp.aim && (IE.weaponById[S.cur] || {}).scope;
     camera.fov = lerp(camera.fov, scope ? 16 : aiming && inp.aim ? 48 : 62, dt * 10);
     $('scope').hidden = !scope;
   }

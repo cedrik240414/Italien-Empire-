@@ -159,7 +159,7 @@ IE.makeCar = function (kind, color, police) {
     siren = [new T.Mesh(new T.BoxGeometry(0.3, 0.14, 0.5), new T.MeshBasicMaterial({ color: 0x1040ff })), new T.Mesh(new T.BoxGeometry(0.3, 0.14, 0.5), new T.MeshBasicMaterial({ color: 0xff1020 }))];
     siren[0].position.set(-0.3, 1.5, -0.3); siren[1].position.set(-0.3, 1.5, 0.3); g.add(siren[0], siren[1]);
   }
-  return { group: outer, wheels, L: P.L, W: P.W, bodyMat, siren };
+  return { group: outer, wheels, L: P.L, W: P.W, bodyMat, siren, inner: g, topY: Math.max.apply(null, P.body.map(q => q[1])), bottom };
 };
 
 // ---------- Panzer ----------

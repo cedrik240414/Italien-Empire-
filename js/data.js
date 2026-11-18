@@ -133,7 +133,17 @@ IE.weapons = [
   { id: 'pompa',   name: 'Schrotflinte',    price: 7500,  dmg: 18, rate: 0.8,  range: 45,  spread: 0.07,  ammoPrice: 180, clip: 24, pellets: 7, auto: false },
   { id: 'assalto', name: 'Sturmgewehr',     price: 16000, dmg: 30, rate: 0.11, range: 200, spread: 0.015, ammoPrice: 300, clip: 150,pellets: 1, auto: true },
   { id: 'cecchino',name: 'Scharfschützengewehr', price: 35000, dmg: 160, rate: 1.1, range: 600, spread: 0, ammoPrice: 500, clip: 20, pellets: 1, auto: false, scope: true },
-  { id: 'minigun', name: 'Minigun', price: 150000, dmg: 24, rate: 0.035, range: 160, spread: 0.03, ammoPrice: 900, clip: 600, pellets: 1, auto: true, spin: true }
+  { id: 'minigun', name: 'Minigun', price: 150000, dmg: 24, rate: 0.035, range: 160, spread: 0.03, ammoPrice: 900, clip: 600, pellets: 1, auto: true, spin: true },
+  { id: 'revolver', name: 'Revolver .44',       price: 3500,   dmg: 55,  rate: 0.6,  range: 140, spread: 0.008, ammoPrice: 120,  clip: 30,  pellets: 1, auto: false },
+  { id: 'deagle',   name: 'Desert Eagle',       price: 9000,   dmg: 72,  rate: 0.45, range: 150, spread: 0.01,  ammoPrice: 200,  clip: 28,  pellets: 1, auto: false },
+  { id: 'uzi',      name: 'Uzi',                price: 6000,   dmg: 13,  rate: 0.055,range: 80,  spread: 0.04,  ammoPrice: 140,  clip: 160, pellets: 1, auto: true },
+  { id: 'ak',       name: 'Kalaschnikow AK-47', price: 22000,  dmg: 34,  rate: 0.12, range: 190, spread: 0.02,  ammoPrice: 320,  clip: 150, pellets: 1, auto: true },
+  { id: 'kampf',    name: 'Kampfschrotflinte',  price: 14000,  dmg: 16,  rate: 0.3,  range: 40,  spread: 0.075, ammoPrice: 260,  clip: 40,  pellets: 8, auto: true },
+  { id: 'lmg',      name: 'Leichtes MG',        price: 48000,  dmg: 28,  rate: 0.07, range: 180, spread: 0.025, ammoPrice: 600,  clip: 300, pellets: 1, auto: true },
+  { id: 'heavysniper', name: 'Schweres Sniper .50', price: 90000, dmg: 420, rate: 1.6, range: 900, spread: 0, ammoPrice: 1200, clip: 15, pellets: 1, auto: false, scope: true },
+  { id: 'granat',   name: 'Granatwerfer',       price: 120000, dmg: 60,  rate: 0.9,  range: 120, spread: 0.01,  ammoPrice: 2000, clip: 12,  pellets: 1, auto: false, explode: 6 },
+  { id: 'rpg',      name: 'Raketenwerfer (RPG)',price: 250000, dmg: 200, rate: 1.6,  range: 320, spread: 0,     ammoPrice: 5000, clip: 6,   pellets: 1, auto: false, explode: 9 },
+  { id: 'laser',    name: 'Laserkanone',        price: 500000, dmg: 90,  rate: 0.15, range: 400, spread: 0,     ammoPrice: 3000, clip: 200, pellets: 1, auto: true, laser: true }
 ];
 IE.weaponById = {}; IE.weapons.forEach(w => IE.weaponById[w.id] = w);
 
