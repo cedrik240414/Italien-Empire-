@@ -401,7 +401,8 @@ IE.addScorch = function (p, radius) {
 // ================= BACKROOMS (geheimer Sprung-Punkt) =================
 const BR = { x: 4300, z: 0, y: 400, n: 16, cell: 8 };
 BR.W = BR.n * BR.cell; BR.D = BR.n * BR.cell;
-IE.backroomsSpot = { x: IE.track.x, z: IE.track.z }; // mitten im Innenfeld der Rennstrecke (die Stelle vom Foto)
+// Hubschrauberlandeplatz der Tenuta Toscana (die Stelle vom Foto)
+IE.backroomsSpot = (() => { const v = IE.villas.find(v => v.id === 'm2'); return { x: v.x + 16 * v.s, z: v.z + 8 * v.s }; })();
 function seeded(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 let brChest = null;
 function buildBackrooms(scene) {
@@ -448,16 +449,14 @@ function buildBackrooms(scene) {
   IE.addBox(cx - 0.8, cz - 0.5, cx + 0.8, cz + 0.5, y + 1.2, y - 1);
   brChest = { x: cx, z: cz, lid, glow };
   IE.interiors.backrooms = { type: 'backrooms', name: 'Backrooms', x: BR.x, z: BR.z, y, W: BR.W, D: BR.D, door, counter: { x: 1e9, z: 1e9 }, item: { x: cx, z: cz }, spots: [] };
-  // geheimer gelber Fleck am Sprungpunkt
-  const sp = IE.backroomsSpot, pm = new T.Mesh(new T.PlaneGeometry(2.4, 2.4), new T.MeshLambertMaterial({ color: 0xd6c56c, polygonOffset: true, polygonOffsetFactor: -3 }));
-  pm.rotation.x = -Math.PI / 2; pm.position.set(sp.x, IE.groundH(sp.x, sp.z) + 0.05, sp.z); scene.add(pm);
+
 }
 function updateBackrooms(dt) {
   const g = G(), P = g.P, S = g.S;
   if (brChest) { const open = !!S.backroomsLoot; brChest.lid.rotation.x = open ? -1.1 : 0; brChest.lid.position.z = open ? -0.35 : 0; brChest.glow.visible = !open; }
   if (P.interior || P.veh || g.game.dead || P.fly) return;
   const sp = IE.backroomsSpot;
-  if (P.vy > 4 && Math.hypot(P.pos.x - sp.x, P.pos.z - sp.z) < 2.2 && !updateBackrooms.cool) {
+  if (P.vy > 4 && Math.hypot(P.pos.x - sp.x, P.pos.z - sp.z) < 3.2 && !updateBackrooms.cool) {
     updateBackrooms.cool = true; setTimeout(() => updateBackrooms.cool = false, 3000);
     g.enterInterior('backrooms', sp.x + 4, sp.z + 4, null); g.banner('???', 'Die Backrooms', 'Irgendwo hier ist eine Truhe … finde den Ausgang (EXIT)', 5); g.sfx('fail');
   }
