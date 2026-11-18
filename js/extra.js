@@ -1062,17 +1062,48 @@ function petTick(dt) {
   myPet.g.position.copy(myPet.pos); myPet.g.rotation.y = myPet.yaw; IE.animPet(myPet, dt, spd);
 }
 IE.myPetId = () => { const S = G().S, P = G().P; return S.petActive && (S.pets || []).includes(S.petActive) && !P.veh && !P.ride ? S.petActive : ''; };
+let zzzTex = null;
+function zzz() { if (!zzzTex) { const c = document.createElement('canvas'); c.width = 128; c.height = 64; const x = c.getContext('2d'); x.fillStyle = '#ffffff'; x.font = 'bold 40px Arial'; x.fillText('Z', 10, 50); x.font = 'bold 30px Arial'; x.fillText('z', 50, 36); x.font = 'bold 22px Arial'; x.fillText('z', 82, 22); zzzTex = new T.CanvasTexture(c); }
+  const sp = new T.Sprite(new T.SpriteMaterial({ map: zzzTex, transparent: true, depthTest: false })); sp.scale.set(0.9, 0.45, 1); return sp; }
+function basketMesh() {
+  const g = new T.Group(), wick = new T.MeshLambertMaterial({ color: 0xb08040 }), pillow = new T.MeshLambertMaterial({ color: [0xd8262c, 0x1f4fb0, 0x2e8b57, 0xd0569a][(rnd() * 4) | 0] });
+  const ring = new T.Mesh(new T.TorusGeometry(0.75, 0.16, 8, 20), wick); ring.rotation.x = Math.PI / 2; ring.position.y = 0.2; g.add(ring);
+  const bot = new T.Mesh(new T.CylinderGeometry(0.8, 0.7, 0.12, 20), wick); bot.position.y = 0.06; g.add(bot);
+  const pl = new T.Mesh(new T.CylinderGeometry(0.62, 0.62, 0.12, 20), pillow); pl.position.y = 0.16; g.add(pl);
+  return g;
+}
 function homePetsTick(dt) {
   const g = G(), P = g.P, S = g.S, inVilla = P.interior && P.interior.it.type.indexOf('villa_') === 0;
   const want = inVilla ? (S.pets || []).filter(id => id !== S.petActive) : [];
-  if (!inVilla || homePets.room !== P.interior.it.type || homePets.length !== want.length) { homePets.forEach(h => g.scene.remove(h.g)); homePets.length = 0; homePets.room = inVilla ? P.interior.it.type : null;
-    if (inVilla) { const it = P.interior.it; want.forEach((id, k) => { const h = Object.assign(IE.makePet(id), { id, x: it.x - 12 + (k % 5) * 6, z: it.z + 6 + Math.floor(k / 5) * 4, yaw: rnd() * 6, tx: 0, tz: 0, wait: rnd() * 3 }); h.g.position.set(h.x, it.y, h.z); g.scene.add(h.g); homePets.push(h); }); } }
+  if (!inVilla || homePets.room !== P.interior.it.type || homePets.length !== want.length) {
+    homePets.forEach(h => { g.scene.remove(h.g); g.scene.remove(h.basket); g.scene.remove(h.zz); }); homePets.length = 0; homePets.room = inVilla ? P.interior.it.type : null;
+    if (inVilla) { const it = P.interior.it;
+      want.forEach((id, k) => {
+        // Körbchen an der Rückwand bzw. linken Wand aufreihen
+        const bx = k < 7 ? it.x - 18 + k * 3.2 : it.x - it.W / 2 + 2, bz = k < 7 ? it.z - it.D / 2 + 2.2 : it.z - 8 + (k - 7) * 3.2;
+        const big = id === 'dino' || id === 'rentier' || id === 'reh', basket = basketMesh(); basket.scale.setScalar(big ? 1.8 : 1); basket.position.set(bx, it.y, bz); g.scene.add(basket);
+        const h = Object.assign(IE.makePet(id), { id, x: bx, z: bz, bx, bz, yaw: 0, tx: bx, tz: bz, state: 'sleep', timer: 3 + rnd() * 12, big });
+        h.zz = zzz(); g.scene.add(h.zz); g.scene.add(h.g); h.basket = basket; homePets.push(h);
+      }); }
+  }
   if (!inVilla) return; const it = P.interior.it, t = performance.now() / 1000;
   for (const h of homePets) {
-    h.wait -= dt; let spd = 0;
-    if (h.wait <= 0) { h.wait = 2 + rnd() * 4; h.tx = it.x + (rnd() - 0.5) * (it.W - 8); h.tz = it.z + (rnd() - 0.5) * (it.D - 8); }
-    const dx = h.tx - h.x, dz = h.tz - h.z, d = Math.hypot(dx, dz); if (h.tx && d > 0.5) { spd = 2; h.x += dx / d * spd * dt; h.z += dz / d * spd * dt; h.yaw = Math.atan2(dx, dz); }
-    h.g.position.set(h.x, it.y + (h.fly ? 2 + Math.sin(t * 2) * 0.3 : h.float ? 1 + Math.sin(t * 2.5) * 0.1 : 0), h.z); h.g.rotation.y = h.yaw; IE.animPet(h, dt, spd);
+    h.timer -= dt; let spd = 0;
+    if (h.timer <= 0) {
+      if (h.state === 'sleep') { h.state = 'walk'; h.timer = 6 + rnd() * 8; h.tx = it.x + (rnd() - 0.5) * (it.W - 8); h.tz = it.z + (rnd() - 0.5) * (it.D - 10); }
+      else if (h.state === 'walk') { if (rnd() < 0.5) { h.tx = it.x + (rnd() - 0.5) * (it.W - 8); h.tz = it.z + (rnd() - 0.5) * (it.D - 10); h.timer = 5 + rnd() * 6; } else { h.state = 'home'; h.tx = h.bx; h.tz = h.bz; h.timer = 30; } }
+      else { h.state = 'sleep'; h.timer = 12 + rnd() * 20; }
+    }
+    const dx = h.tx - h.x, dz = h.tz - h.z, d = Math.hypot(dx, dz);
+    if (h.state !== 'sleep' && d > 0.3) { spd = h.big ? 2.4 : 1.8; h.x += dx / d * Math.min(spd * dt, d); h.z += dz / d * Math.min(spd * dt, d); h.yaw = Math.atan2(dx, dz); }
+    else if (h.state === 'home' && d <= 0.3) { h.state = 'sleep'; h.timer = 12 + rnd() * 20; }
+    const sleeping = h.state === 'sleep';
+    if (sleeping) { h.x += (h.bx - h.x) * Math.min(1, dt * 4); h.z += (h.bz - h.z) * Math.min(1, dt * 4); }
+    const y = it.y + (sleeping ? 0.18 : h.fly ? 2 + Math.sin(t * 2) * 0.3 : h.float ? 1 + Math.sin(t * 2.5) * 0.1 : 0);
+    h.g.position.set(h.x, y, h.z); h.g.rotation.y = h.yaw;
+    h.g.scale.set(1, sleeping ? 0.75 : 1, 1); // im Körbchen eingerollt
+    IE.animPet(h, sleeping ? 0 : dt, spd);
+    h.zz.visible = sleeping; if (sleeping) h.zz.position.set(h.x + 0.4, it.y + (h.big ? 2.6 : 1.3) + Math.sin(t * 1.5 + h.bx) * 0.15, h.z);
   }
 }
 function openPets() {
