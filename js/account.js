@@ -41,7 +41,7 @@ function msg(t, ok) { const m = $('lgMsg'); m.textContent = t; m.classList.toggl
 function busy(b) { $('lgLogin').disabled = $('lgRegister').disabled = b; }
 function done(nick, info) {
   A.nick = nick; A.slug = slugOf(nick);
-  if (info) { A.admin = !!info.admin; A.superAdmin = !!info.superAdmin; A.hidden = !!info.hidden; }
+  if (info) { A.admin = !!info.admin; A.superAdmin = !!info.superAdmin; A.hidden = !!info.hidden; A.canHide = !!info.canHide; }
   try { sessionStorage.setItem('italienEmpire_session', nick); } catch (e) { }
   if (window.IEgame && IEgame.setAccount) IEgame.setAccount(A.slug, nick);
   $('login').hidden = true;
@@ -188,7 +188,7 @@ function startPoll() {
       const me = await SRV().me();
       if (me.banned && !me.superAdmin) { A.onBanned(); return; }
       A.setMoon(!!me.moonOpen);
-      if (!!me.hidden !== !!A.hidden) { A.hidden = !!me.hidden; showAdminUI(); }
+      A.canHide = !!me.canHide; if (!!me.hidden !== !!A.hidden) { A.hidden = !!me.hidden; showAdminUI(); }
       if (me.admin !== A.admin) { A.admin = me.admin; showAdminUI(); IEgame.toast(A.admin ? 'Du bist jetzt Admin!' : 'Deine Admin-Rechte wurden entfernt', 4); }
       if (me.grant) { const c = await SRV().claim(); if (c.grant) applyGrant(c.grant); }
     } catch (e) { if (e && e.status === 401) { try { localStorage.removeItem(TOKEN_KEY); } catch (er) { } } }
@@ -205,6 +205,7 @@ async function openAdmin() {
   const g = IEgame;
   $('adFly').textContent = g.P.fly ? 'Flugmodus: An' : 'Flugmodus: Aus';
   $('adMoon').textContent = IEgame.IE.moonUnlocked ? 'Mond: offen für alle' : 'Mond: gesperrt';
+  $('adUndercover').hidden = !A.canHide; $('adUndercover').textContent = A.hidden ? 'Undercover-Admin entfernen' : 'Wieder Undercover-Admin werden';
   $('adGod').textContent = g.game.ch && g.game.ch.god ? 'Unsterblich: An' : 'Unsterblich: Aus';
   $('adSpeed').value = g.P.flySpeed || 120; $('adSpeedV').textContent = Math.round(($('adSpeed').value) * 3.6) + ' km/h';
   drawAdminCheats();
@@ -249,6 +250,13 @@ function drawAdminList() {
 }
 $('adSearch').addEventListener('input', drawAdminList);
 $('adFly').addEventListener('click', () => { const g = IEgame; g.setFly(!g.P.fly, +$('adSpeed').value); $('adFly').textContent = g.P.fly ? 'Flugmodus: An' : 'Flugmodus: Aus'; });
+$('adUndercover').addEventListener('click', async () => {
+  if (!SRV() || !A.canHide) return;
+  try { const r = await SRV().undercover(!A.hidden); A.hidden = !!r.hidden; showAdminUI(); $('adUndercover').textContent = A.hidden ? 'Undercover-Admin entfernen' : 'Wieder Undercover-Admin werden';
+    IEgame.toast(A.hidden ? 'Du bist wieder Undercover – andere sehen nicht, dass du Admin bist' : 'Undercover aus – alle sehen jetzt, dass du Admin bist (★)', 4);
+    if (window.IEonline && IEonline.active && IEonline.rejoin) IEonline.rejoin(); }
+  catch (e) { IEgame.toast('Fehler: ' + (e.code || 'Server'), 3); }
+});
 $('adMoon').addEventListener('click', async () => { const open = !IEgame.IE.moonUnlocked; await A.unlockMoon(open); $('adMoon').textContent = IEgame.IE.moonUnlocked ? 'Mond: offen für alle' : 'Mond: gesperrt'; });
 $('adGod').addEventListener('click', () => { const g = IEgame; g.game.ch = g.game.ch || {}; g.game.ch.god = !g.game.ch.god; if (g.game.ch.god) g.hurtPlayer(0); $('adGod').textContent = g.game.ch.god ? 'Unsterblich: An' : 'Unsterblich: Aus'; g.toast(g.game.ch.god ? '★ Unsterblich' : 'Unsterblich aus', 2); });
 $('adSpeed').addEventListener('input', () => { const v = +$('adSpeed').value; $('adSpeedV').textContent = Math.round(v * 3.6) + ' km/h'; IEgame.P.flySpeed = v; });

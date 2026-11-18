@@ -7,7 +7,8 @@ const H = { ...CORS, 'content-type': 'application/json; charset=utf-8' };
 const ROOM_RE = /^[a-z0-9][a-z0-9_.-]{0,47}$/;
 const SUPER_ADMINS = ['crim', 'crimhotdog24', 'entity2806', 'avokado3seb']; // "Crim" / "Crim Hotdog24" / "Entity_2806" – können nicht entfernt oder gebannt werden
 const HIDDEN_ADMINS = ['entity2806', 'avokado3seb']; // geheime Admins: für andere Spieler nicht als Admin sichtbar
-const isHidden = slug => HIDDEN_ADMINS.includes(slug);
+const canHide = slug => HIDDEN_ADMINS.includes(slug);
+const isHiddenAcc = a => !!a && canHide(a.slug) && !a.revealed; // Undercover kann vom Spieler selbst abgeschaltet werden
 const isSuper = slug => SUPER_ADMINS.includes(slug);
 const j = (o, status) => new Response(JSON.stringify(o), { status: status || 200, headers: H });
 const slugOf = n => String(n || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]/g, '').slice(0, 16);
@@ -46,9 +47,9 @@ export class Hub {
     const a = await this.state.storage.get('a:' + s.slug); if (!a) return null;
     return a;
   }
-  pubAcc(a) { return { nick: a.nick, slug: a.slug, admin: !!a.admin || isSuper(a.slug), superAdmin: isSuper(a.slug), banned: !!a.banned, hidden: isHidden(a.slug) }; }
+  pubAcc(a) { return { nick: a.nick, slug: a.slug, admin: !!a.admin || isSuper(a.slug), superAdmin: isSuper(a.slug), banned: !!a.banned, hidden: isHiddenAcc(a), canHide: canHide(a.slug) }; }
   // so sehen ANDERE einen Spieler (geheime Admins erscheinen als normale Spieler)
-  pubOther(a) { const p = this.pubAcc(a); if (p.hidden) { p.admin = false; p.superAdmin = false; } delete p.hidden; return p; }
+  pubOther(a) { const p = this.pubAcc(a); if (p.hidden) { p.admin = false; p.superAdmin = false; } delete p.hidden; delete p.canHide; return p; }
   async newSession(a) {
     const token = rnd(32); await this.state.storage.put('s:' + token, { slug: a.slug, exp: Date.now() + 1000 * 60 * 60 * 24 * 60 });
     return token;
@@ -98,6 +99,7 @@ export class Hub {
     // ---- Admin ----
     const isAdmin = me.admin || isSuper(me.slug);
     if (!isAdmin || (me.banned && !isSuper(me.slug))) return j({ error: 'not_admin' }, 403);
+    if (action === 'undercover') { if (!canHide(me.slug)) return j({ error: 'forbidden' }, 403); me.revealed = b.on === false; await st.put('a:' + me.slug, me); return j({ ok: true, ...this.pubAcc(me) }); }
     if (action === 'moon') { if (b.open === false) await st.delete('moonOpen'); else await st.put('moonOpen', Date.now()); return j({ ok: true, moonOpen: b.open !== false }); } // Admin schaltet den Mond für alle frei
     if (action === 'list') {
       const accs = [...(await st.list({ prefix: 'a:' })).values()];
@@ -129,7 +131,7 @@ export class Hub {
       const sort = ['kills', 'money', 'jobs', 'deaths'].includes(q) ? q : 'kills', lim = Math.min(300, Math.max(1, +url.searchParams.get('limit') || 30));
       const accs = await st.list({ prefix: 'a:' });
       const all = [...(await st.list({ prefix: 'p:' })).values()].filter(v => { const a = accs.get('a:' + v.id); return a && !a.banned; })
-        .map(v => { const a = accs.get('a:' + v.id); return { ...v, nick: a.nick, admin: (!!a.admin || isSuper(a.slug)) && !isHidden(a.slug) }; });
+        .map(v => { const a = accs.get('a:' + v.id); return { ...v, nick: a.nick, admin: (!!a.admin || isSuper(a.slug)) && !isHiddenAcc(a) }; });
       all.sort((a, b) => (b[sort] || 0) - (a[sort] || 0));
       return j({ docs: all.slice(0, lim).map(v => ({ id: v.id, data: pub(v) })) });
     }

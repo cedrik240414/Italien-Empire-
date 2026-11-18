@@ -61,6 +61,7 @@ function makeRoom(name) {
     peers: snapshot,
     connected: () => open,
     onConnection(fn) { cl.push(fn); setTimeout(() => fn(open), 0); return () => { }; },
+    reconnect() { try { if (ws) ws.close(); } catch (e) { } },
     leave() { closed = true; try { ws.close(); } catch (e) { } return Promise.resolve(); }
   };
 }
@@ -101,6 +102,7 @@ const account = {
   load: slot => post('/acc/load', { token: tok(), slot }),
   moon: open => post('/acc/moon', { token: tok(), open: open !== false }),
   state: () => post('/acc/state', {}),
+  undercover: on => post('/acc/undercover', { token: tok(), on }),
   saveBeacon: (slot, data, t) => { try { fetch(base + '/acc/save', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tok(), slot, data, t }) }).catch(() => { }); } catch (e) { } }
 };
 window.IECF = { use: async n => (n === 'room' ? lobby : n === 'db' ? db : n === 'user' ? user : null), server: base, account };

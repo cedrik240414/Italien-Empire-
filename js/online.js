@@ -49,6 +49,7 @@ O.nearCarPeer = function (pos) {
 };
 O.adminMoon = function (open) { if (room) room.emit('admin', { moon: open === false ? 0 : 1 }).catch(() => { }); };
 O.adminKick = function (slug) { if (room) room.emit('admin', { kick: slug }).catch(() => { }); };
+O.rejoin = function () { try { if (room && room.reconnect) room.reconnect(); } catch (e) { } };
 O.leave = async function () { try { if (room) await room.leave(); } catch (e) { } location.reload(); };
 
 // ---------- Spieler in der Welt ----------
