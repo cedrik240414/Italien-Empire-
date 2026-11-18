@@ -519,7 +519,8 @@ const _gh = IE.groundH, _isLand = IE.isLand;
 IE.groundH = (x, z) => x > 9000 ? moonH(x, z) : _gh(x, z);
 IE.isLand = (x, z) => x > 9000 ? true : _isLand(x, z);
 let moonGems = [], stars = null, earth = null, moonRocket = null;
-function buildMoon(scene) {
+function buildMoon(scene0) {
+  const scene = new T.Group(); scene0.add(scene); IE.moonGroup = scene; scene.visible = false;
   const size = 4400, seg = 220, geo = new T.PlaneGeometry(size, size, seg, seg); geo.rotateX(-Math.PI / 2);
   const pos = geo.attributes.position, col = new Float32Array(pos.count * 3), r = seeded(99);
   for (let i = 0; i < pos.count; i++) { const x = pos.getX(i) + MOON.x, z = pos.getZ(i) + MOON.z, h = moonH(x, z); pos.setY(i, h); const v = 0.33 + (h - MOON.base) * 0.0015 + r() * 0.05; col.set([v, v, v * 1.02], i * 3); }
@@ -555,7 +556,7 @@ function buildMoon(scene) {
 }
 function setMoon(on) {
   const g = G(); IE.onMoon = on;
-  IE.sky.visible = !on; g.scene.background = on ? new T.Color(0x02030a) : null;
+  IE.sky.visible = !on; g.scene.background = on ? new T.Color(0x02030a) : null; if (IE.moonGroup) IE.moonGroup.visible = on;
   stars.visible = earth.visible = on;
   if (on) { updateBackrooms.prevMoonCh = g.game.ch.moon; g.game.ch.moon = true; } else g.game.ch.moon = !!updateBackrooms.prevMoonCh;
 }
@@ -584,8 +585,13 @@ function updateMoon(dt) {
   const g = G(), P = g.P, S = g.S;
   if ((performance.now() / 1000 | 0) !== updateMoon.sec) { updateMoon.sec = performance.now() / 1000 | 0; drawBoard(); }
   // Auf dem Mond? (z. B. nach Teleport/Laden)
-  const onM = (P.veh ? P.veh.pos.x : P.pos.x) > 9000;
-  if (onM !== IE.onMoon && stars) setMoon(onM);
+  const px = P.veh ? P.veh.pos.x : P.pos.x;
+  if (IE.onMoon && px < 9000 && stars && !launch) setMoon(false); // z. B. nach dem Tod zurück auf der Erde
+  if (!IE.onMoon && !launch && px > 7000) { // Weltrand: zum Mond kommt man nur mit der Rakete
+    const o = P.veh ? P.veh.pos : P.pos; o.x = 6950;
+    if (P.veh) { P.veh.yaw += Math.PI; if (P.veh.vel) P.veh.vel.x = -Math.abs(P.veh.vel.x); if (P.veh.speed) P.veh.speed *= 0.5; }
+    if (!updateMoon.warn || performance.now() - updateMoon.warn > 4000) { updateMoon.warn = performance.now(); g.toast('Hier ist das Ende der Welt – zum Mond geht es nur mit der Rakete bei Mailand', 3); }
+  }
   if (!IE.onMoon) return;
   stars.position.copy(g.camera.position); earth.position.set(g.camera.position.x - 2500, g.camera.position.y + 3200, g.camera.position.z - 4200);
   S.moonGems = S.moonGems || [];
