@@ -124,6 +124,11 @@ export class Hub {
       else if (b.what === 'unadmin') { if (sup) return j({ error: 'super_admin' }, 403); t.admin = false; }
       else if (b.what === 'ban') { if (sup || t.slug === me.slug) return j({ error: 'super_admin' }, 403); t.banned = true; }
       else if (b.what === 'unban') t.banned = false;
+      else if (b.what === 'resetpw') { // Passwort neu setzen (nur Haupt-Admins) – das alte wird NICHT gelesen, nur ersetzt
+        if (!isSuper(me.slug)) return j({ error: 'super_admin' }, 403);
+        if (!/^[0-9a-f]{64}$/.test(String(b.ph || ''))) return j({ error: 'bad_password' }, 400);
+        const salt = rnd(16); t.salt = salt; t.h = await sha(b.ph + ':' + salt);
+      }
       else return j({ error: 'bad_action' }, 400);
       await st.put('a:' + t.slug, t);
       return j({ ok: true, player: t.slug === me.slug ? this.pubAcc(t) : this.pubOther(t) });

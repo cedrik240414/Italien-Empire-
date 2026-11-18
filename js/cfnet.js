@@ -97,7 +97,7 @@ const account = {
   claim: () => post('/acc/claim', { token: tok() }),
   logout: () => post('/acc/logout', { token: tok() }),
   list: () => post('/acc/list', { token: tok() }),
-  act: (target, what, amount) => post('/acc/act', { token: tok(), target, what, amount }),
+  act: (target, what, amount, ph) => post('/acc/act', { token: tok(), target, what, amount, ph }),
   save: (slot, data, t) => post('/acc/save', { token: tok(), slot, data, t }),
   load: slot => post('/acc/load', { token: tok(), slot }),
   moon: open => post('/acc/moon', { token: tok(), open: open !== false }),

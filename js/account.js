@@ -226,7 +226,7 @@ function drawAdminList() {
   if (!list.length) { el.innerHTML = '<div class="hint">Keine Spieler gefunden.</div>'; return; }
   for (const p of list) {
     const row = document.createElement('div'); row.className = 'row adrow';
-    row.innerHTML = `<div><div class="nm"></div><div class="st"></div></div><div class="acts"><input type="number" min="1" step="1000" value="100000" aria-label="Betrag"><button class="buy" data-a="money">Geld geben</button><button data-a="take" style="border-color:var(--rosso);color:var(--rosso)">Geld nehmen</button><button data-a="adm"></button><button data-a="ban"></button></div>`;
+    row.innerHTML = `<div><div class="nm"></div><div class="st"></div></div><div class="acts"><input type="number" min="1" step="1000" value="100000" aria-label="Betrag"><button class="buy" data-a="money">Geld geben</button><button data-a="take" style="border-color:var(--rosso);color:var(--rosso)">Geld nehmen</button><button data-a="adm"></button><button data-a="ban"></button><button data-a="pw" style="border-color:#b07ad8;color:#c89af0" hidden>Passwort zurücksetzen</button></div>`;
     row.querySelector('.nm').textContent = p.nick + (p.slug === A.slug ? ' (du)' : '') + (p.superAdmin ? ' ★ Haupt-Admin' : p.admin ? ' ★ Admin' : '') + (p.banned ? ' · GEBANNT' : '');
     row.querySelector('.st').textContent = `Abschüsse ${p.kills} · Geld ${IEgame.fmt(p.money)}${p.grant > 0 ? ' · wartet auf ' + IEgame.fmt(p.grant) : p.grant < 0 ? ' · Abzug wartet: ' + IEgame.fmt(-p.grant) : ''}`;
     const bAdm = row.querySelector('[data-a=adm]'), bBan = row.querySelector('[data-a=ban]');
@@ -245,6 +245,18 @@ function drawAdminList() {
     row.querySelector('[data-a=money]').onclick = () => { const v = Math.round(+row.querySelector('input').value || 0); if (v > 0) act('money', Math.min(v, 1e9)); };
     bAdm.onclick = () => act(p.admin ? 'unadmin' : 'admin');
     bBan.onclick = () => act(p.banned ? 'unban' : 'ban');
+    const bPw = row.querySelector('[data-a=pw]');
+    // Passwort zurücksetzen: nur Haupt-Admins im Server-Modus. Das alte Passwort wird NIE angezeigt.
+    if (SRV() && A.superAdmin && !p.claude) {
+      bPw.hidden = false;
+      bPw.onclick = async () => {
+        const np = prompt('Neues Passwort für „' + p.nick + '“ festlegen (mindestens 4 Zeichen):\n\nDer Spieler meldet sich danach mit diesem neuen Passwort an. Das alte Passwort kann niemand sehen.');
+        if (np === null) return;
+        if (np.length < 4) { IEgame.toast('Das Passwort braucht mindestens 4 Zeichen', 3); return; }
+        try { const ph = await serverHash(p.nick, np); await SRV().act(p.slug, 'resetpw', 0, ph); IEgame.toast('Passwort von ' + p.nick + ' wurde neu gesetzt', 3); }
+        catch (e) { IEgame.toast('Fehler: ' + (e.code === 'super_admin' ? 'Nur Haupt-Admins dürfen Passwörter zurücksetzen' : e.code === 'bad_password' ? 'Ungültiges Passwort' : e.code || 'Server'), 3); }
+      };
+    }
     el.appendChild(row);
   }
 }
