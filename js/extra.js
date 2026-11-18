@@ -497,6 +497,7 @@ function buildRocket(scene) {
 }
 const fmtCD = ms => { if (ms <= 0) return 'BEREIT ZUM START'; const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60; return (d ? d + ' T  ' : '') + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0'); };
 IE.moonOpen = () => Date.now() >= RK.launch || !!IE.moonUnlocked;
+IE.drawRocketBoard = () => drawBoard();
 const isAdm = () => !!(window.IEaccount && IEaccount.admin);
 function drawBoard() {
   if (!boardTex) return; const g = boardTex.g, open = IE.moonOpen();

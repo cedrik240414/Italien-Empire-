@@ -37,7 +37,7 @@ O.join = async function (isPublic, code, title) {
   room.onPeers(onPeers, e => G().toast('Online-Verbindung beendet (' + e.code + ')', 4));
   room.on('hit', onHit); room.on('kill', onKill); room.on('job', onJob); room.on('jobstep', onJobStep); room.on('jobkill', onJobKill);
   room.onConnection(c => { O.connected = c; updateBadge(); });
-  room.on('admin', msg => { const d = msg.data || {}; if (msg.adm && d.moon && window.IEaccount && IEaccount.setMoon) IEaccount.setMoon(); if (msg.adm && window.IEaccount && d.kick && d.kick === IEaccount.slug && IEaccount.onBanned) IEaccount.onBanned(); });
+  room.on('admin', msg => { const d = msg.data || {}; if (msg.adm && d.moon !== undefined && window.IEaccount && IEaccount.setMoon) IEaccount.setMoon(d.moon !== 0); if (msg.adm && window.IEaccount && d.kick && d.kick === IEaccount.slug && IEaccount.onBanned) IEaccount.onBanned(); });
   await loadStats(); dirty = true; flushStats();
   updateBadge();
 };
@@ -47,7 +47,7 @@ O.nearCarPeer = function (pos) {
   for (const r of O.peers.values()) { const pr = r.pr; if (!pr || pr.dead || !pr.v || pr.v.t !== 'car' || pr.rd) continue; const d = Math.hypot(r.pos.x - pos.x, r.pos.z - pos.z); if (d < bd) { bd = d; best = r; } }
   return best;
 };
-O.adminMoon = function () { if (room) room.emit('admin', { moon: 1 }).catch(() => { }); };
+O.adminMoon = function (open) { if (room) room.emit('admin', { moon: open === false ? 0 : 1 }).catch(() => { }); };
 O.adminKick = function (slug) { if (room) room.emit('admin', { kick: slug }).catch(() => { }); };
 O.leave = async function () { try { if (room) await room.leave(); } catch (e) { } location.reload(); };
 

@@ -53,6 +53,7 @@ export class Hub {
     const st = this.state.storage;
     let b = {}; if (req.method === 'POST') { try { b = await req.json(); } catch (e) { return j({ error: 'bad_json' }, 400); } }
     const token = b.token || url.searchParams.get('token');
+    if (action === 'state') return j({ moonOpen: !!(await st.get('moonOpen')) }); // öffentlich: Mond freigeschaltet?
     if (action === 'register') {
       const nick = String(b.nick || '').trim().replace(/\s+/g, ' ');
       const slug = slugOf(nick);
@@ -93,7 +94,7 @@ export class Hub {
     // ---- Admin ----
     const isAdmin = me.admin || isSuper(me.slug);
     if (!isAdmin || (me.banned && !isSuper(me.slug))) return j({ error: 'not_admin' }, 403);
-    if (action === 'moon') { await st.put('moonOpen', Date.now()); return j({ ok: true }); } // Admin schaltet den Mond für alle frei
+    if (action === 'moon') { if (b.open === false) await st.delete('moonOpen'); else await st.put('moonOpen', Date.now()); return j({ ok: true, moonOpen: b.open !== false }); } // Admin schaltet den Mond für alle frei
     if (action === 'list') {
       const accs = [...(await st.list({ prefix: 'a:' })).values()];
       const board = await st.list({ prefix: 'p:' });
