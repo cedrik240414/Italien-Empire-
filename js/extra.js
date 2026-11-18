@@ -882,6 +882,38 @@ function openTuning(id) {
   colorize(0, PAINTS); colorize(2, [0xd8d8d8, 0x111114, 0xd6b04a, 0xd33a2c, 0x1f4fb0, 0x5ff3ff]); colorize(4, NEONS);
 }
 IE.openTuning = openTuning;
+
+// ================= BOMBEN (Militär-Jet & Kampfhubschrauber) =================
+const bombs = []; let bombCool = 0;
+IE.dropBomb = function () {
+  const g = G(), P = g.P, v = P.veh;
+  if (!v || !(v.type === 'plane' || v.type === 'heli') || !v.def.armed || v.dead) return;
+  if (v.type === 'plane' ? v.onGround : v.pos.y - IE.supportH(v.pos.x, v.pos.z, v.pos.y) < 4) { g.toast('Erst abheben', 1.5); return; }
+  if (bombCool > 0) return; bombCool = 0.7;
+  const f = fwd(v.yaw), cp = Math.cos(v.pitch || 0), sp = v.type === 'plane' ? v.speed : 0;
+  const vel = v.type === 'plane' ? new T.Vector3(f.x * sp * cp, Math.sin(v.pitch || 0) * sp, f.z * sp * cp) : (v.vel ? v.vel.clone() : new T.Vector3());
+  const m = new T.Group(); const body = new T.Mesh(new T.CylinderGeometry(0.35, 0.35, 1.6, 10), new T.MeshLambertMaterial({ color: 0x3a3f2a })); body.rotation.x = Math.PI / 2; m.add(body);
+  const nose = new T.Mesh(new T.SphereGeometry(0.35, 10, 6), body.material); nose.position.z = 0.8; m.add(nose);
+  const fin = new T.Mesh(new T.BoxGeometry(0.9, 0.05, 0.4), new T.MeshLambertMaterial({ color: 0x222222 })); fin.position.z = -0.8; m.add(fin); const fin2 = fin.clone(); fin2.rotation.z = Math.PI / 2; m.add(fin2);
+  m.position.set(v.pos.x, v.pos.y - 1.5, v.pos.z); m.rotation.y = v.yaw; g.scene.add(m);
+  bombs.push({ m, vel, t: 0 }); g.sfx('beep', 0.4);
+};
+function updateBombs(dt) {
+  bombCool = Math.max(0, bombCool - dt);
+  const g = G();
+  for (let i = bombs.length - 1; i >= 0; i--) {
+    const b = bombs[i]; b.t += dt; b.vel.y -= 22 * dt; b.vel.multiplyScalar(1 - 0.08 * dt);
+    b.m.position.addScaledVector(b.vel, dt);
+    b.m.rotation.x = Math.max(-1.4, Math.min(1.4, -Math.atan2(b.vel.y, Math.hypot(b.vel.x, b.vel.z))));
+    const p = b.m.position, gh = Math.max(IE.supportH(p.x, p.z, p.y + 0.5), IE.groundH(p.x, p.z) < -0.5 && p.x < 9000 ? 0 : -999);
+    if (p.y <= gh + 0.3 || b.t > 25) {
+      g.scene.remove(b.m); bombs.splice(i, 1);
+      const at = new T.Vector3(p.x, Math.max(p.y, gh) + 0.5, p.z);
+      g.explosion(at, 12); setTimeout(() => g.explosion(at.clone().add(new T.Vector3(4, 0, 3)), 7), 120);
+      if (window.IEonline && IEonline.active) IEonline.blast(at, 16, 320);
+    }
+  }
+}
 // ================= MEINE FAHRZEUGE (gekaufte Fahrzeuge herholen) =================
 function freeSpot(cx, cz, r, need) {
   for (let k = 0; k < 24; k++) {
@@ -1062,7 +1094,7 @@ function bizTick(dt) {
   for (const s of IE.shops) { if (s.type !== 'biz') continue; const b = S.biz[s.id]; if (!b) continue; const D = IE.bizDefs[s.biz], inc = D.inc * (1 + 0.5 * (b.lv - 1)); b.cash = Math.min(inc * 120, (b.cash || 0) + inc / 60 * dt); }
 }
 IE.extraUpdate = function (dt) {
-  bizTick(dt); guardManager(dt); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
+  bizTick(dt); guardManager(dt); updateBombs(dt); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
   if (IE.raceBeam) IE.raceBeam.visible = !R;
   updateRace(dt); updateRob(dt);
 };

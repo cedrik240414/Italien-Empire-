@@ -133,6 +133,7 @@ addEventListener('keydown', e => {
   if (m[e.code]) press(m[e.code]);
   const cs = { KeyE: 'E', Space: 'SPRUNG', ShiftLeft: 'RENNEN', ShiftRight: 'RENNEN', KeyQ: 'WAFFE' }[e.code]; if (cs) cheatInput(cs);
   if (/^Digit[1-7]$/.test(e.code)) press('w' + e.code.slice(5));
+  if (e.code === 'KeyB' && game.state === 'play' && !uiOpen() && IE.dropBomb) IE.dropBomb();
   if (e.code === 'Space' || e.code === 'Tab' || e.code.startsWith('Arrow')) e.preventDefault();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
@@ -158,6 +159,7 @@ function bindBtn(id, down, up) {
   const end = e => { el.classList.remove('on'); up && up(); };
   el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end); el.addEventListener('pointerleave', end);
 }
+bindBtn('tBomb', () => { if (IE.dropBomb) IE.dropBomb(); });
 bindBtn('tFire', () => inp.fire = true, () => inp.fire = false);
 bindBtn('tJump', () => { inp.jump = true; press('space'); cheatInput('SPRUNG'); }, () => inp.jump = false);
 bindBtn('tDown', () => inp.down = true, () => inp.down = false);
@@ -1797,7 +1799,7 @@ function updateHUD(dt) {
     } else if (P.veh.type === 'heli' && P.veh.rotor < 0.75) pr = 'Rotor läuft an …';
     else if (P.veh.type === 'plane' && P.veh.onGround && P.veh.speed < P.veh.def.minSpeed) pr = isTouch ? 'GAS + halten · ab ' + Math.round(P.veh.def.minSpeed * 3.6) + ' km/h Joystick hoch = abheben' : 'Leertaste = Gas · ab ' + Math.round(P.veh.def.minSpeed * 3.6) + ' km/h W = abheben';
     else if (P.veh.m.tank) pr = 'Kanone: Feuer · Turm folgt der Kamera';
-    else if (P.veh.def.armed) pr = 'Bordkanone: Feuer';
+    else if (P.veh.def.armed) pr = isTouch ? 'Bordkanone: FEUER · Bomben: BOMBE' : 'Bordkanone: Linksklick · Bomben: B';
   }
   pr = pr.replace('<b>F</b>', isTouch ? '<b>EIN/AUS</b>' : '<b>E</b>');
   $('prompt').hidden = !pr; if (pr) $('prompt').innerHTML = pr;
@@ -1812,6 +1814,7 @@ function updateHUD(dt) {
     $('tJump').textContent = inP ? 'GAS +' : inH || inA || P.fly ? 'HOCH' : inC || inB ? 'BREMSE' : P.swim ? 'AUF' : 'SPRUNG';
     $('tSprint').style.display = P.veh ? 'none' : ''; $('tAim').style.display = P.veh ? 'none' : '';
     $('tFire').style.display = (inH || (P.veh && P.veh.type === 'plane')) && !P.veh.def.armed ? 'none' : '';
+    $('tBomb').style.display = P.veh && (inH || P.veh.type === 'plane') && P.veh.def.armed ? '' : 'none';
   }
 }
 
@@ -1971,6 +1974,6 @@ function boot() {
 $('bNew').addEventListener('click', () => startGame(false));
 $('bCont').addEventListener('click', () => startGame(true));
 function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = 'italienEmpire_v1' + ACC; $('bCont').hidden = !store.get(); cloudPull(); }
-window.IEgame = { damageNPC, tracer, flash, enterInterior, exitInterior, putInVehicle, setWanted, maxHP, placePlayer, teleportTo, CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
+window.IEgame = { explosion, damageNPC, tracer, flash, enterInterior, exitInterior, putInVehicle, setWanted, maxHP, placePlayer, teleportTo, CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, isTouch, closeModals, openPause, IE };
 boot();
 })();
