@@ -829,7 +829,7 @@ function updatePlayer(dt) {
     // Fallschirm öffnen (in der Luft, hoch genug)
     if (ctrl && P.jumpReq > 0 && !P.onGround && !P.chute && P.pos.y - g > 8) { P.jumpReq = 0; P.chute = true; sfx('beep'); toast('🪂 Fallschirm offen', 1.5); }
     if (P.bailV) { P.pos.x += P.bailV.x * dt; P.pos.z += P.bailV.z * dt; const dr = P.onGround ? 6 : P.chute ? 1.5 : 0.25; P.bailV.x *= Math.exp(-dr * dt); P.bailV.z *= Math.exp(-dr * dt); if (Math.hypot(P.bailV.x, P.bailV.z) < 0.3) P.bailV = null; }
-    P.vy -= (game.ch.moon ? 5 : 24) * dt; if (P.chute) P.vy = Math.max(P.vy, -4.5); P.pos.y += P.vy * dt;
+    P.vy -= (game.ch.moon ? 5 : 24) * dt; if (P.chute) P.vy = Math.max(P.vy, -11); P.pos.y += P.vy * dt;
     if (P.pos.y <= g && !P.onGround) { const hv = P.bailV ? Math.hypot(P.bailV.x, P.bailV.z) : 0; if (hv > 9 && !P.chute && !game.ch.moon) hurtPlayer((hv - 9) * 4); if (P.chute) { P.chute = false; P.vy = 0; } }
     if (P.pos.y <= g) { if (P.vy < -22 && !game.ch.jump && !game.ch.moon) hurtPlayer((-P.vy - 22) * 6); P.pos.y = g; P.vy = 0; P.onGround = true; }
     else if (P.pos.y - g > 0.3) P.onGround = false;
