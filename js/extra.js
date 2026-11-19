@@ -1078,11 +1078,13 @@ function homePetsTick(dt) {
   if (!inVilla || homePets.room !== P.interior.it.type || homePets.length !== want.length) {
     homePets.forEach(h => { g.scene.remove(h.g); g.scene.remove(h.basket); g.scene.remove(h.zz); }); homePets.length = 0; homePets.room = inVilla ? P.interior.it.type : null;
     if (inVilla) { const it = P.interior.it;
+      // Alle Körbchen in einer Reihe an der großen Fensterwand (+z), die Tür in der Mitte wird frei gelassen
+      const bz = it.z + it.D / 2 - 1.8, slots = [];
+      for (let d = 4, step = 3.6; d <= it.W / 2 - 2.5 && slots.length < want.length + 2; d += step) { slots.push({ x: it.x - d, z: bz }); slots.push({ x: it.x + d, z: bz }); }
       want.forEach((id, k) => {
-        // Körbchen an der Rückwand bzw. linken Wand aufreihen
-        const bx = k < 7 ? it.x - 18 + k * 3.2 : it.x - it.W / 2 + 2, bz = k < 7 ? it.z - it.D / 2 + 2.2 : it.z - 8 + (k - 7) * 3.2;
-        const big = id === 'dino' || id === 'rentier' || id === 'reh', basket = basketMesh(); basket.scale.setScalar(big ? 1.8 : 1); basket.position.set(bx, it.y, bz); g.scene.add(basket);
-        const h = Object.assign(IE.makePet(id), { id, x: bx, z: bz, bx, bz, yaw: 0, tx: bx, tz: bz, state: 'sleep', timer: 3 + rnd() * 12, big });
+        const sl = slots[k] || { x: it.x - 4, z: bz }, bx = sl.x, bzz = sl.z;
+        const big = id === 'dino' || id === 'rentier' || id === 'reh', basket = basketMesh(); basket.scale.setScalar(big ? 1.8 : 1); basket.position.set(bx, it.y, bzz); g.scene.add(basket);
+        const h = Object.assign(IE.makePet(id), { id, x: bx, z: bzz, bx, bz: bzz, yaw: Math.PI, tx: bx, tz: bzz, state: 'sleep', timer: 3 + rnd() * 12, big });
         h.zz = zzz(); g.scene.add(h.zz); g.scene.add(h.g); h.basket = basket; homePets.push(h);
       }); }
   }
