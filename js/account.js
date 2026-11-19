@@ -52,9 +52,12 @@ function done(nick, info) {
   if (!SRV()) claudeAdminInit();
 }
 function showAdminUI() {
-  const vis = A.admin && !A.hidden; // geheimer Admin: keine sichtbaren Admin-Knöpfe – Panel nur mit Taste O
+  const vis = A.admin && !A.hidden, under = A.admin && A.hidden; // undercover: Knopf da, aber unsichtbar
   $('lgWho').textContent = A.nick + (vis ? ' ★ Admin' : '');
-  $('acctAdmin').hidden = !vis; $('tAdmin').hidden = !vis; $('hudAdmin').hidden = !vis;
+  $('acctAdmin').hidden = !vis;
+  // ADMIN-Knopf: sichtbar für normale Admins, unsichtbar (aber antippbar) für Undercover-Admins
+  $('tAdmin').hidden = !A.admin; $('tAdmin').classList.toggle('invis', under);
+  $('hudAdmin').hidden = !A.admin; $('hudAdmin').classList.toggle('invis', under);
 }
 
 // ---------- claude.ai-Version: Besitzer des Spiels ist Admin, Geschenke & Banns über die gemeinsame Datenbank ----------

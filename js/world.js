@@ -319,15 +319,19 @@ IE.buildWorld = function (scene) {
   const skyGeo = new T.SphereGeometry(9000, 32, 16);
   const skyMat = new T.ShaderMaterial({
     side: T.BackSide, depthWrite: false, fog: false,
-    uniforms: { sunDir: { value: new T.Vector3(-0.5, 0.45, 0.6).normalize() } },
+    uniforms: { sunDir: { value: new T.Vector3(-0.5, 0.45, 0.6).normalize() }, uNight: { value: 0 }, uSunset: { value: 0 } },
     vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-    fragmentShader: `varying vec3 vP; uniform vec3 sunDir;
-      void main(){ float h = vP.y; vec3 top = vec3(0.20,0.45,0.82); vec3 hor = vec3(0.86,0.83,0.76);
-        vec3 c = mix(hor, top, pow(max(h,0.0),0.55)); if(h<0.0) c = mix(hor, vec3(0.55,0.65,0.72), min(-h*4.0,1.0));
-        float s = max(dot(vP, sunDir),0.0); c += vec3(1.0,0.85,0.55)*pow(s,700.0)*2.0 + vec3(1.0,0.7,0.4)*pow(s,10.0)*0.25;
+    fragmentShader: `varying vec3 vP; uniform vec3 sunDir; uniform float uNight; uniform float uSunset;
+      void main(){ float h = vP.y;
+        vec3 top = mix(vec3(0.20,0.45,0.82), vec3(0.015,0.03,0.10), uNight);
+        vec3 hor = mix(vec3(0.86,0.83,0.76), vec3(0.05,0.07,0.15), uNight);
+        vec3 c = mix(hor, top, pow(max(h,0.0),0.55)); if(h<0.0) c = mix(hor, mix(vec3(0.55,0.65,0.72), vec3(0.02,0.03,0.07), uNight), min(-h*4.0,1.0));
+        float s = max(dot(vP, sunDir),0.0);
+        c += (vec3(1.0,0.85,0.55)*pow(s,700.0)*2.0 + vec3(1.0,0.7,0.4)*pow(s,10.0)*0.25) * (1.0 - uNight);
+        c += vec3(1.0,0.4,0.15) * pow(s,5.0) * uSunset * max(0.0, 1.0 - abs(h)*2.5);
         gl_FragColor = vec4(c,1.0);} `
   });
-  const sky = new T.Mesh(skyGeo, skyMat); sky.renderOrder = -1; scene.add(sky); IE.sky = sky;
+  const sky = new T.Mesh(skyGeo, skyMat); sky.renderOrder = -1; scene.add(sky); IE.sky = sky; IE.skyMat = skyMat;
 
   // Terrain-Mesh
   const pos = new Float32Array(NV * 3), col = new Float32Array(NV * 3);

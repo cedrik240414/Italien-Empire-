@@ -80,7 +80,8 @@ const SUN_DIR = new T.Vector3(-0.5, 0.45, 0.6).normalize();
 sun.shadow.camera.left = -70; sun.shadow.camera.right = 70; sun.shadow.camera.top = 70; sun.shadow.camera.bottom = -70;
 sun.shadow.camera.near = 10; sun.shadow.camera.far = 600; sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.04;
 scene.add(sun); scene.add(sun.target);
-scene.add(new T.AmbientLight(0xffffff, 0.12));
+const ambient = new T.AmbientLight(0xffffff, 0.12); scene.add(ambient);
+IE.lights = { hemi, sun, ambient, sunColorDay: 0xfff0d6, hemiSky: 0xcfe3ff, hemiGround: 0x8a7b5a };
 function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
 addEventListener('resize', resize);
 
@@ -1464,10 +1465,10 @@ function renderShop() {
     $('shopT').textContent = D.name + ' · ' + city;
     const inc = lv => Math.round(D.inc * (1 + 0.5 * (lv - 1)));
     if (!b) {
-      $('shopHint').textContent = 'Eigene Geschäfte bringen dir Geld, solange du spielst. Die Einnahmen sammeln sich in der Kasse (bis zu 2 Stunden) – komm vorbei und leere sie.';
+      $('shopHint').textContent = 'Eigene Geschäfte verdienen Geld – auch offline, wenn du nicht spielst. Die Einnahmen sammeln sich in der Kasse (bis zu 12 Stunden) – komm vorbei und leere sie.';
       row('Geschäft kaufen', `Einnahmen ca. ${fmt(inc(1))} pro Minute`, [{ t: 'Kaufen · ' + fmt(D.price), buy: true, dis: S.money < D.price, f: () => { S.money -= D.price; S.biz[s.id] = { lv: 1, cash: 0 }; sfx('cash'); toast('Glückwunsch – das ' + D.name + ' gehört jetzt dir!', 3); } }], D.color);
     } else {
-      $('shopHint').textContent = 'Dein Geschäft verdient ' + fmt(inc(b.lv)) + ' pro Minute, solange du spielst. Die Kasse fasst bis zu 2 Stunden Einnahmen.';
+      $('shopHint').textContent = 'Dein Geschäft verdient ' + fmt(inc(b.lv)) + ' pro Minute – auch offline. Die Kasse fasst bis zu 12 Stunden Einnahmen.';
       row('Kasse', `${fmt(Math.floor(b.cash))} warten auf dich`, [{ t: 'Kasse leeren', buy: true, dis: b.cash < 1, f: () => { addMoney(Math.floor(b.cash)); b.cash = 0; sfx('cash'); } }], D.color);
       const upc = Math.round(D.price * 0.5 * b.lv);
       { const paid = D.price + Array.from({ length: b.lv - 1 }, (_, i) => Math.round(D.price * 0.5 * (i + 1))).reduce((x, y) => x + y, 0), sell = Math.round(paid * 0.7);
@@ -1911,6 +1912,7 @@ function frameBody() {
   sun.position.set(P.pos.x + SUN_DIR.x * 300, P.pos.y + SUN_DIR.y * 300, P.pos.z + SUN_DIR.z * 300); sun.target.position.copy(P.pos);
   IE.sky.position.copy(camera.position);
   const alt = camera.position.y; if (!game.uw) { if (IE.onMoon) { scene.fog.near = 900; scene.fog.far = 6000; } else if (game.ch.zombies) { scene.fog.near = 40; scene.fog.far = 420 + alt * 2; } else { scene.fog.near = 500 + alt * 2; scene.fog.far = 3200 + alt * 6; } }
+  if (IE.dayNightApply) IE.dayNightApply();
   engineSound(P.veh && !P.veh.dead ? P.veh : null);
   updateHUD(dt);
   drawMini();

@@ -1120,6 +1120,38 @@ function openPets() {
 }
 IE.openPets = openPets;
 
+
+// ================= TAG-NACHT-ZYKLUS (24 Min Tag, 5 Min Nacht) =================
+const DAY_SEC = 24 * 60, NIGHT_SEC = 5 * 60, CYCLE = DAY_SEC + NIGHT_SEC;
+const _cDay = new T.Color(0xfff0d6), _cNight = new T.Color(0x6f86c4), _cSunset = new T.Color(0xffa24a);
+const _hSkyD = new T.Color(0xcfe3ff), _hSkyN = new T.Color(0x16233f), _hGrD = new T.Color(0x8a7b5a), _hGrN = new T.Color(0x12161f);
+const _fogNight = new T.Color(0x0b1226), _tmp = new T.Color(), _tmp2 = new T.Color();
+IE.nightFactor = 0;
+function nightAt(sec) {
+  const t = ((sec % CYCLE) + CYCLE) % CYCLE;
+  if (t < DAY_SEC - 90) return 0;                 // voller Tag
+  if (t < DAY_SEC) return (t - (DAY_SEC - 90)) / 90;   // Dämmerung (Abend)
+  if (t < CYCLE - 60) return 1;                   // volle Nacht
+  return 1 - (t - (CYCLE - 60)) / 60;             // Morgendämmerung
+}
+IE.dayNightApply = function () {
+  const g = G(), L = IE.lights, M = IE.skyMat; if (!L || !M) return;
+  if (IE.onMoon) { M.uniforms.uNight.value = 1; M.uniforms.uSunset.value = 0; return; }
+  const night = nightAt(Date.now() / 1000), sunset = Math.max(0, Math.min(1, 4 * night * (1 - night)));
+  IE.nightFactor = night;
+  M.uniforms.uNight.value = night; M.uniforms.uSunset.value = sunset;
+  // Sonne: Helligkeit und Farbe
+  L.sun.intensity = 1.15 * (1 - night * 0.9) + 0.06;
+  _tmp.copy(_cDay).lerp(_cNight, night); _tmp.lerp(_cSunset, sunset * 0.55); L.sun.color.copy(_tmp);
+  // Himmelslicht + Boden
+  L.hemi.intensity = 0.6 * (1 - night * 0.78) + 0.05;
+  L.hemi.color.copy(_hSkyD).lerp(_hSkyN, night);
+  L.hemi.groundColor.copy(_hGrD).lerp(_hGrN, night);
+  L.ambient.intensity = 0.12 * (1 - night * 0.55);
+  // Nebel einfärben (nicht unter Wasser / in der Zombie-Apokalypse)
+  if (!g.game.uw && !(g.game.ch && g.game.ch.zombies)) g.scene.fog.color.lerp(_fogNight, night * 0.82);
+};
+
 // ================= SPIELLOGIK =================
 let R = null; // aktuelles Rennen
 let rob = null; // laufender Überfall
@@ -1706,9 +1738,20 @@ IE.extraAct = function () {
   }
   return false;
 };
+let bizOfflineDone = false;
+function bizOffline() {
+  const g = G(), S = g.S; if (!S.biz) return;
+  const mins = Math.min(720, ((Date.now() - (S._t || Date.now())) / 60000)); // bis zu 12 Stunden offline anrechnen
+  if (!(mins > 1)) return;
+  let total = 0;
+  for (const s of IE.shops) { if (s.type !== 'biz') continue; const b = S.biz[s.id]; if (!b) continue; const D = IE.bizDefs[s.biz], incMin = D.inc * (1 + 0.5 * (b.lv - 1)); const add = Math.min(incMin * 720, (b.cash || 0) + incMin * mins) - (b.cash || 0); b.cash = (b.cash || 0) + add; total += add; }
+  if (total > 1) { g.saveGame && g.saveGame(); setTimeout(() => g.banner('Willkommen zurück!', 'Deine Geschäfte haben offline gearbeitet', '+ ' + g.fmt(Math.floor(total)) + ' in der Kasse – komm vorbei und hol es ab', 5), 3500); }
+}
 function bizTick(dt) {
   const g = G(), S = g.S; if (!S.biz || g.game.state !== 'play') return;
-  for (const s of IE.shops) { if (s.type !== 'biz') continue; const b = S.biz[s.id]; if (!b) continue; const D = IE.bizDefs[s.biz], inc = D.inc * (1 + 0.5 * (b.lv - 1)); b.cash = Math.min(inc * 120, (b.cash || 0) + inc / 60 * dt); }
+  if (!bizOfflineDone) { bizOfflineDone = true; bizOffline(); }
+  // Offline-Kasse fasst bis zu 12 Std., im Spiel läuft es normal weiter
+  for (const s of IE.shops) { if (s.type !== 'biz') continue; const b = S.biz[s.id]; if (!b) continue; const D = IE.bizDefs[s.biz], incMin = D.inc * (1 + 0.5 * (b.lv - 1)); b.cash = Math.min(incMin * 720, (b.cash || 0) + incMin / 60 * dt); }
 }
 IE.extraUpdate = function (dt) {
   bizTick(dt); guardManager(dt); updateBombs(dt); updateMissiles(dt); updateXmas(dt); updateBoost(dt); updateChute(); updateDriftSmoke(dt); updateHouses(); petTick(dt); homePetsTick(dt); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
