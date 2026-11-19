@@ -1178,8 +1178,28 @@ function rebuildIsland(is) {
   if (up.heli) { const hx = 24, hz = 22; box(16, 0.3, 16, new T.MeshLambertMaterial({ color: 0x4a4e52 }), hx, 0.15, hz, g); const circ = new T.Mesh(new T.RingGeometry(5, 6.2, 24), new T.MeshBasicMaterial({ color: 0xf2f2ee, side: T.DoubleSide })); circ.rotation.x = -Math.PI / 2; circ.position.set(hx, 0.35, hz); g.add(circ); const hTex = textTex([{ t: 'H', f: 'bold 90px Arial' }], 64, 64, 'rgba(0,0,0,0)', '#f2f2ee'); const hm = new T.Mesh(new T.PlaneGeometry(6, 6), new T.MeshBasicMaterial({ map: hTex.t, transparent: true })); hm.rotation.x = -Math.PI / 2; hm.position.set(hx, 0.36, hz); g.add(hm); is.heliSpot = { x: is.x + hx, z: is.z + hz }; }
   // Hangar in der gegenüberliegenden Ecke – weit weg von der Villa
   if (up.hangar) { const hx = 28, hz = -26, hm = new T.MeshLambertMaterial({ color: 0xb7bcc2, side: T.DoubleSide }); const hg = new T.CylinderGeometry(10, 10, 22, 20, 1, true, 0, Math.PI); hg.rotateZ(Math.PI / 2); hg.rotateY(Math.PI / 2); const roof = new T.Mesh(hg, hm); roof.rotation.y = Math.PI / 2; roof.position.set(hx, 0, hz); g.add(roof); box(22, 0.2, 22, new T.MeshLambertMaterial({ color: 0x9a9c9f }), hx, 0.1, hz, g); addCol(hx - 11, hz - 11, hx - 10, hz + 11, 10); is.hangarSpot = { x: is.x + hx, z: is.z + hz }; }
-  // Landebahn quer über die Mitte (an Villa/Heli vorbei)
-  if (up.bahn) { box(11, 0.25, is.r * 1.5, new T.MeshLambertMaterial({ color: 0x3a3c40 }), 2, 0.12, -6, g); for (let z = -is.r + 12; z < is.r - 12; z += 9) box(1, 0.26, 3, new T.MeshLambertMaterial({ color: 0xf1f1ea }), 2, 0.14, z - 6, g); is.bahn = true; }
+  // Lange Landebahn: geht über die Insel hinaus übers Wasser, damit man leicht landen kann
+  if (up.bahn) {
+    const LEN = 260, W = 20, lx = 2; // Länge, Breite, seitlicher Versatz (an Villa/Heli vorbei)
+    box(W, 0.3, LEN, new T.MeshLambertMaterial({ color: 0x33363a }), lx, 0.14, 0, g);          // Asphaltdeck
+    box(W + 2, 0.2, LEN, new T.MeshLambertMaterial({ color: 0x1f2124 }), lx, 0.04, 0, g);        // dunkler Rand
+    // Mittellinie gestrichelt
+    for (let z = -LEN / 2 + 8; z < LEN / 2 - 8; z += 12) box(1.1, 0.34, 6, new T.MeshBasicMaterial({ color: 0xf1f1ea }), lx, 0.16, z, g);
+    // Schwellenmarkierungen an beiden Enden
+    for (const e of [-1, 1]) for (let k = -3; k <= 3; k++) box(1.6, 0.34, 7, new T.MeshBasicMaterial({ color: 0xf1f1ea }), lx + k * 2.4, 0.17, e * (LEN / 2 - 7), g);
+    // Stützpfeiler für den Teil über dem Wasser
+    const pm = new T.MeshLambertMaterial({ color: 0x8a8d90 });
+    for (let z = -LEN / 2 + 10; z <= LEN / 2 - 10; z += 20) for (const sx of [-1, 1]) {
+      const wx = is.x + lx + sx * (W / 2 - 1), wz = is.z + z, gy = IE.groundH(wx, wz);
+      if (gy > is.y - 1.5) continue; // nur über Wasser/tiefem Boden
+      const h = is.y - gy; const col = new T.Mesh(new T.CylinderGeometry(0.9, 1.1, h, 10), pm); col.position.set(lx + sx * (W / 2 - 1), -h / 2, z); g.add(col);
+    }
+    // Kollisionsfläche (dünne Platte oben) – darauf landen Flugzeuge, man kann darauf laufen, Boote fahren darunter durch
+    IE.addBox(is.x + lx - W / 2, is.z - LEN / 2, is.x + lx + W / 2, is.z + LEN / 2, is.y + 0.3, is.y - 1.2);
+    // Windsack
+    box(0.2, 5, 0.2, new T.MeshLambertMaterial({ color: 0x333333 }), lx + W / 2 + 3, 2.5, LEN / 2 - 12, g);
+    is.bahn = true;
+  }
 }
 function drawIslandSigns() {
   const S = G().S;
