@@ -279,6 +279,7 @@ IE.planes = [
   { id: 'doppelprop', name: 'Doppelpropeller',     price: 320000,   speed: 95,  minSpeed: 28, turn: 1.1,  color: 0x2e8b57, accent: 0xf2f2ee, kind: 'prop' },
   { id: 'kunstrot',  name: 'Kunstflug Rosso',      price: 450000,   speed: 112, minSpeed: 24, turn: 2.4,  color: 0xd11f2a, accent: 0x1a1a1a, kind: 'stunt' },
   { id: 'ueberschall', name: 'Überschalljet',      price: 6500000,  speed: 235, minSpeed: 55, turn: 1.0,  color: 0x9aa0a8, accent: 0xd6b04a, kind: 'jet' },
+  { id: 'burger',   name: 'Burger-Jet (Raketen)',    price: 2800000,       speed: 150, minSpeed: 42, turn: 1.3, color: 0xd9a441, accent: 0x7a4a1e, kind: 'burger', armed: true },
   { id: 'caccia',   name: 'Caccia (Kampfjet)',       price: 3500000,       speed: 190, minSpeed: 45, turn: 1.4, color: 0x7b8590, accent: 0x4a5236, kind: 'fighter', armed: true, military: true }
 ];
 IE.planeById = {}; IE.planes.forEach(p => IE.planeById[p.id] = p);

@@ -339,6 +339,41 @@ IE.makePlane = function (def) {
     for (const sz of [-1, 1]) { const wg = mesh(new T.BoxGeometry(2.6, 0.2, 7), bm, 0, gearH + 0.8, sz * 4.4); wg.rotation.y = sz * 0.35; mesh(fus(3, 0.5, 0.45), am, -5.5, gearH + 1.9, sz * 1.6); }
     mesh(new T.BoxGeometry(2, 3, 0.15), am, -7.4, gearH + 3, 0); mesh(new T.BoxGeometry(1.4, 0.15, 5), bm, -7.9, gearH + 4.4, 0);
     for (const [gx, gz] of [[4.5, 0], [-0.5, 1.4], [-0.5, -1.4]]) { mesh(new T.CylinderGeometry(0.4, 0.4, 0.3, 10).rotateX(Math.PI / 2), dk, gx, 0.4, gz); mesh(new T.BoxGeometry(0.15, 1.2, 0.15), dk, gx, 1, gz); }
+  } else if (k === 'burger') {
+    // Fliegender Burger: gestapelte Scheiben, Flügel, Heckflosse, Raketen unter den Flügeln
+    L = 9; W = 13; gearH = 1.2;
+    const bun = new T.MeshStandardMaterial({ color: 0xd9a441, metalness: 0.1, roughness: 0.8 });
+    const meat = lam(0x5a3418), cheese = lam(0xf2a93b), salad = lam(0x5fae3a), tomato = lam(0xcf3324), seed = lam(0xf5ecd0);
+    const yb = gearH + 0.6;
+    // untere Brötchenhälfte
+    const bot = mesh(new T.SphereGeometry(3.0, 18, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), bun, 0, yb + 0.5, 0); bot.scale.y = 0.55;
+    mesh(new T.CylinderGeometry(3.0, 2.9, 0.5, 20), bun, 0, yb + 0.55, 0);
+    // Fleisch-Patty
+    mesh(new T.CylinderGeometry(3.15, 3.15, 0.55, 20), meat, 0, yb + 0.95, 0);
+    // Käse (Quadrat, Ecken schauen raus)
+    const ch = mesh(new T.BoxGeometry(4.6, 0.16, 4.6), cheese, 0, yb + 1.28, 0); ch.rotation.y = Math.PI / 4;
+    // Salat
+    mesh(new T.CylinderGeometry(3.35, 3.35, 0.4, 24), salad, 0, yb + 1.5, 0);
+    // Tomate
+    mesh(new T.CylinderGeometry(2.9, 2.9, 0.32, 18), tomato, 0, yb + 1.78, 0);
+    // obere Brötchenkuppel
+    const top = mesh(new T.SphereGeometry(3.0, 18, 12, 0, Math.PI * 2, 0, Math.PI / 2), bun, 0, yb + 1.95, 0); top.scale.y = 0.75;
+    // Sesamkörner
+    for (let i = 0; i < 14; i++) { const a = i * 2.4, rr = 0.6 + (i % 3) * 0.7, hy = Math.cos(rr / 3 * Math.PI / 2); mesh(new T.SphereGeometry(0.13, 6, 5), seed, Math.cos(a) * rr, yb + 1.95 + hy * 1.7, Math.sin(a) * rr).scale.y = 0.6; }
+    // Flügel (seitlich), Querruder-Akzent
+    mesh(new T.BoxGeometry(2.8, 0.22, 13), am, -0.3, yb + 0.7, 0);
+    for (const sz of [-1, 1]) mesh(new T.BoxGeometry(2.8, 0.26, 0.5), bm, -0.3, yb + 0.7, sz * 6.2);
+    // Heckausleger + Höhen-/Seitenleitwerk
+    mesh(new T.BoxGeometry(3.4, 0.5, 0.6), meat, -4.0, yb + 0.8, 0);
+    mesh(new T.BoxGeometry(1.4, 1.8, 0.14), am, -5.3, yb + 1.5, 0);
+    mesh(new T.BoxGeometry(1.2, 0.14, 3.2), am, -5.2, yb + 0.85, 0);
+    // Cockpit vorne oben
+    const cp = mesh(new T.SphereGeometry(0.8, 12, 8), glassMat, 2.1, yb + 2.0, 0); cp.scale.set(1.4, 0.8, 1.0);
+    // Raketen unter den Flügeln (Optik)
+    for (const sz of [-1, 1]) { mesh(new T.CylinderGeometry(0.22, 0.22, 2.0, 10).rotateZ(Math.PI / 2), lam(0xe8e8e2), 0.2, yb + 0.1, sz * 3.6); const tip = new T.ConeGeometry(0.22, 0.6, 10); tip.rotateZ(-Math.PI / 2); mesh(tip, lam(0xc8372d), 1.3, yb + 0.1, sz * 3.6); }
+    // Fahrwerk
+    for (const [gx, gz] of [[2.6, 0], [-1.6, 2.0], [-1.6, -2.0]]) { mesh(new T.CylinderGeometry(0.4, 0.4, 0.3, 10).rotateX(Math.PI / 2), dk, gx, 0.4, gz); mesh(new T.BoxGeometry(0.16, 1.0, 0.16), dk, gx, 0.9, gz); }
+    return { group: outer, L, W, H: gearH + 4, bodyMat: bm, prop: null, gearH };
   } else {
     L = 15; W = 10; gearH = 1.3;
     mesh(fus(11, 1.0, 0.8), bm, -1, gearH + 1.0, 0);
