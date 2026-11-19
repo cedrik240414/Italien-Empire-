@@ -1357,16 +1357,19 @@ function updateRob(dt) {
 
 // ----- Villen -----
 function nearVilla(pos) { for (const v of IE.villas) if (v.gate && (Math.hypot(pos.x - v.gate.x, pos.z - v.gate.z) < 6 || Math.hypot(pos.x - v.door.x, pos.z - v.door.z) < 5)) return v; return null; }
+const MAX_VILLAS = 2; // man kann höchstens 2 Villen besitzen
 function buyVilla(v) {
   const g = G(), S = g.S;
+  const full = (S.villas || []).length >= MAX_VILLAS;
   xModal('villa', v.name, [
-    { name: v.name, stat: (v.mega ? 'Riesige Luxusvilla mit Türmen, Pool, Springbrunnen, Helipad & Tennisplatz' : 'Panorama-Villa über dem Golf von Neapel · Pool & Terrasse') + ' · gehört dir für immer', btns: [{ label: 'Kaufen · ' + g.fmt(v.price), buy: true, off: S.money < v.price, fn: () => {
+    { name: v.name, stat: (v.mega ? 'Riesige Luxusvilla mit Türmen, Pool, Springbrunnen, Helipad & Tennisplatz' : 'Panorama-Villa über dem Golf von Neapel · Pool & Terrasse') + ' · gehört dir für immer', btns: [{ label: full ? 'Du hast schon 2 Villen' : 'Kaufen · ' + g.fmt(v.price), buy: !full, off: full || S.money < v.price, fn: () => {
+      if (full) { g.toast('Du kannst höchstens 2 Villen besitzen – verkauf erst eine', 3); return; }
       if (S.money < v.price) return;
       const done = () => { S.money -= v.price; S.villas = (S.villas || []).concat(v.id); g.sfx('cash'); g.saveGame(); refreshHouses(); g.closeModals(); g.banner('Villa gekauft', v.name, 'Lauf einfach durch die Haustür hinein · Haus-Menü: E am Tor', 5); };
       const a = SRVA();
       if (isOnline() && a && a.house) a.house('buy', v.id).then(r => { IE.houseOwners[v.id] = { slug: mySlug(), nick: IEaccount.nick, paint: 'standard' }; done(); }).catch(e => { if (e.code === 'taken') { g.toast('Zu spät – ' + v.name + ' gehört schon ' + (e.nick || 'einem anderen Spieler'), 4); syncHouses(); } else g.toast('Server-Fehler beim Kauf – versuch es nochmal', 3); });
       else done(); } }] },
-  ], S.money < v.price ? 'Dir fehlen noch ' + g.fmt(v.price - S.money) + '.' : 'Nach dem Kauf: einfach durch die Haustür hineinlaufen. Am Tor (E) gibt es das Haus-Menü mit Lackierung und Möbeln. Online gehört die Villa dann nur dir.');
+  ], full ? 'Du besitzt bereits 2 Villen. Verkauf erst eine im Haus-Menü, dann kannst du eine andere kaufen.' : S.money < v.price ? 'Dir fehlen noch ' + g.fmt(v.price - S.money) + '.' : 'Nach dem Kauf: einfach durch die Haustür hineinlaufen. Am Tor (E) gibt es das Haus-Menü mit Lackierung und Möbeln. Höchstens 2 Villen pro Spieler.');
 }
 const SELL_RATE = 0.7; // Verkauf: 70 % vom Kaufpreis
 function villaMenu(v) {
