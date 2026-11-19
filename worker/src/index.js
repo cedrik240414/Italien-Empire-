@@ -78,6 +78,17 @@ export class Hub {
       if (a.banned && !isSuper(a.slug)) return j({ error: 'banned' }, 403);
       return j({ token: await this.newSession(a), ...this.pubAcc(a) });
     }
+    if (action === 'appeal') { // Entbannungsantrag: ein gebannter Spieler bittet um Entbannung
+      const reason = String(b.reason || '').trim().replace(/\s+/g, ' ').slice(0, 400);
+      if (reason.length < 3) return j({ error: 'bad_reason' }, 400);
+      let a = token ? await this.session(token) : null;
+      if (!a && b.nick) { const cand = await st.get('a:' + slugOf(b.nick)); if (cand && /^[0-9a-f]{64}$/.test(String(b.ph || '')) && (await sha(b.ph + ':' + cand.salt)) === cand.h) a = cand; }
+      if (!a) return j({ error: 'no_session' }, 401);
+      if (!a.banned || isSuper(a.slug)) return j({ error: 'not_banned' }, 400);
+      a.appeal = { reason, t: Date.now() };
+      await st.put('a:' + a.slug, a);
+      return j({ ok: true });
+    }
     const me = await this.session(token);
     if (action === 'check') return me ? j(this.pubAcc(me)) : j({ error: 'no_session' }, 401);
     if (!me) return j({ error: 'no_session' }, 401);
@@ -113,7 +124,7 @@ export class Hub {
     if (action === 'list') {
       const accs = [...(await st.list({ prefix: 'a:' })).values()];
       const board = await st.list({ prefix: 'p:' });
-      return j({ players: accs.map(a => { const p = board.get('p:' + a.slug) || {}; return { ...(a.slug === me.slug ? this.pubAcc(a) : this.pubOther(a)), kills: p.kills || 0, deaths: p.deaths || 0, jobs: p.jobs || 0, money: p.money || 0, grant: a.grant || 0 }; }) });
+      return j({ players: accs.map(a => { const p = board.get('p:' + a.slug) || {}; return { ...(a.slug === me.slug ? this.pubAcc(a) : this.pubOther(a)), kills: p.kills || 0, deaths: p.deaths || 0, jobs: p.jobs || 0, money: p.money || 0, grant: a.grant || 0, appeal: a.banned && a.appeal ? a.appeal : null }; }) });
     }
     if (action === 'act') {
       const t = await st.get('a:' + slugOf(b.target)); if (!t) return j({ error: 'unknown_target' }, 404);
@@ -123,7 +134,8 @@ export class Hub {
       else if (b.what === 'admin') t.admin = true;
       else if (b.what === 'unadmin') { if (sup) return j({ error: 'super_admin' }, 403); t.admin = false; }
       else if (b.what === 'ban') { if (sup || t.slug === me.slug) return j({ error: 'super_admin' }, 403); t.banned = true; }
-      else if (b.what === 'unban') t.banned = false;
+      else if (b.what === 'unban') { t.banned = false; delete t.appeal; }
+      else if (b.what === 'rejectappeal') { delete t.appeal; }
       else if (b.what === 'resetpw') { // Passwort neu setzen (nur Haupt-Admins) – das alte wird NICHT gelesen, nur ersetzt
         if (!isSuper(me.slug)) return j({ error: 'super_admin' }, 403);
         if (!/^[0-9a-f]{64}$/.test(String(b.ph || ''))) return j({ error: 'bad_password' }, 400);

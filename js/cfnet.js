@@ -93,6 +93,7 @@ const post = async (path, body) => { const r = await fetch(base + path, { method
 const account = {
   register: (nick, ph) => post('/acc/register', { nick, ph }),
   login: (nick, ph) => post('/acc/login', { nick, ph }),
+  appeal: (body) => post('/acc/appeal', Object.assign({ token: tok() }, body)),
   me: () => post('/acc/me', { token: tok() }),
   claim: () => post('/acc/claim', { token: tok() }),
   logout: () => post('/acc/logout', { token: tok() }),

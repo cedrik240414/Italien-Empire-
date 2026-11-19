@@ -92,7 +92,7 @@ function applyGrant(g) {
 }
 async function claudeList() {
   const snap = await db.collection('leaderboard').limit(300).get();
-  return snap.docs.map(d => { const v = d.data(); return { nick: v.nick || 'Spieler', slug: d.id, kills: v.kills || 0, money: v.money || 0, admin: d.id === myId, superAdmin: d.id === myId, banned: cBans.includes(d.id), grant: 0, claude: true }; });
+  return snap.docs.map(d => { const v = d.data(); return { nick: v.nick || 'Spieler', slug: d.id, kills: v.kills || 0, money: v.money || 0, admin: d.id === myId, superAdmin: d.id === myId, banned: cBans.includes(d.id), appeal: cBans.includes(d.id) && v.appeal ? v.appeal : null, grant: 0, claude: true }; });
 }
 async function claudeAct(target, what, amount) {
   if (what === 'money' || what === 'take') {
@@ -115,7 +115,9 @@ async function login() {
   busy(true); msg('Prüfe …', true); await init();
   if (SRV()) {
     try { const r = await SRV().login(nick, await serverHash(nick, pw)); A.token = r.token; try { localStorage.setItem(TOKEN_KEY, r.token); } catch (e) { } busy(false); done(r.nick, r); }
-    catch (e) { busy(false); msg(ERR[e.code] || 'Der Server ist gerade nicht erreichbar.'); if (e.code === 'wrong_password') $('lgPw').value = ''; }
+    catch (e) { busy(false);
+      if (e.code === 'banned') { let ph = ''; try { ph = await serverHash(nick, pw); } catch (er) { } showBanBox({ nick, ph }); return; }
+      msg(ERR[e.code] || 'Der Server ist gerade nicht erreichbar.'); if (e.code === 'wrong_password') $('lgPw').value = ''; }
     return;
   }
   const list = await loadAccounts(), acc = list.find(a => a.slug === slugOf(nick));
@@ -176,11 +178,43 @@ A.unlockMoon = async function (open) {
 };
 // Mond-Status regelmäßig vom Server holen (auch ohne Anmeldung)
 setTimeout(function moonPoll() { if (SRV() && SRV().state) SRV().state().then(r => A.setMoon(!!r.moonOpen)).catch(() => { }); setTimeout(moonPoll, 20000); }, 1500);
-A.onBanned = function () {
+A.onBanned = function (opts) { showBanBox(opts); };
+async function submitAppealClaude(reason) {
+  if (!db || !myId) throw Object.assign(new Error('nodb'), { code: 'no_session' });
+  const ref = db.collection('leaderboard').doc(myId);
+  let data = {}; try { const c = await ref.get(); if (c.exists) data = c.data() || {}; } catch (e) { }
+  data.appeal = { reason, t: Date.now() };
+  await ref.set(data);
+}
+let banShown = false;
+function showBanBox(opts) {
+  opts = opts || {};
   try { localStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem('italienEmpire_session'); } catch (e) { }
-  alertBox('Du wurdest von einem Admin gebannt.');
-};
-function alertBox(t) { const d = document.createElement('div'); d.className = 'modal'; d.innerHTML = '<div class="panel" style="padding:24px"><h2 style="margin:0 0 10px;font-family:var(--f-display);color:var(--rosso)">Gebannt</h2><p></p><button class="btn">OK</button></div>'; d.querySelector('p').textContent = t; d.querySelector('button').onclick = () => location.reload(); document.body.appendChild(d); }
+  if (banShown) return; banShown = true;
+  const nick = opts.nick || A.nick || ($('lgName') && $('lgName').value.trim()) || '';
+  const d = document.createElement('div'); d.className = 'modal'; d.style.zIndex = 80;
+  d.innerHTML = `<div class="panel" style="padding:24px;max-width:460px">
+    <h2 style="margin:0 0 10px;font-family:var(--f-display);color:var(--rosso)">Gebannt</h2>
+    <p style="margin:0 0 12px;line-height:1.5">Dein Konto wurde von einem Admin gebannt. Du kannst einen <b>Entbannungsantrag</b> stellen – ein Admin liest deinen Text und entscheidet, ob du wieder freigeschaltet wirst.</p>
+    <textarea id="appealTxt" maxlength="400" placeholder="Warum solltest du entbannt werden?" style="width:100%;min-height:92px;box-sizing:border-box;font-family:var(--f-body);font-size:16px;padding:10px;background:var(--ink);color:var(--paper);border:1px solid rgba(243,234,216,0.3);-webkit-user-select:text;user-select:text;resize:vertical"></textarea>
+    <div class="lgmsg" id="appealMsg" style="min-height:18px"></div>
+    <div class="btns" style="margin-top:6px"><button class="btn" id="appealSend">Antrag senden</button><button class="btn ghost" id="appealClose">Schließen</button></div>
+  </div>`;
+  document.body.appendChild(d);
+  const am = () => $('appealMsg');
+  $('appealClose').onclick = () => location.reload();
+  $('appealSend').onclick = async () => {
+    const reason = $('appealTxt').value.trim();
+    if (reason.length < 3) { am().classList.remove('ok'); am().textContent = 'Bitte schreibe kurz, warum du entbannt werden möchtest.'; return; }
+    $('appealSend').disabled = true; am().classList.add('ok'); am().textContent = 'Wird gesendet …';
+    try {
+      if (SRV()) { const body = { reason }; if (A.token) body.token = A.token; if (opts.ph) { body.nick = nick; body.ph = opts.ph; } else if (!A.token) body.nick = nick; await SRV().appeal(body); }
+      else await submitAppealClaude(reason);
+      am().classList.add('ok'); am().textContent = 'Antrag gesendet! Ein Admin schaut ihn sich an. Du kannst das Spiel jetzt schließen.';
+      $('appealSend').textContent = 'Gesendet ✓';
+    } catch (e) { $('appealSend').disabled = false; am().classList.remove('ok'); am().textContent = 'Konnte nicht senden: ' + (e.code === 'not_banned' ? 'Du bist nicht (mehr) gebannt – lade das Spiel neu.' : e.code === 'no_session' ? 'Melde dich zuerst mit Name und Passwort an, dann kannst du einen Antrag stellen.' : e.code === 'bad_reason' ? 'Der Text ist zu kurz.' : 'Server nicht erreichbar.'); }
+  };
+}
 
 // ---------- Server: Geschenke, Admin-Status, Bann regelmäßig prüfen ----------
 let pollT = null;
@@ -248,6 +282,16 @@ function drawAdminList() {
     row.querySelector('[data-a=money]').onclick = () => { const v = Math.round(+row.querySelector('input').value || 0); if (v > 0) act('money', Math.min(v, 1e9)); };
     bAdm.onclick = () => act(p.admin ? 'unadmin' : 'admin');
     bBan.onclick = () => act(p.banned ? 'unban' : 'ban');
+    if (p.banned && p.appeal && p.appeal.reason) {
+      const ap = document.createElement('div');
+      ap.style.cssText = 'margin-top:8px;padding:9px 11px;background:rgba(217,180,90,0.14);border-left:3px solid var(--gold);font-size:14px;line-height:1.45';
+      const head = document.createElement('b'); head.style.color = 'var(--gold)'; head.textContent = '📩 Entbannungsantrag: ';
+      ap.appendChild(head); ap.appendChild(document.createTextNode(p.appeal.reason));
+      const hint = document.createElement('div'); hint.style.cssText = 'color:var(--muted);font-size:13px;margin-top:4px'; hint.textContent = 'Zum Entbannen auf „Entbannen" tippen, oder den Antrag ablehnen (Spieler bleibt gebannt).';
+      ap.appendChild(hint);
+      if (SRV() && !p.claude) { const rj = document.createElement('button'); rj.textContent = 'Antrag ablehnen'; rj.style.cssText = 'margin-top:6px;border:1px solid var(--muted);background:transparent;color:var(--muted);font-size:14px;padding:5px 12px'; rj.onclick = () => act('rejectappeal'); ap.appendChild(rj); }
+      row.appendChild(ap);
+    }
     const bPw = row.querySelector('[data-a=pw]');
     // Passwort zurücksetzen: nur Haupt-Admins im Server-Modus. Das alte Passwort wird NIE angezeigt.
     if (SRV() && A.superAdmin && !p.claude) {
