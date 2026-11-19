@@ -259,7 +259,15 @@ IE.islands = [
   { id: 'iadria',   name: 'Isola Adriatica', x: 1200, z: -630, r: 60, h: 6, price: 350000000 },
   { id: 'iwest',    name: 'Isola del Tirreno', x: -440, z: 640, r: 60, h: 6, price: 400000000 },
   { id: 'itirreno', name: 'Isola Sarda',     x: -830, z: 1890, r: 60, h: 6, price: 450000000 },
-  { id: 'iionio',   name: 'Isola Ionica',    x: 1450, z: 1980, r: 60, h: 6, price: 500000000 }
+  { id: 'iionio',   name: 'Isola Ionica',    x: 1450, z: 1980, r: 60, h: 6, price: 500000000 },
+  { id: 'iligure',  name: 'Isola Ligure',    x: -820, z: -320, r: 55, h: 6, price: 300000000 },
+  { id: 'iponente', name: 'Isola di Ponente', x: -520, z: 60,  r: 55, h: 6, price: 320000000 },
+  { id: 'isud',     name: 'Isola del Sud',    x: -720, z: 520, r: 55, h: 6, price: 360000000 },
+  { id: 'ilontana', name: 'Isola Lontana',   x: -1400, z: 1050, r: 55, h: 6, price: 420000000 },
+  { id: 'inord',    name: 'Isola del Nord',   x: 620,  z: -1150, r: 55, h: 6, price: 340000000 },
+  { id: 'iveneta',  name: 'Isola Veneta',    x: 300,  z: -1120, r: 55, h: 6, price: 330000000 },
+  { id: 'iorient',  name: 'Isola Orientale', x: 1150, z: -140, r: 55, h: 6, price: 380000000 },
+  { id: 'igolfo',   name: 'Isola del Golfo',  x: 250,  z: 560, r: 55, h: 6, price: 350000000 }
 ];
 for (const is of IE.islands) IE.flatZones.push({ x: is.x, z: is.z, hw: is.r - 6, hd: is.r - 6, h: is.h, f: 55, sea: true });
 
