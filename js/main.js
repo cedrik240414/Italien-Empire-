@@ -135,6 +135,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyF' || e.code === 'Enter' || e.code === 'KeyE') IE.exitHold = performance.now();
   if (/^Digit[1-7]$/.test(e.code)) press('w' + e.code.slice(5));
   if (e.code === 'KeyB' && game.state === 'play' && !uiOpen() && IE.dropBomb) IE.dropBomb();
+  if (e.code === 'KeyR' && game.state === 'play' && !uiOpen() && IE.fireMissile) IE.fireMissile();
   if (e.code === 'Space' || e.code === 'Tab' || e.code.startsWith('Arrow')) e.preventDefault();
 });
 addEventListener('keyup', e => { keys[e.code] = false; const cs = { KeyE: 'E', Space: 'SPRUNG', ShiftLeft: 'RENNEN', ShiftRight: 'RENNEN', KeyQ: 'WAFFE' }[e.code]; if (cs) holdUp(cs); if (e.code === 'KeyF' || e.code === 'Enter' || e.code === 'KeyE') IE.exitHold = null; });
@@ -166,6 +167,7 @@ function bindBtn(id, down, up) {
 }
 bindBtn('tDrift', () => inp.drift = true, () => inp.drift = false);
 bindBtn('tBomb', () => { if (IE.dropBomb) IE.dropBomb(); });
+bindBtn('tMissile', () => { if (IE.fireMissile) IE.fireMissile(); });
 bindBtn('tFire', () => inp.fire = true, () => inp.fire = false);
 bindBtn('tJump', () => { inp.jump = true; press('space'); cheatInput('SPRUNG'); }, () => inp.jump = false);
 bindBtn('tDown', () => inp.down = true, () => inp.down = false);
@@ -1811,7 +1813,7 @@ function updateHUD(dt) {
     } else if (P.veh.type === 'heli' && P.veh.rotor < 0.75) pr = 'Rotor läuft an …';
     else if (P.veh.type === 'plane' && P.veh.onGround && P.veh.speed < P.veh.def.minSpeed) pr = isTouch ? 'GAS + halten · ab ' + Math.round(P.veh.def.minSpeed * 3.6) + ' km/h Joystick hoch = abheben' : 'Leertaste = Gas · ab ' + Math.round(P.veh.def.minSpeed * 3.6) + ' km/h W = abheben';
     else if (P.veh.m.tank) pr = 'Kanone: Feuer · Turm folgt der Kamera';
-    else if (P.veh.def.armed) pr = isTouch ? 'Bordkanone: FEUER · Bomben: BOMBE · BOOST' : 'Bordkanone: Linksklick · Bomben: B · Boost: X';
+    else if (P.veh.def.armed) pr = isTouch ? 'Bordkanone: FEUER · RAKETE · BOMBE · BOOST' : 'Bordkanone: Linksklick · Rakete: R · Bomben: B · Boost: X';
   }
   pr = pr.replace('<b>F</b>', isTouch ? '<b>EIN/AUS</b>' : '<b>E</b>');
   $('prompt').hidden = !pr; if (pr) $('prompt').innerHTML = pr;
@@ -1827,6 +1829,7 @@ function updateHUD(dt) {
     $('tSprint').style.display = P.veh ? 'none' : ''; $('tAim').style.display = P.veh ? 'none' : '';
     $('tFire').style.display = (inH || (P.veh && P.veh.type === 'plane')) && !P.veh.def.armed ? 'none' : '';
     $('tBomb').style.display = P.veh && (inH || P.veh.type === 'plane') && P.veh.def.armed ? '' : 'none';
+    $('tMissile').style.display = P.veh && P.veh.type === 'plane' && P.veh.def.armed ? '' : 'none';
     $('tBoost').style.display = P.veh && P.veh.type === 'plane' ? '' : 'none';
     $('tDrift').style.display = inC && !P.veh.m.tank ? '' : 'none';
   }

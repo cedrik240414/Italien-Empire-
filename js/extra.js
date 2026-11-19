@@ -1435,6 +1435,48 @@ function updateBombs(dt) {
   }
 }
 
+// ================= RAKETEN (Kampfjet schießt nach vorne) =================
+const missiles = []; let missileCool = 0;
+const MISSILE_SPEED = 300; // schneller als der Jet (max ~190), aber nicht zu schnell
+IE.fireMissile = function () {
+  const g = G(), P = g.P, v = P.veh;
+  if (!v || v.type !== 'plane' || !v.def.armed || v.dead) return;
+  if (v.onGround && v.speed < 10) { g.toast('Erst abheben', 1.5); return; }
+  if (missileCool > 0) { g.toast('Rakete lädt …', 0.8); return; }
+  missileCool = 1.1;
+  const f = fwd(v.yaw), cp = Math.cos(v.pitch || 0), sp = Math.sin(v.pitch || 0);
+  const dir = new T.Vector3(f.x * cp, sp, f.z * cp).normalize();
+  for (const side of [-1, 1]) {
+    const m = new T.Group();
+    const body = new T.Mesh(new T.CylinderGeometry(0.22, 0.22, 2.2, 10), new T.MeshLambertMaterial({ color: 0xe8e8e2 })); body.rotation.x = Math.PI / 2; m.add(body);
+    const nose = new T.Mesh(new T.ConeGeometry(0.22, 0.7, 10), new T.MeshLambertMaterial({ color: 0xc8372d })); nose.rotation.x = Math.PI / 2; nose.position.z = 1.4; m.add(nose);
+    for (const a of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) { const fin = new T.Mesh(new T.BoxGeometry(0.06, 0.5, 0.5), new T.MeshLambertMaterial({ color: 0x555555 })); fin.position.set(Math.cos(a) * 0.3, Math.sin(a) * 0.3, -1); fin.rotation.z = a; m.add(fin); }
+    const off = { x: f.z * side * (v.m.L * 0.1), z: -f.x * side * (v.m.L * 0.1) };
+    m.position.set(v.pos.x + off.x, v.pos.y, v.pos.z + off.z);
+    m.rotation.order = 'YXZ'; m.rotation.set(v.pitch || 0, v.yaw, 0); g.scene.add(m);
+    missiles.push({ m, dir: dir.clone(), vel: v.speed, t: 0, start: m.position.clone() });
+  }
+  g.sfx('shot', 0.8); g.toast('🚀 Rakete abgefeuert!', 0.9);
+};
+function updateMissiles(dt) {
+  missileCool = Math.max(0, missileCool - dt);
+  const g = G();
+  for (let i = missiles.length - 1; i >= 0; i--) {
+    const b = missiles[i]; b.t += dt; b.vel = Math.min(MISSILE_SPEED, b.vel + 260 * dt); // beschleunigt schnell auf Endgeschwindigkeit
+    const p = b.m.position; p.addScaledVector(b.dir, b.vel * dt);
+    // Rauchfahne
+    if ((b.sm = (b.sm || 0) + dt) > 0.03) { b.sm = 0; const sm = new T.Mesh(new T.SphereGeometry(0.4 + Math.random() * 0.3, 6, 4), new T.MeshBasicMaterial({ color: Math.random() < 0.3 ? 0xffa040 : 0xdedede, transparent: true, opacity: 0.6, depthWrite: false })); sm.position.copy(p).addScaledVector(b.dir, -1.2); g.scene.add(sm); let a = 0; const iv = setInterval(() => { a += 0.08; sm.scale.setScalar(1 + a * 3); sm.material.opacity = 0.6 * (1 - a); if (a >= 1) { clearInterval(iv); g.scene.remove(sm); sm.geometry.dispose(); sm.material.dispose(); } }, 40); }
+    // Treffer prüfen: Boden/Wasser, Fahrzeuge, entfernte Reichweite
+    let hit = p.y <= Math.max(IE.supportH(p.x, p.z, p.y + 1), IE.groundH(p.x, p.z) < -0.5 && p.x < 9000 ? 0 : -999) + 0.5;
+    if (!hit) for (const vv of IE.vehicles) { if (vv === g.P.veh || vv.dead) continue; if (p.distanceTo(vv.pos.clone().setY(vv.pos.y + 1)) < (vv.type === 'heli' ? 5 : 4.2)) { hit = true; break; } }
+    const far = b.start.distanceTo(p) > 1300 || b.t > 6;
+    if (hit || far) {
+      g.scene.remove(b.m); missiles.splice(i, 1);
+      if (hit || b.t <= 6) { g.explosion(p.clone(), 9); if (window.IEonline && IEonline.active) IEonline.blast(p, 12, 260); }
+    }
+  }
+}
+
 // ================= RAUSSPRINGEN (lange EIN/AUS) + FALLSCHIRM =================
 IE.vehFast = v => {
   if (!v || v.type === 'airship') return false;
@@ -1667,7 +1709,7 @@ function bizTick(dt) {
   for (const s of IE.shops) { if (s.type !== 'biz') continue; const b = S.biz[s.id]; if (!b) continue; const D = IE.bizDefs[s.biz], inc = D.inc * (1 + 0.5 * (b.lv - 1)); b.cash = Math.min(inc * 120, (b.cash || 0) + inc / 60 * dt); }
 }
 IE.extraUpdate = function (dt) {
-  bizTick(dt); guardManager(dt); updateBombs(dt); updateXmas(dt); updateBoost(dt); updateChute(); updateDriftSmoke(dt); updateHouses(); petTick(dt); homePetsTick(dt); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
+  bizTick(dt); guardManager(dt); updateBombs(dt); updateMissiles(dt); updateXmas(dt); updateBoost(dt); updateChute(); updateDriftSmoke(dt); updateHouses(); petTick(dt); homePetsTick(dt); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
   if (IE.raceBeam) IE.raceBeam.visible = !R;
   updateRace(dt); updateRob(dt);
 };
