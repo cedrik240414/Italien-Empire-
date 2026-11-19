@@ -238,6 +238,12 @@ IE.villas = [
   { id: 'v6', name: 'Villa Imperiale',  x: 705, z: 117, side: 'n', price: 9500000, big: true }
 ];
 IE.villas.push(
+  { id: 'v7',  name: 'Villa Oliveto',   x: 400, z: 118, side: 'n', price: 1600000 },
+  { id: 'v8',  name: 'Villa Smeraldo',  x: 400, z: 188, side: 's', price: 1800000 },
+  { id: 'v9',  name: 'Villa Mare',      x: 460, z: 188, side: 's', price: 2600000 },
+  { id: 'v10', name: 'Villa Panorama',  x: 660, z: 188, side: 's', price: 3800000 },
+  { id: 'v11', name: 'Villa Corallo',   x: 700, z: 188, side: 's', price: 5200000 });
+IE.villas.push(
   { id: 'm1', name: 'Villa Lago di Como',     x: -926,  z: -1720, h: 45, side: 'n', price: 28000000, mega: true },
   { id: 'm2', name: 'Tenuta Toscana',         x: -416,  z: -440,  h: 7,  side: 'n', price: 22000000, mega: true },
   { id: 'm3', name: 'Villa Calabria',         x: 1290,  z: 1128,  h: 10, side: 'n', price: 35000000, mega: true },
@@ -247,6 +253,14 @@ IE.villas.push(
 for (const v of IE.villas) v.s = v.mega ? 3 : v.big ? 2 : 1.6;
 for (let i = 7; i < IE.villaRoad.length; i++) { const a = IE.villaRoad[i - 1], b = IE.villaRoad[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 3, hd: Math.abs(b[1] - a[1]) / 2 + 6, h: IE.villaRoadH, f: 16, small: true }); }
 for (const v of IE.villas) IE.flatZones.push({ x: v.x, z: v.z + (v.mega ? 3 : 1.25 * v.s), hw: v.mega ? 62 : 10 * v.s + 3, hd: v.mega ? 36 : 9.25 * v.s + 3, h: v.h !== undefined ? v.h : IE.villaRoadH + 1.5, f: v.mega ? 30 : 20, small: true });
+// Private Inseln im offenen Meer (werden zu Land erhoben, kaufbar & ausbaubar)
+IE.islands = [
+  { id: 'iadria',   name: 'Isola Adriatica', x: 1200, z: -630, r: 50, h: 6, price: 20000000 },
+  { id: 'itirreno', name: 'Isola Tirrena',   x: -830, z: 1890, r: 50, h: 6, price: 25000000 },
+  { id: 'iionio',   name: 'Isola Ionica',    x: 1450, z: 1980, r: 50, h: 6, price: 30000000 }
+];
+for (const is of IE.islands) IE.flatZones.push({ x: is.x, z: is.z, hw: is.r - 6, hd: is.r - 6, h: is.h, f: 95, sea: true });
+
 IE.planes = [
   { id: 'piccolo',  name: 'Piccolo 172 (Propeller)', price: 0,       speed: 62,  minSpeed: 22, turn: 1.0, color: 0xf2f2ee, accent: 0xc8372d, kind: 'prop' },
   { id: 'acrobata', name: 'Acrobata (Kunstflug)',    price: 180000,  speed: 85,  minSpeed: 24, turn: 1.8, color: 0xd12b2b, accent: 0xf2f2f2, kind: 'stunt' },

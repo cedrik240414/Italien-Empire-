@@ -356,6 +356,7 @@ IE.buildExtras = function (scene) {
   try { buildMoon(scene); } catch (e) { console.error('Mond', e); }
   try { buildTrack(scene); } catch (e) { console.error('Strecke', e); }
   try { buildVillas(scene); IE.villas.forEach((v, i) => buildRoom(v, i, scene)); } catch (e) { console.error('Villen', e); }
+  try { buildIslands(scene); } catch (e) { console.error('Inseln', e); }
   try { buildGas(scene); } catch (e) { console.error('Tankstellen', e); }
 };
 
@@ -874,8 +875,9 @@ async function syncHouses() {
       if (mine && !o) { try { await a.house('buy', v.id); IE.houseOwners[v.id] = { slug: mySlug(), nick: IEaccount.nick, paint: paintFor(v) }; } catch (e) { } }
       else if (mine && o && o.slug !== mySlug()) { S.villas = S.villas.filter(x => x !== v.id); S.money += v.price; g.saveGame(); g.banner('Villa gehörte schon jemand anderem', v.name + ' gehört ' + o.nick, 'Du bekommst ' + g.fmt(v.price) + ' zurück', 5); }
     }
+    if (isOnline() && mySlug()) for (const is of IE.islands) { const o = IE.houseOwners[is.id], mine = (S.islands || []).includes(is.id); if (mine && !o) { try { await a.house('buy', is.id); IE.houseOwners[is.id] = { slug: mySlug(), nick: IEaccount.nick }; } catch (e) {} } else if (mine && o && o.slug !== mySlug()) { S.islands = S.islands.filter(x => x !== is.id); S.money += is.price; g.saveGame(); g.banner('Insel gehörte schon jemand anderem', is.name + ' gehört ' + o.nick, 'Du bekommst ' + g.fmt(is.price) + ' zurück', 5); } }
   } catch (e) { }
-  refreshHouses();
+  refreshHouses(); if (IE.refreshIslands) IE.refreshIslands();
 }
 setTimeout(function hp() { if (G() && G().game.state === 'play') syncHouses(); setTimeout(hp, 20000); }, 4000);
 // eigene Räume pro Villa (kein gemeinsamer Raum mehr)
@@ -897,7 +899,8 @@ const FURN = [
 ];
 IE.furniture = FURN;
 const rooms = {};
-function buildRoom(v, i, scene) {
+function buildRoom(v, i, scene, prefix) {
+  prefix = prefix || 'villa_';
   const W = 44, D = 32, H = 6, ox = 5200 + (i % 4) * 80, oz = -200 + Math.floor(i / 4) * 80, y = 300;
   const fm = new T.MeshLambertMaterial({ color: 0xd8cfbd }), wm = new T.MeshLambertMaterial({ color: 0xf6f1e6 }), grp = new T.Group(); scene.add(grp);
   box(W, 1, D, fm, ox, y - 0.5, oz, grp); IE.addBox(ox - W / 2, oz - D / 2, ox + W / 2, oz + D / 2, y, y - 1);
@@ -908,7 +911,7 @@ function buildRoom(v, i, scene) {
   for (const sd of [-1, 1]) box(W / 2 - 6, 3.6, 0.1, new T.MeshBasicMaterial({ color: 0x9fd4ee }), ox + sd * (W / 4 + 1.5), y + 3.2, oz + D / 2 - 0.3, grp);
   for (const cx of [-10, 10]) { const ch = new T.Mesh(new T.SphereGeometry(0.9, 12, 8), new T.MeshBasicMaterial({ color: 0xfff1c8 })); ch.position.set(ox + cx, y + H - 1.3, oz); grp.add(ch); }
   const furnG = new T.Group(); grp.add(furnG);
-  const it = { type: 'villa_' + v.id, name: v.name, x: ox, z: oz, y, W, D, door: { x: ox, z: oz + D / 2 - 1.8 }, counter: { x: 1e9, z: 1e9 }, item: { x: ox + 15, z: oz - 11 }, spots: [] };
+  const it = { type: prefix + v.id, name: v.name, x: ox, z: oz, y, W, D, door: { x: ox, z: oz + D / 2 - 1.8 }, counter: { x: 1e9, z: 1e9 }, item: { x: ox + 15, z: oz - 11 }, spots: [] };
   IE.interiors[it.type] = it;
   rooms[v.id] = { it, furnG, ox, oz, y, built: {} };
 }
@@ -1120,6 +1123,115 @@ function openPets() {
 }
 IE.openPets = openPets;
 
+
+// ================= PRIVATE INSELN (kaufen & ausbauen) =================
+const ISL_UP = [
+  { id: 'haus',   name: 'Villa bauen',            price: 5000000,  info: 'Eine Villa auf der Insel, die du betreten kannst' },
+  { id: 'steg',   name: 'Steg bauen',             price: 1500000,  info: 'Ein Holzsteg ins Wasser für deine Boote' },
+  { id: 'heli',   name: 'Helikopterplatz bauen',  price: 2500000,  info: 'Ein Landeplatz für Helikopter' },
+  { id: 'hangar', name: 'Hangar bauen',           price: 6000000,  info: 'Ein Hangar für Flugzeuge' },
+  { id: 'bahn',   name: 'Landebahn bauen',        price: 9000000,  info: 'Eine kleine Start- und Landebahn für Flugzeuge' }
+];
+IE.islandUpDefs = ISL_UP;
+function islOwnedByOther(is) { const o = isOnline() && IE.houseOwners[is.id]; return o && o.slug !== mySlug() ? o : null; }
+function islMine(is) { return (G().S.islands || []).includes(is.id) && !islOwnedByOther(is); }
+function buildIslands(scene) {
+  const sand = new T.MeshLambertMaterial({ color: 0xe8dcae });
+  IE.islands.forEach((is, idx) => {
+    const y = is.h; is.y = y;
+    // sichtbarer Insel-Teller (auf dem Terrain), Palmen, Zentrum
+    const disc = new T.Mesh(new T.CylinderGeometry(is.r - 4, is.r + 2, 1.4, 36), sand); disc.position.set(is.x, y - 0.4, is.z); scene.add(disc);
+    const grp = new T.Group(); grp.position.set(is.x, y, is.z); scene.add(grp); is.group = grp;
+    // Palmen am Rand
+    for (let k = 0; k < 7; k++) { const a = k / 7 * Math.PI * 2, px = Math.cos(a) * (is.r - 12), pz = Math.sin(a) * (is.r - 12), pg = new T.Group(); pg.position.set(px, 0, pz); grp.add(pg);
+      box(0.5, 7, 0.5, new T.MeshLambertMaterial({ color: 0x7a5a3a }), 0, 3.5, 0, pg);
+      for (let l = 0; l < 6; l++) { const lf = box(0.4, 0.15, 4, new T.MeshLambertMaterial({ color: 0x3f7a35 }), 0, 7, 1.8, null); const pv = new T.Group(); pv.rotation.y = l / 6 * Math.PI * 2; lf.rotation.x = 0.35; pv.add(lf); pg.add(pv); } }
+    // Schild in der Mitte
+    const sg = textTex([{ t: is.name, f: 'bold 50px Georgia' }], 512, 128, '#1b2b3b', '#d9b45a');
+    const sm = new T.Mesh(new T.PlaneGeometry(10, 2.5), new T.MeshBasicMaterial({ map: sg.t, side: T.DoubleSide })); sm.position.set(0, 3, 0); grp.add(sm); is.sign = sm;
+    box(0.4, 3, 0.4, IE.mat.dark, 0, 1.5, 0, grp);
+    is.upGroup = new T.Group(); grp.add(is.upGroup);
+    // eigenes Haus-Interieur (immer vorhanden, betreten nur wenn Villa gebaut)
+    buildRoom({ id: is.id, name: is.name }, 20 + idx, scene, 'islh_');
+    is.door = { x: is.x - 14, z: is.z + 6 }; // Haustür-Platz
+    rebuildIsland(is);
+  });
+  drawIslandSigns();
+}
+function rebuildIsland(is) {
+  const up = (G().S.islandUp && G().S.islandUp[is.id]) || {}, g = is.upGroup;
+  while (g.children.length) g.remove(g.children[0]);
+  const addCol = (x0, z0, x1, z1, top) => IE.addBox(is.x + x0, is.z + z0, is.x + x1, is.z + z1, is.y + top);
+  if (up.haus) {
+    const s = 1.4, hx = -14, hz = -2;
+    box(18 * s, 6, 10 * s, IE.mat.white, hx, 3, hz - 3 * s, g); box(14 * s, 5, 8 * s, IE.mat.white, hx - 1.5 * s, 8.5, hz - 4 * s, g);
+    box(19 * s, 0.5, 11 * s, new T.MeshLambertMaterial({ color: 0xb75a32 }), hx, 6.2, hz - 3 * s, g);
+    for (let k = -3; k <= 3; k++) box(2.1 * s, 3.6, 0.1, IE.mat.glass, hx + k * 2.5 * s, 2.7, hz + 2.05 * s, g);
+    box(3, 3.2, 0.2, IE.mat.dark, hx, 1.6, hz + 2.6 * s, g); // Tür
+    addCol(hx - 13, hz - 12, hx + 13, hz + 2, 11);
+    is.door = { x: is.x + hx, z: is.z + hz + 2.6 * 1.4 + 1.2 };
+  }
+  if (up.steg) { const sx = is.r - 6; for (let k = 0; k < 10; k++) box(4, 0.3, 2.2, new T.MeshLambertMaterial({ color: 0x8a6a42 }), sx + k * 2.4, -(is.y) + 0.2, 10, g); for (let k = 0; k < 6; k++) { box(0.3, 2, 0.3, new T.MeshLambertMaterial({ color: 0x5a4330 }), sx + k * 4, -(is.y) - 0.8, 9, g); } }
+  if (up.heli) { const hx = 12, hz = 12; box(16, 0.3, 16, new T.MeshLambertMaterial({ color: 0x4a4e52 }), hx, 0.15, hz, g); const circ = new T.Mesh(new T.RingGeometry(5, 6.2, 24), new T.MeshBasicMaterial({ color: 0xf2f2ee, side: T.DoubleSide })); circ.rotation.x = -Math.PI / 2; circ.position.set(hx, 0.35, hz); g.add(circ); const hTex = textTex([{ t: 'H', f: 'bold 90px Arial' }], 64, 64, 'rgba(0,0,0,0)', '#f2f2ee'); const hm = new T.Mesh(new T.PlaneGeometry(6, 6), new T.MeshBasicMaterial({ map: hTex.t, transparent: true })); hm.rotation.x = -Math.PI / 2; hm.position.set(hx, 0.36, hz); g.add(hm); is.heliSpot = { x: is.x + hx, z: is.z + hz }; }
+  if (up.hangar) { const hx = -14, hz = 16, hm = new T.MeshLambertMaterial({ color: 0xb7bcc2, side: T.DoubleSide }); const hg = new T.CylinderGeometry(9, 9, 20, 20, 1, true, 0, Math.PI); hg.rotateZ(Math.PI / 2); hg.rotateY(Math.PI / 2); const roof = new T.Mesh(hg, hm); roof.rotation.y = Math.PI / 2; roof.position.set(hx, 0, hz); g.add(roof); box(20, 0.2, 20, new T.MeshLambertMaterial({ color: 0x9a9c9f }), hx, 0.1, hz, g); addCol(hx - 10, hz - 10, hx - 9, hz + 10, 9); is.hangarSpot = { x: is.x + hx, z: is.z + hz }; }
+  if (up.bahn) { box(10, 0.25, 70, new T.MeshLambertMaterial({ color: 0x3a3c40 }), 0, 0.12, -is.r + 36, g); for (let z = -is.r + 8; z < is.r - 8; z += 8) box(1, 0.26, 3, new T.MeshLambertMaterial({ color: 0xf1f1ea }), 0, 0.14, z, g); is.bahn = true; }
+}
+function drawIslandSigns() {
+  const S = G().S;
+  for (const is of IE.islands) { if (!is.sign) continue; const other = islOwnedByOther(is), own = (S.islands || []).includes(is.id) && !other;
+    const c = document.createElement('canvas'); c.width = 512; c.height = 128; const x = c.getContext('2d'); x.fillStyle = '#1b2b3b'; x.fillRect(0, 0, 512, 128);
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#d9b45a'; x.font = 'bold 44px Georgia'; x.fillText(is.name, 256, 46);
+    x.font = 'bold 32px Arial'; x.fillStyle = own ? '#48e07a' : other ? '#ff9a7a' : '#f3ead8';
+    x.fillText(own ? 'DEINE INSEL' : other ? 'GEHÖRT ' + String(other.nick).toUpperCase().slice(0, 14) : 'ZU VERKAUFEN · ' + (is.price / 1e6) + ' Mio. €', 256, 94);
+    is.sign.material.map.dispose(); is.sign.material.map = new T.CanvasTexture(c); is.sign.material.needsUpdate = true;
+  }
+}
+IE.refreshIslands = drawIslandSigns; IE.rebuildIsland = rebuildIsland;
+function nearIsland(pos) { for (const is of IE.islands) if (Math.hypot(pos.x - is.x, pos.z - is.z) < is.r - 2) return is; return null; }
+function enterIslandHouse(is) {
+  const g = G(), P = g.P; furnishRoom({ id: is.id });
+  g.enterInterior('islh_' + is.id, is.door.x, is.door.z + 4, null);
+  if (P.interior) { P.interior.villa = { id: is.id, name: is.name }; enterVilla.cool = performance.now(); g.toast(is.name, 2); }
+}
+function buyIsland(is) {
+  const g = G(), S = g.S;
+  xModal('island', is.name, [{ name: '🏝 ' + is.name, stat: 'Eine eigene Insel im Meer – baue Villa, Steg, Helikopterplatz, Hangar und Landebahn', btns: [{ label: 'Kaufen · ' + g.fmt(is.price), buy: true, off: S.money < is.price, fn: () => {
+    if (S.money < is.price) return;
+    const done = () => { S.money -= is.price; S.islands = (S.islands || []).concat(is.id); S.islandUp = S.islandUp || {}; S.islandUp[is.id] = S.islandUp[is.id] || {}; g.sfx('cash'); g.saveGame(); drawIslandSigns(); g.closeModals(); g.banner('Insel gekauft', is.name, 'Bau sie aus: geh auf die Insel und drück E', 5); };
+    const a = SRVA();
+    if (isOnline() && a && a.house) a.house('buy', is.id).then(() => { IE.houseOwners[is.id] = { slug: mySlug(), nick: IEaccount.nick }; done(); }).catch(e => { if (e.code === 'taken') { g.toast('Zu spät – ' + is.name + ' gehört schon ' + (e.nick || 'jemandem'), 4); syncHouses(); } else g.toast('Server-Fehler – nochmal versuchen', 3); });
+    else done();
+  } }] }], S.money < is.price ? 'Dir fehlen noch ' + g.fmt(is.price - S.money) + '.' : 'Nach dem Kauf baust du die Insel Stück für Stück aus.');
+}
+function islandMenu(is) {
+  const g = G(), S = g.S; S.islandUp = S.islandUp || {}; const up = S.islandUp[is.id] = S.islandUp[is.id] || {}, rows = [];
+  for (const u of ISL_UP) { const have = !!up[u.id];
+    rows.push({ name: (have ? '✅ ' : '🔨 ') + u.name, stat: have ? 'Gebaut · ' + u.info : u.info, btns: have ? [{ label: 'Gebaut', off: true, fn: () => {} }] : [{ label: 'Bauen · ' + g.fmt(u.price), buy: true, off: S.money < u.price, fn: () => { if (S.money < u.price) return; S.money -= u.price; up[u.id] = true; g.sfx('cash'); g.saveGame(); rebuildIsland(is); islandMenu(is); g.toast(u.name + ' fertig!', 2.5); } }] });
+  }
+  if (up.haus) { rows.push({ name: '🛋 Haus-Einrichtung', stat: 'Möbel für deine Insel-Villa', btns: [{ label: 'Einrichten', fn: () => furnitureMenu({ id: is.id, name: is.name }) }] }); rows.push({ name: '🚪 Villa betreten', stat: '', btns: [{ label: 'Betreten', buy: true, fn: () => { g.closeModals(); enterIslandHouse(is); } }] }); }
+  const sell = Math.round(is.price * 0.7);
+  rows.push({ name: 'Insel verkaufen', stat: 'Du bekommst ' + g.fmt(sell) + ' (die Ausbauten gehen verloren)', btns: [{ label: 'Verkaufen · ' + g.fmt(sell), fn: () => { if (!confirm(is.name + ' wirklich verkaufen?')) return; S.islands = (S.islands || []).filter(x => x !== is.id); delete S.islandUp[is.id]; S.money += sell; g.sfx('cash'); const a = SRVA(); if (isOnline() && a && a.house) a.house('sell', is.id).catch(() => {}); delete IE.houseOwners[is.id]; rebuildIsland(is); drawIslandSigns(); g.saveGame(); g.closeModals(); g.banner('Insel verkauft', is.name, '+ ' + g.fmt(sell), 4); } }] });
+  xModal('island', is.name + ' ausbauen', rows, 'Online gehört die Insel nur dir. Höchstens eigene Inseln kannst du frei ausbauen.');
+}
+IE.islandPrompt = function () {
+  const g = G(), P = g.P; if (P.veh || P.interior) {
+    if (P.interior && P.interior.it && P.interior.it.type && P.interior.it.type.indexOf('islh_') === 0) { const it = P.interior.it; if (Math.hypot(P.pos.x - it.door.x, P.pos.z - it.door.z) < 2.5) return '<b>E</b> · Hinausgehen'; if (Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4.5) return '<b>E</b> · Ausruhen (Gesundheit voll + speichern)'; return '<b>E</b> · Haus-Menü'; }
+    return '';
+  }
+  const is = nearIsland(P.pos); if (!is) return '';
+  const other = islOwnedByOther(is); if (other) return is.name + ' gehört ' + other.nick;
+  if (islMine(is)) { const up = (g.S.islandUp || {})[is.id] || {}; if (up.haus && Math.hypot(P.pos.x - is.door.x, P.pos.z - is.door.z) < 2.2) return '<b>E</b> · Villa betreten'; return '<b>E</b> · ' + is.name + ' ausbauen'; }
+  return '<b>E</b> · ' + is.name + ' kaufen · ' + g.fmt(is.price);
+};
+IE.islandAct = function () {
+  const g = G(), P = g.P;
+  if (P.interior && P.interior.it && P.interior.it.type && P.interior.it.type.indexOf('islh_') === 0) { const it = P.interior.it; if (Math.hypot(P.pos.x - it.door.x, P.pos.z - it.door.z) < 2.5) { g.exitInterior(); enterVilla.cool = performance.now(); return true; } if (Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4.5) { P.health = Math.max(P.health, g.maxHP()); g.saveGame(); g.toast('Ausgeruht · Spiel gespeichert', 2.5); g.sfx('pass'); return true; } for (const is of IE.islands) if (is.id === it.type.slice(5)) { islandMenu(is); break; } return true; }
+  if (P.veh || P.interior) return false;
+  const is = nearIsland(P.pos); if (!is) return false;
+  if (islOwnedByOther(is)) { g.toast(is.name + ' gehört ' + islOwnedByOther(is).nick, 2.5); return true; }
+  if (islMine(is)) { const up = (g.S.islandUp || {})[is.id] || {}; if (up.haus && Math.hypot(P.pos.x - is.door.x, P.pos.z - is.door.z) < 2.2) enterIslandHouse(is); else islandMenu(is); } else buyIsland(is);
+  return true;
+};
 
 // ================= TAG-NACHT-ZYKLUS (24 Min Tag, 5 Min Nacht) =================
 const DAY_SEC = 24 * 60, NIGHT_SEC = 5 * 60, CYCLE = DAY_SEC + NIGHT_SEC;
@@ -1707,6 +1819,7 @@ IE.openSecurity = openSecurity;
 IE.extraPrompt = function () {
   const g = G(), P = g.P; if (!g) return '';
   if (launch) return '';
+  { const ip = IE.islandPrompt && IE.islandPrompt(); if (ip) return ip; }
   if (P.interior) { const it = P.interior.it; if (it.type === 'backrooms' && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 3.2) return g.S.backroomsLoot ? 'Die Truhe ist leer …' : '<b>E</b> · Truhe öffnen'; if (it.type.indexOf('villa') === 0 && P.interior.villa && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4.5) return '<b>E</b> · Ausruhen (Gesundheit voll + speichern)'; if (it.type.indexOf('villa_') === 0 && Math.hypot(P.pos.x - it.door.x, P.pos.z - it.door.z) > 3) return '<b>E</b> · Haus-Menü (Möbel & Lackierung)'; return ''; }
   if (!P.veh && rocket && Math.hypot(P.pos.x - RK.x, P.pos.z - RK.z) < 30) return IE.moonOpen() ? '<b>E</b> · Mit der Rakete zum Mond fliegen' : isAdm() ? '<b>E</b> · ★ Admin: Rakete jetzt für ALLE starten (Countdown ' + fmtCD(RK.launch - Date.now()) + ')' : 'Mondrakete · Start in ' + fmtCD(RK.launch - Date.now());
   if (!P.veh && IE.onMoon && Math.hypot(P.pos.x - MOON.x, P.pos.z - MOON.z) < 16) return '<b>E</b> · Zurück zur Erde fliegen';
@@ -1723,6 +1836,7 @@ IE.extraPrompt = function () {
 IE.extraAct = function () {
   const g = G(), P = g.P;
   if (launch) return true;
+  if (IE.islandAct && IE.islandAct()) return true;
   if (P.interior && P.interior.it.type === 'backrooms' && Math.hypot(P.pos.x - P.interior.it.item.x, P.pos.z - P.interior.it.item.z) < 3.2) { if (!g.S.backroomsLoot) { g.S.backroomsLoot = true; g.addMoney(100000000, true); g.sfx('cash'); g.banner('JACKPOT', 'Die Truhe der Backrooms', '+ ' + g.fmt(100000000), 6); g.saveGame(true); } return true; }
   if (!P.veh && !P.interior && rocket && Math.hypot(P.pos.x - RK.x, P.pos.z - RK.z) < 30) { if (!IE.moonOpen() && isAdm() && window.IEaccount && IEaccount.unlockMoon) IEaccount.unlockMoon(); if (IE.moonOpen() || isAdm()) startLaunch(true); else g.toast('Die Rakete startet am 25. November um 16:00 Uhr', 3); return true; }
   if (!P.veh && IE.onMoon && Math.hypot(P.pos.x - MOON.x, P.pos.z - MOON.z) < 16) { startLaunch(false); return true; }
@@ -1772,6 +1886,7 @@ IE.mapPOIs = function () {
   out.push({ x: RK.x, z: RK.z, kind: 'rocket', label: 'Mondrakete' });
   for (const v of IE.villas) out.push({ x: v.x, z: v.z, kind: S && (S.villas || []).includes(v.id) && !ownedByOther(v) ? 'villaOwn' : 'villa' });
   for (const s of gas) out.push({ x: s.x, z: s.z, kind: 'gas' });
+  for (const is of IE.islands) out.push({ x: is.x, z: is.z, kind: (S && (S.islands||[]).includes(is.id) && !islOwnedByOther(is)) ? 'islandOwn' : 'island', label: is.name });
   return out;
 };
 })();

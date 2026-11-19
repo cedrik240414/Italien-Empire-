@@ -1530,8 +1530,8 @@ function buildMapCanvas() {
 }
 const w2m = (x, z) => ({ x: (x - IE.grid.x0) * MAP.s, y: (z - IE.grid.z0) * MAP.s });
 function icon(g, x, y, kind, size) {
-  const col = { rocket: '#ff8a3c', biz: '#48e07a', bizOwn: '#48e07a', luxury: '#d6b04a', race: '#ff4fd8', villa: '#d9b45a', villaOwn: '#48e07a', gas: '#ff9a3c', plane: '#f2c230', weapon: '#e94b3c', car: '#3aa0ff', heli: '#48e07a', boat: '#35d6e8', base: '#a9c25a', wreck: '#f2c94c', wreckGot: '#6b6b6b', mission: '#f2c230', wp: '#ff5fd2', target: '#f2c230' }[kind];
-  const ch = { rocket: '▲', biz: '♦', bizOwn: '♦', luxury: '€', race: 'R', villa: 'V', villaOwn: '⌂', gas: 'T', plane: '✈', weapon: 'W', car: 'A', heli: 'H', boat: 'B', base: '✪', wreck: '$', wreckGot: '$', mission: 'M', wp: '•', target: '★' }[kind];
+  const col = { island: '#2ec5c0', islandOwn: '#48e07a', rocket: '#ff8a3c', biz: '#48e07a', bizOwn: '#48e07a', luxury: '#d6b04a', race: '#ff4fd8', villa: '#d9b45a', villaOwn: '#48e07a', gas: '#ff9a3c', plane: '#f2c230', weapon: '#e94b3c', car: '#3aa0ff', heli: '#48e07a', boat: '#35d6e8', base: '#a9c25a', wreck: '#f2c94c', wreckGot: '#6b6b6b', mission: '#f2c230', wp: '#ff5fd2', target: '#f2c230' }[kind];
+  const ch = { island: '🏝', islandOwn: '🏝', rocket: '▲', biz: '♦', bizOwn: '♦', luxury: '€', race: 'R', villa: 'V', villaOwn: '⌂', gas: 'T', plane: '✈', weapon: 'W', car: 'A', heli: 'H', boat: 'B', base: '✪', wreck: '$', wreckGot: '$', mission: 'M', wp: '•', target: '★' }[kind];
   g.fillStyle = '#111'; g.beginPath(); g.arc(x, y, size, 0, 7); g.fill(); g.strokeStyle = col; g.lineWidth = Math.max(1.5, size * 0.22); g.stroke();
   g.fillStyle = col; g.font = `bold ${size * 1.15}px Barlow Condensed, Arial`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(ch, x, y + 0.5);
 }
@@ -1616,7 +1616,7 @@ function drawBig() {
   g.save(); g.translate(tx(p.x), ty(p.y)); g.rotate(-P.yaw + Math.PI); g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = 2 * dpr;
   g.beginPath(); g.moveTo(0, -9 * dpr); g.lineTo(7 * dpr, 7 * dpr); g.lineTo(0, 3 * dpr); g.lineTo(-7 * dpr, 7 * dpr); g.closePath(); g.stroke(); g.fill(); g.restore();
   // Legende
-  const items = [['rocket', 'Mondrakete'], ['race', 'Rennstrecke'], ['villa', 'Villa (kaufbar)'], ['gas', 'Tankstelle'], ['plane', 'Flughafen & Hangar'], ['weapon', 'Waffenladen'], ['car', 'Autohaus'], ['luxury', 'Luxus-Autohaus'], ['biz', 'Geschäft (kaufbar)'], ['heli', 'Helikopterplatz'], ['boat', 'Bootsladen & Hafen'], ['base', 'Militärbasis'], ['wreck', 'Schiffswrack (tauchen)'], ['mission', 'Mission'], ['wp', 'Wegpunkt']];
+  const items = [['island', 'Private Insel'], ['rocket', 'Mondrakete'], ['race', 'Rennstrecke'], ['villa', 'Villa (kaufbar)'], ['gas', 'Tankstelle'], ['plane', 'Flughafen & Hangar'], ['weapon', 'Waffenladen'], ['car', 'Autohaus'], ['luxury', 'Luxus-Autohaus'], ['biz', 'Geschäft (kaufbar)'], ['heli', 'Helikopterplatz'], ['boat', 'Bootsladen & Hafen'], ['base', 'Militärbasis'], ['wreck', 'Schiffswrack (tauchen)'], ['mission', 'Mission'], ['wp', 'Wegpunkt']];
   g.fillStyle = 'rgba(13,15,19,0.7)'; g.fillRect(6 * dpr, 6 * dpr, 160 * dpr, (items.length * 20 + 10) * dpr);
   items.forEach((it, i) => { icon(g, 20 * dpr, (20 + i * 20) * dpr, it[0], 7 * dpr); g.fillStyle = '#fff'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = `600 ${13 * dpr}px Barlow Condensed, Arial`; g.fillText(it[1], 34 * dpr, (21 + i * 20) * dpr); });
   $('mapZoom').textContent = MV.zoom.toFixed(1) + '×';
