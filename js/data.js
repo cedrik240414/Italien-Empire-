@@ -255,11 +255,12 @@ for (let i = 7; i < IE.villaRoad.length; i++) { const a = IE.villaRoad[i - 1], b
 for (const v of IE.villas) IE.flatZones.push({ x: v.x, z: v.z + (v.mega ? 3 : 1.25 * v.s), hw: v.mega ? 62 : 10 * v.s + 3, hd: v.mega ? 36 : 9.25 * v.s + 3, h: v.h !== undefined ? v.h : IE.villaRoadH + 1.5, f: v.mega ? 30 : 20, small: true });
 // Private Inseln im offenen Meer (werden zu Land erhoben, kaufbar & ausbaubar)
 IE.islands = [
-  { id: 'iadria',   name: 'Isola Adriatica', x: 1200, z: -630, r: 50, h: 6, price: 20000000 },
-  { id: 'itirreno', name: 'Isola Tirrena',   x: -830, z: 1890, r: 50, h: 6, price: 25000000 },
-  { id: 'iionio',   name: 'Isola Ionica',    x: 1450, z: 1980, r: 50, h: 6, price: 30000000 }
+  { id: 'iadria',   name: 'Isola Adriatica', x: 1200, z: -630, r: 60, h: 6, price: 350000000 },
+  { id: 'iwest',    name: 'Isola del Tirreno', x: -440, z: 640, r: 60, h: 6, price: 400000000 },
+  { id: 'itirreno', name: 'Isola Sarda',     x: -830, z: 1890, r: 60, h: 6, price: 450000000 },
+  { id: 'iionio',   name: 'Isola Ionica',    x: 1450, z: 1980, r: 60, h: 6, price: 500000000 }
 ];
-for (const is of IE.islands) IE.flatZones.push({ x: is.x, z: is.z, hw: is.r - 6, hd: is.r - 6, h: is.h, f: 95, sea: true });
+for (const is of IE.islands) IE.flatZones.push({ x: is.x, z: is.z, hw: is.r - 6, hd: is.r - 6, h: is.h, f: 55, sea: true });
 
 IE.planes = [
   { id: 'piccolo',  name: 'Piccolo 172 (Propeller)', price: 0,       speed: 62,  minSpeed: 22, turn: 1.0, color: 0xf2f2ee, accent: 0xc8372d, kind: 'prop' },

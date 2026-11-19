@@ -1153,7 +1153,7 @@ function buildIslands(scene) {
     is.upGroup = new T.Group(); grp.add(is.upGroup);
     // eigenes Haus-Interieur (immer vorhanden, betreten nur wenn Villa gebaut)
     buildRoom({ id: is.id, name: is.name }, 20 + idx, scene, 'islh_');
-    is.door = { x: is.x - 14, z: is.z + 6 }; // Haustür-Platz
+    is.door = { x: is.x - 26, z: is.z - 6 }; // Haustür-Platz (vor Villa-Bau)
     rebuildIsland(is);
   });
   drawIslandSigns();
@@ -1162,19 +1162,24 @@ function rebuildIsland(is) {
   const up = (G().S.islandUp && G().S.islandUp[is.id]) || {}, g = is.upGroup;
   while (g.children.length) g.remove(g.children[0]);
   const addCol = (x0, z0, x1, z1, top) => IE.addBox(is.x + x0, is.z + z0, is.x + x1, is.z + z1, is.y + top);
+  // Villa in einer Ecke
   if (up.haus) {
-    const s = 1.4, hx = -14, hz = -2;
+    const s = 1.6, hx = -26, hz = -18;
     box(18 * s, 6, 10 * s, IE.mat.white, hx, 3, hz - 3 * s, g); box(14 * s, 5, 8 * s, IE.mat.white, hx - 1.5 * s, 8.5, hz - 4 * s, g);
     box(19 * s, 0.5, 11 * s, new T.MeshLambertMaterial({ color: 0xb75a32 }), hx, 6.2, hz - 3 * s, g);
     for (let k = -3; k <= 3; k++) box(2.1 * s, 3.6, 0.1, IE.mat.glass, hx + k * 2.5 * s, 2.7, hz + 2.05 * s, g);
     box(3, 3.2, 0.2, IE.mat.dark, hx, 1.6, hz + 2.6 * s, g); // Tür
-    addCol(hx - 13, hz - 12, hx + 13, hz + 2, 11);
-    is.door = { x: is.x + hx, z: is.z + hz + 2.6 * 1.4 + 1.2 };
+    addCol(hx - 15, hz - 13, hx + 15, hz + 2, 11);
+    is.door = { x: is.x + hx, z: is.z + hz + 2.6 * s + 1.2 };
   }
-  if (up.steg) { const sx = is.r - 6; for (let k = 0; k < 10; k++) box(4, 0.3, 2.2, new T.MeshLambertMaterial({ color: 0x8a6a42 }), sx + k * 2.4, -(is.y) + 0.2, 10, g); for (let k = 0; k < 6; k++) { box(0.3, 2, 0.3, new T.MeshLambertMaterial({ color: 0x5a4330 }), sx + k * 4, -(is.y) - 0.8, 9, g); } }
-  if (up.heli) { const hx = 12, hz = 12; box(16, 0.3, 16, new T.MeshLambertMaterial({ color: 0x4a4e52 }), hx, 0.15, hz, g); const circ = new T.Mesh(new T.RingGeometry(5, 6.2, 24), new T.MeshBasicMaterial({ color: 0xf2f2ee, side: T.DoubleSide })); circ.rotation.x = -Math.PI / 2; circ.position.set(hx, 0.35, hz); g.add(circ); const hTex = textTex([{ t: 'H', f: 'bold 90px Arial' }], 64, 64, 'rgba(0,0,0,0)', '#f2f2ee'); const hm = new T.Mesh(new T.PlaneGeometry(6, 6), new T.MeshBasicMaterial({ map: hTex.t, transparent: true })); hm.rotation.x = -Math.PI / 2; hm.position.set(hx, 0.36, hz); g.add(hm); is.heliSpot = { x: is.x + hx, z: is.z + hz }; }
-  if (up.hangar) { const hx = -14, hz = 16, hm = new T.MeshLambertMaterial({ color: 0xb7bcc2, side: T.DoubleSide }); const hg = new T.CylinderGeometry(9, 9, 20, 20, 1, true, 0, Math.PI); hg.rotateZ(Math.PI / 2); hg.rotateY(Math.PI / 2); const roof = new T.Mesh(hg, hm); roof.rotation.y = Math.PI / 2; roof.position.set(hx, 0, hz); g.add(roof); box(20, 0.2, 20, new T.MeshLambertMaterial({ color: 0x9a9c9f }), hx, 0.1, hz, g); addCol(hx - 10, hz - 10, hx - 9, hz + 10, 9); is.hangarSpot = { x: is.x + hx, z: is.z + hz }; }
-  if (up.bahn) { box(10, 0.25, 70, new T.MeshLambertMaterial({ color: 0x3a3c40 }), 0, 0.12, -is.r + 36, g); for (let z = -is.r + 8; z < is.r - 8; z += 8) box(1, 0.26, 3, new T.MeshLambertMaterial({ color: 0xf1f1ea }), 0, 0.14, z, g); is.bahn = true; }
+  // Steg am Rand (gegenüber der Villa)
+  if (up.steg) { const sx = is.r - 8, sz = 18; for (let k = 0; k < 12; k++) box(4, 0.3, 2.4, new T.MeshLambertMaterial({ color: 0x8a6a42 }), sx + k * 2.6, -(is.y) + 0.2, sz, g); for (let k = 0; k < 7; k++) box(0.3, 2, 0.3, new T.MeshLambertMaterial({ color: 0x5a4330 }), sx + k * 4.5, -(is.y) - 0.8, sz - 1, g); }
+  // Helikopterplatz (vorne rechts)
+  if (up.heli) { const hx = 24, hz = 22; box(16, 0.3, 16, new T.MeshLambertMaterial({ color: 0x4a4e52 }), hx, 0.15, hz, g); const circ = new T.Mesh(new T.RingGeometry(5, 6.2, 24), new T.MeshBasicMaterial({ color: 0xf2f2ee, side: T.DoubleSide })); circ.rotation.x = -Math.PI / 2; circ.position.set(hx, 0.35, hz); g.add(circ); const hTex = textTex([{ t: 'H', f: 'bold 90px Arial' }], 64, 64, 'rgba(0,0,0,0)', '#f2f2ee'); const hm = new T.Mesh(new T.PlaneGeometry(6, 6), new T.MeshBasicMaterial({ map: hTex.t, transparent: true })); hm.rotation.x = -Math.PI / 2; hm.position.set(hx, 0.36, hz); g.add(hm); is.heliSpot = { x: is.x + hx, z: is.z + hz }; }
+  // Hangar in der gegenüberliegenden Ecke – weit weg von der Villa
+  if (up.hangar) { const hx = 28, hz = -26, hm = new T.MeshLambertMaterial({ color: 0xb7bcc2, side: T.DoubleSide }); const hg = new T.CylinderGeometry(10, 10, 22, 20, 1, true, 0, Math.PI); hg.rotateZ(Math.PI / 2); hg.rotateY(Math.PI / 2); const roof = new T.Mesh(hg, hm); roof.rotation.y = Math.PI / 2; roof.position.set(hx, 0, hz); g.add(roof); box(22, 0.2, 22, new T.MeshLambertMaterial({ color: 0x9a9c9f }), hx, 0.1, hz, g); addCol(hx - 11, hz - 11, hx - 10, hz + 11, 10); is.hangarSpot = { x: is.x + hx, z: is.z + hz }; }
+  // Landebahn quer über die Mitte (an Villa/Heli vorbei)
+  if (up.bahn) { box(11, 0.25, is.r * 1.5, new T.MeshLambertMaterial({ color: 0x3a3c40 }), 2, 0.12, -6, g); for (let z = -is.r + 12; z < is.r - 12; z += 9) box(1, 0.26, 3, new T.MeshLambertMaterial({ color: 0xf1f1ea }), 2, 0.14, z - 6, g); is.bahn = true; }
 }
 function drawIslandSigns() {
   const S = G().S;
