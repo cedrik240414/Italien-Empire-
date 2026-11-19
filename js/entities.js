@@ -187,6 +187,22 @@ IE.makeTank = function (color) {
 // ---------- Boote ----------
 IE.makeBoat = function (def) {
   const outer = new T.Group(), g = new T.Group(); outer.add(g); g.rotation.y = -Math.PI / 2;
+  if (def.kind === 'sub') {
+    const L = 13, W = 2.8, H = 2.8;
+    const hm = new T.MeshStandardMaterial({ color: def.color, metalness: 0.5, roughness: 0.4 });
+    const hull = new T.Mesh(new T.CylinderGeometry(1.35, 1.35, L, 18), hm); hull.rotation.z = Math.PI / 2; hull.castShadow = true; g.add(hull);
+    const nose = new T.Mesh(new T.SphereGeometry(1.35, 16, 10), hm); nose.position.x = L / 2; nose.scale.x = 0.8; g.add(nose);
+    const tail = new T.Mesh(new T.ConeGeometry(1.35, 2.2, 16), hm); tail.rotation.z = -Math.PI / 2; tail.position.x = -L / 2 - 0.6; g.add(tail);
+    const tower = new T.Mesh(new T.BoxGeometry(2.6, 1.6, 1.3), hm); tower.position.set(0.5, 1.4, 0); g.add(tower);
+    const peri = new T.Mesh(new T.CylinderGeometry(0.12, 0.12, 1.4, 6), new T.MeshStandardMaterial({ color: 0x1a1a1a })); peri.position.set(0.9, 2.6, 0); g.add(peri);
+    const str = new T.Mesh(new T.CylinderGeometry(1.36, 1.36, L * 0.7, 18), new T.MeshStandardMaterial({ color: def.accent, metalness: 0.4, roughness: 0.5 })); str.rotation.z = Math.PI / 2; str.scale.y = 0.12; str.position.y = 0.1; g.add(str);
+    for (const sz of [-1, 1]) { const fin = new T.Mesh(new T.BoxGeometry(1.6, 0.1, 1.4), hm); fin.position.set(-L / 2, 0, sz * 1.0); g.add(fin); }
+    const fin2 = new T.Mesh(new T.BoxGeometry(1.6, 1.6, 0.1), hm); fin2.position.set(-L / 2, 0, 0); g.add(fin2);
+    const prop = new T.Group(); prop.position.set(-L / 2 - 1.5, 0, 0); g.add(prop); for (let i = 0; i < 4; i++) { const bl = new T.Mesh(new T.BoxGeometry(0.1, 1.1, 0.3), new T.MeshStandardMaterial({ color: 0xb0b4b8 })); bl.rotation.x = i * Math.PI / 2; prop.add(bl); }
+    // Torpedoröhren vorne (Optik)
+    for (const sz of [-0.5, 0.5]) { const tube = new T.Mesh(new T.CylinderGeometry(0.28, 0.28, 0.6, 10), new T.MeshStandardMaterial({ color: 0x111416 })); tube.rotation.z = Math.PI / 2; tube.position.set(L / 2 + 0.4, -0.3, sz); g.add(tube); }
+    return { group: outer, L, W, H, bodyMat: hm, prop, sub: true };
+  }
   const dims = { jetski: [3.2, 1.2, 0.8], gommone: [5, 2.2, 0.9], riva: [7.5, 2.4, 1.2], speed: [11, 2.8, 1.4], yacht: [22, 6, 3.2] }[def.kind];
   const [L, W, H] = dims;
   const sh = new T.Shape(); sh.moveTo(-L / 2, -W / 2); sh.lineTo(L * 0.15, -W / 2); sh.quadraticCurveTo(L * 0.45, -W * 0.35, L / 2, 0); sh.quadraticCurveTo(L * 0.45, W * 0.35, L * 0.15, W / 2); sh.lineTo(-L / 2, W / 2); sh.closePath();
@@ -222,12 +238,35 @@ IE.makeBoat = function (def) {
 IE.spawnBoat = function (scene, defId, x, z, yaw) {
   const def = IE.boatById[defId], m = IE.makeBoat(def);
   const v = { type: 'boat', def, m, group: m.group, pos: new T.Vector3(x, 0, z), yaw: yaw || 0, speed: 0, steer: 0, pitch: 0, roll: 0,
-    health: def.kind === 'yacht' ? 3000 : 900, maxHealth: def.kind === 'yacht' ? 3000 : 900, driver: null, dead: false, burn: 0, t: Math.random() * 10 };
+    health: def.kind === 'yacht' ? 3000 : def.kind === 'sub' ? 2000 : 900, maxHealth: def.kind === 'yacht' ? 3000 : def.kind === 'sub' ? 2000 : 900, driver: null, dead: false, burn: 0, t: Math.random() * 10, depth: 0, pitch: 0, roll: 0 };
   m.group.position.copy(v.pos); scene.add(m.group); IE.vehicles.push(v); return v;
 };
 IE.updateBoat = function (v, inp, dt) {
   const d = v.def; if (v.dead) inp = {};
   v.t += dt;
+  if (d.kind === 'sub' && !v.dead) {
+    const thr = inp.y || 0, st = inp.x || 0;
+    if (thr > 0) v.speed += d.accel * thr * (1 - Math.max(0, v.speed) / d.speed * 0.7) * dt;
+    else if (thr < 0) v.speed = Math.max(-8, v.speed + 10 * thr * dt);
+    v.speed -= v.speed * 0.4 * dt;
+    v.steer += (st - v.steer) * Math.min(1, dt * 5);
+    const as = Math.abs(v.speed);
+    v.yaw -= v.steer * Math.sign(v.speed) * Math.min(as / 3, 1) * 0.9 * dt;
+    v.depth = Math.max(-26, Math.min(0, (v.depth || 0) + (inp.dive || 0) * 6 * dt));
+    const f = IE.fwd(v.yaw), nx = v.pos.x + f.x * v.speed * dt, nz = v.pos.z + f.z * v.speed * dt;
+    const floor = IE.terrainH(nx, nz);
+    const ahead = IE.terrainH(nx + f.x * 7 * Math.sign(v.speed || 1), nz + f.z * 7 * Math.sign(v.speed || 1));
+    const targetY = Math.max(floor + 1.6, v.depth);
+    if (ahead > targetY + 0.3 && (v.depth > -1.2 || ahead > -0.6)) { if (as > 6) v.health -= as * 3; v.speed *= -0.3; }
+    else { v.pos.x = nx; v.pos.z = nz; }
+    v.pos.y = Math.max(floor + 1.6, v.depth) + (v.depth > -0.3 ? Math.sin(v.t * 1.7) * 0.06 : 0);
+    v.pitch += ((inp.dive || 0) * -0.18 - v.pitch) * Math.min(1, dt * 3);
+    v.roll += (v.steer * Math.min(as / 10, 1) * 0.12 - v.roll) * Math.min(1, dt * 3);
+    if (v.m.prop) v.m.prop.rotation.x += (0.3 + as * 0.2) * dt * 12;
+    v.group.position.copy(v.pos); v.group.rotation.order = 'YXZ'; v.group.rotation.set(0, v.yaw, 0); v.group.rotation.x = v.pitch; v.group.rotation.z = v.roll;
+    v.submerged = v.depth < -1;
+    return;
+  }
   const thr = inp.y || 0, st = inp.x || 0;
   if (thr > 0) v.speed += d.accel * thr * (1 - Math.max(0, v.speed) / d.speed * 0.7) * dt;
   else if (thr < 0) v.speed = Math.max(-6, v.speed + 10 * thr * dt);
@@ -568,11 +607,12 @@ IE.spawnNPC = function (scene, kind, x, z, opts) {
   else if (kind === 'guard') look = { pants: 0x111114, jacket: 0x111114, shirt: 0xf4f4f4, tie: 0x111111, skin: skins[(r() * 5) | 0], hair: 0x111111, glasses: 'sun' };
   else if (kind === 'zombie') { const zs = [0x8fa37a, 0x7d9168, 0x9aa88a, 0x6f8460][(r() * 4) | 0]; look = { pants: [0x2f3440, 0x3d3428, 0x2b2b2b][(r() * 3) | 0], jacket: [0x4a4436, 0x5a3030, 0x3a4a3a, 0x6b6250][(r() * 4) | 0], shirt: 0x8a8070, skin: zs, hair: [0x222222, 0x3a3020, 0x555555][(r() * 3) | 0], female: r() < 0.35 }; }
   else if (kind === 'enemy') look = { pants: 0x161616, jacket: opts.boss ? 0x5a0d0d : 0x1d1d22, shirt: opts.boss ? 0xf0f0f0 : 0x2a2a2a, skin: skins[(r() * 5) | 0], hair: 0x1a1a1a };
+  else if (kind === 'alien') look = { pants: 0x2a3a2a, jacket: 0x314a31, shirt: 0x1a2a1a, skin: 0x8fbf6a, hair: 0x2a3a2a, glasses: 'visor', hands: 0x8fbf6a };
   else look = { pants: pedColors[(r() * 10) | 0], jacket: pedColors[(r() * 10) | 0], shirt: 0xeeeeee, skin: skins[(r() * 5) | 0], hair: [0x2a1a10, 0x111111, 0x7a5a30, 0xaaaaaa][(r() * 4) | 0], female: r() < 0.45 };
   const h = IE.makeHuman(look);
   if (opts.boss) h.group.scale.setScalar(1.12);
   const y = opts.y !== undefined ? opts.y : IE.supportH(x, z, 999);
-  const n = { kind, h, group: h.group, pos: new T.Vector3(x, y, z), yaw: r() * 6.28, health: kind === 'ped' ? 40 : kind === 'guard' ? 400 : kind === 'zombie' ? 60 + r() * 40 : (opts.boss ? 600 : kind === 'police' ? 80 : kind === 'soldier' ? 130 : 90),
+  const n = { kind, h, group: h.group, pos: new T.Vector3(x, y, z), yaw: r() * 6.28, health: kind === 'ped' ? 40 : kind === 'guard' ? 400 : kind === 'zombie' ? 60 + r() * 40 : kind === 'alien' ? 70 + r() * 40 : (opts.boss ? 600 : kind === 'police' ? 80 : kind === 'soldier' ? 130 : 90),
     state: 'walk', timer: r() * 3, phase: r() * 6, dead: false, deadT: 0, shootT: 1 + r() * 2, boss: !!opts.boss, name: opts.name, city: opts.city, mission: !!opts.mission, speed: 0 };
   if (kind !== 'ped' && kind !== 'zombie') IE.setGunLen(h, opts.boss ? 0.5 : kind === 'soldier' ? 0.8 : 0.28);
   h.group.position.copy(n.pos); scene.add(h.group); IE.npcs.push(n); return n;

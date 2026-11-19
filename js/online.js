@@ -36,6 +36,7 @@ O.join = async function (isPublic, code, title) {
   O.room = room; O.active = true;
   room.onPeers(onPeers, e => G().toast('Online-Verbindung beendet (' + e.code + ')', 4));
   room.on('hit', onHit); room.on('kill', onKill); room.on('job', onJob); room.on('jobstep', onJobStep); room.on('jobkill', onJobKill);
+  room.on('free', onFree);
   room.onConnection(c => { O.connected = c; updateBadge(); });
   room.on('admin', msg => { const d = msg.data || {}; if (msg.adm && d.moon !== undefined && window.IEaccount && IEaccount.setMoon) IEaccount.setMoon(d.moon !== 0); if (msg.adm && window.IEaccount && d.kick && d.kick === IEaccount.slug && IEaccount.onBanned) IEaccount.onBanned(); });
   await loadStats(); dirty = true; flushStats();
@@ -46,6 +47,14 @@ O.nearCarPeer = function (pos) {
   let best = null, bd = 1e9; const reach = { car: 4.8, boat: 7.5, heli: 7, plane: 9 };
   for (const r of O.peers.values()) { const pr = r.pr; if (!pr || pr.dead || !pr.v || !reach[pr.v.t] || pr.rd) continue; const d = Math.hypot(r.pos.x - pos.x, r.pos.z - pos.z); if (d < reach[pr.v.t] && Math.abs(r.pos.y - pos.y) < 6 && d < bd) { bd = d; best = r; } }
   return best;
+};
+function onFree(msg) { if (msg && msg.to === O.mePeer && G().P.jailed && IE.releaseJailRemote) IE.releaseJailRemote(); }
+O.freeNearbyJailed = function () {
+  const P = G().P; if (P.jailed) return false;
+  const pp = P.veh ? P.veh.pos : P.pos; let best = null, bd = 5;
+  for (const r of O.peers.values()) { if (!r.pr || !r.pr.jail) continue; const d = r.pos.distanceTo(pp); if (d < bd) { bd = d; best = r; } }
+  if (best) { if (room) room.emit('free', { to: best.peer }).catch(() => { }); G().toast('🔓 Du befreist ' + best.name + '!', 2.5); return true; }
+  return false;
 };
 O.adminMoon = function (open) { if (room) room.emit('admin', { moon: open === false ? 0 : 1 }).catch(() => { }); };
 O.adminKick = function (slug) { if (room) room.emit('admin', { kick: slug }).catch(() => { }); };
@@ -136,6 +145,7 @@ function sendPresence() {
   pr.ship = ship ? { x: r2(ship.pos.x), y: r2(ship.pos.y), z: r2(ship.pos.z), yaw: r2(ship.yaw) } : null;
   pr.rd = P.ride || null; pr.pet = IE.myPetId ? IE.myPetId() : ''; pr.rc = IE.racePresence ? IE.racePresence() : null;
   pr.v = v && v.type !== 'airship' ? { t: v.type, id: v.def.id, yaw: r2(v.yaw), p: r2(v.pitch || 0), r: r2(v.roll || 0), col: v.m.bodyMat ? v.m.bodyMat.color.getHex() : undefined } : null;
+  pr.jail = P.jailed ? 1 : 0;
   room.presence(pr).catch(() => { });
 }
 O.update = function (dt) {

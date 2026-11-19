@@ -459,6 +459,8 @@ function hurtPlayer(dmg) {
   if (P.veh && P.veh.type === 'car') { P.veh.health -= dmg * 4; P.veh.shotT = game.time; dmg *= 0.35; }
   if (S.armor > 0) { const a = Math.min(S.armor, dmg * 0.7); S.armor -= a; dmg -= a; }
   P.health -= dmg; P.hurtT = 0.4;
+  // Festnahme läuft: die Polizei tötet dich nicht, sie verhaftet dich
+  if (P.arrestPending && P.health < maxHP() * 0.2) P.health = maxHP() * 0.2;
   if (P.health <= 0) die();
 }
 function damageNPC(n, dmg, byPlayer) {
@@ -472,6 +474,7 @@ function damageNPC(n, dmg, byPlayer) {
       if (n.kind === 'soldier') { setWanted(3); addWanted(0.5); for (const o of IE.npcs) if (o.kind === 'soldier') o.alert = true; }
       if (n.mission && mission.coop && ONL()) IEonline.jobKill(mission.def.id, mission.step, n.id);
       if (n.kind === 'enemy') { const amt = n.boss ? 5000 : 40 + (Math.random() * 160 | 0); spawnCash(n.pos, amt); }
+      else if (n.kind === 'alien') { spawnCash(n.pos, 400 + (Math.random() * 600 | 0)); game.aliensKilled = (game.aliensKilled || 0) + 1; }
       else if (n.kind === 'zombie') { game.zKills = (game.zKills || 0) + 1; spawnCash(n.pos, 20 + (Math.random() * 60 | 0)); }
       else if (n.kind === 'ped') spawnCash(n.pos, 15 + (Math.random() * 70 | 0));
       else if (n.kind === 'police') spawnCash(n.pos, 60 + (Math.random() * 120 | 0));
@@ -523,6 +526,7 @@ function cycleWeapon(dir) {
 }
 const HELI_GUN = { id: 'heligun', name: 'Bordkanone', dmg: 40, rate: 0.09, range: 320, spread: 0.02, pellets: 1, auto: true };
 function playerShoot(dt) {
+  if (P.jailed) return;
   let w = curWeapon();
   P.fireT -= dt;
   if (w.spin && !P.veh) {
@@ -532,6 +536,7 @@ function playerShoot(dt) {
   }
   if (!inp.fire || P.fireT > 0 || P.under) return;
   if (P.veh && P.veh.m.tank) { P.fireT = 1.5; fireShell(P.veh); return; }
+  if (P.veh && P.veh.def.torpedo) { if (!inp.fire || P.fireT > 0) return; P.fireT = 1.4; IE.fireTorpedo(P.veh); return; }
   if (P.veh && (P.veh.type === 'heli' || P.veh.type === 'plane')) { if (!P.veh.def.armed) return; w = HELI_GUN; }
   else {
     if (P.veh && w.id === 'faust') return;
@@ -783,7 +788,7 @@ function updatePlayer(dt) {
       P.pos.set(v.pos.x, Math.max(v.pos.y, -1.2), v.pos.z); P.vy = 0; toast('Dein Auto ist im Wasser versunken – schwimm an Land!', 3); return;
     }
     if (v.type === 'car') { if (v.loop || (IE.loopCheck && IE.loopCheck(v))) IE.loopUpdate(v, dt); else IE.updateCar(v, { x: mx, y: my, brake: ctrl && inp.hold.space, drift: ctrl && (inp.drift || keys.ShiftLeft || keys.ShiftRight) }, dt); if (v.m.tank) v.m.turret.rotation.y += angDiff(v.m.turret.rotation.y, angDiff(v.yaw, cam.yaw)) * Math.min(1, dt * 3); }
-    else if (v.type === 'boat') IE.updateBoat(v, { x: mx, y: my, brake: ctrl && inp.hold.space }, dt);
+    else if (v.type === 'boat') IE.updateBoat(v, { x: mx, y: my, brake: ctrl && inp.hold.space, dive: v.def.kind === 'sub' && ctrl ? (inp.hold.space ? 1 : 0) - (inp.hold.down ? 1 : 0) : 0 }, dt);
     else if (v.type === 'airship') updateAirship(v, { x: mx, y: my, up: ctrl ? (inp.hold.space ? 1 : 0) - (inp.hold.down ? 1 : 0) : 0 }, dt);
     else if (v.type === 'plane') IE.updatePlane(v, { x: mx, y: my, up: ctrl ? (inp.hold.space ? 1 : 0) - (inp.hold.down ? 1 : 0) : 0, brake: ctrl && inp.hold.down && v.throttle < 0.02 }, dt);
     else IE.updateHeli(v, { x: mx, y: my, up: ctrl ? (inp.hold.space ? 1 : 0) - (inp.hold.down ? 1 : 0) : 0 }, dt);
@@ -1147,7 +1152,7 @@ function spawner(dt) {
   }
   // Polizei
   const sn = starsN();
-  if (sn > 0 && !P.interior) {
+  if (sn > 0 && !P.interior && !IE.onMoon) {
     const count = f => IE.vehicles.filter(v => !v.dead && v.ai && f(v)).length;
     const landSpot = () => { for (let t = 0; t < 15; t++) { const a = Math.random() * 6.28, rr = 150 + Math.random() * 70, x = pp.x + Math.cos(a) * rr, z = pp.z + Math.sin(a) * rr; if (!IE.isLand(x, z)) continue; const tt = { x, z }; if (IE.pushOut(tt, 2.5, IE.groundH(x, z), 1.5)) continue; return tt; } return null; };
     if (count(v => v.police && v.type === 'car') < [0, 1, 2, 3, 4, 4][sn]) { const q = landSpot(); if (q) { const v = IE.spawnCar(scene, 'berlina', q.x, q.z, Math.atan2(pp.x - q.x, pp.z - q.z), { police: true, color: 0x1b2d6b, ai: { pursue: true } }); v.driver = 'npc'; v.def = Object.assign({}, v.def, { speed: 52, accel: 22 }); } }
@@ -1174,6 +1179,60 @@ function policeUpdate(dt) {
     for (const v of IE.vehicles) if (v.police && v.ai) v.removeMe = v.pos.distanceTo(P.pos) > 60 || !!v.ai.heliPursue;
     for (const n of IE.npcs) if (n.kind === 'police') { n.alert = false; if (n.pos.distanceTo(P.pos) > 60) n.remove = true; }
   }
+}
+
+// ---------- Gefängnis: untätig mit Fahndung -> 5 Minuten ----------
+const jailIdle = { t: 0, pos: new T.Vector3(), warn: false };
+function arrestPlayer() {
+  game.wanted = 0; game.seenT = 0;
+  for (const v of IE.vehicles) if (v.police && v.ai && v !== P.veh) v.removeMe = true;
+  for (const n of IE.npcs) if (n.kind === 'police' || n.kind === 'soldier') n.remove = true;
+  if (P.veh) leaveVehicle();
+  if (IE.buildJail) IE.buildJail();
+  const j = IE.jail; if (!j) return;
+  P.veh = null; P.ride = null; P.fly = false; P.swim = false; P.under = false; P.interior = null; P.chute = false;
+  P.pos.set(j.x, j.y + 0.1, j.z - 1); P.vy = 0; P.onGround = true;
+  P.jailed = true; P.jailT = 300; jailIdle.t = 0;
+  $('speed').hidden = true;
+  banner('VERHAFTET', 'Du sitzt 5 Minuten im Gefängnis von Rom', 'Ein anderer Spieler kann dich befreien', 5);
+  sfx('beep', 0.5); saveGame && saveGame();
+}
+function releaseJail(msg) {
+  P.jailed = false; P.jailT = 0; jailIdle.t = 0; jailIdle.pos.copy(P.pos);
+  const h = $('jailHud'); if (h) h.hidden = true;
+  const j = IE.jail; if (j) { P.pos.set(j.x, j.y + 0.1, j.z + j.hd + 5); P.vy = 0; }
+  toast(msg || 'Du bist frei!', 3);
+}
+IE.releaseJailRemote = () => { if (P.jailed) releaseJail('Ein anderer Spieler hat dich befreit!'); };
+function jailUpdate(dt) {
+  // Verhaftung prüfen
+  if (!P.jailed && !P.interior && !IE.onMoon && !game.dead && starsN() > 0) {
+    const moving = Math.abs(inp.mx) > 0.05 || Math.abs(inp.my) > 0.05;
+    const driving = P.veh && (Math.abs(P.veh.speed || 0) > 3 || (P.veh.vel && Math.hypot(P.veh.vel.x, P.veh.vel.z) > 3));
+    const acting = inp.fire || inp.aim || moving || driving || P.ride;
+    if (acting) { jailIdle.t = 0; jailIdle.warn = false; P.arrestPending = false; }
+    else {
+      jailIdle.t += dt;
+      P.arrestPending = jailIdle.t > 0.4;
+      if (jailIdle.t > 4 && !jailIdle.warn) { jailIdle.warn = true; toast('Beweg dich! Sonst nimmt dich die Polizei fest …', 3.5); }
+      if (jailIdle.t > 12) arrestPlayer();
+    }
+  } else if (!P.jailed) { jailIdle.t = 0; P.arrestPending = false; }
+  if (!P.jailed) return;
+  // Im Käfig festhalten
+  game.wanted = 0;
+  const j = IE.jail; if (j) {
+    P.pos.x = clamp(P.pos.x, j.x - j.hw + 1, j.x + j.hw - 1);
+    P.pos.z = clamp(P.pos.z, j.z - j.hd + 1, j.z + j.hd - 1);
+    if (P.pos.y < j.y) { P.pos.y = j.y + 0.05; P.vy = 0; }
+  }
+  P.jailT -= dt;
+  let h = $('jailHud');
+  if (!h) { h = document.createElement('div'); h.id = 'jailHud'; h.style.cssText = 'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:60;background:rgba(13,15,19,.82);border:2px solid #d9b45a;border-radius:10px;padding:8px 16px;color:#fff;font:600 16px Barlow Condensed,Arial;text-align:center;pointer-events:none'; document.body.appendChild(h); }
+  h.hidden = false;
+  const mm = Math.floor(P.jailT / 60), ss = Math.floor(P.jailT % 60);
+  h.innerHTML = '🚔 <b>GEFÄNGNIS</b> · noch ' + mm + ':' + (ss < 10 ? '0' : '') + ss + '<br><span style="font-size:13px;color:#d9b45a">Ein anderer Spieler kann dich an den Gittern befreien</span>';
+  if (P.jailT <= 0) releaseJail('Strafe abgesessen – du bist frei!');
 }
 
 // ---------- Fahrzeug-Verwaltung ----------
@@ -1822,11 +1881,12 @@ function updateHUD(dt) {
   if (isTouch) {
     const inH = P.veh && P.veh.type === 'heli', inC = P.veh && P.veh.type === 'car';
     const inB = P.veh && P.veh.type === 'boat';
+    const inSub = inB && P.veh.def.kind === 'sub';
     const inA = P.veh && P.veh.type === 'airship';
-    $('tDown').style.display = inH || inA || P.fly || (P.swim && !P.veh) ? '' : 'none'; $('tDown').textContent = P.veh && P.veh.type === 'plane' ? 'GAS −' : inH || inA || P.fly ? 'RUNTER' : 'TAUCHEN';
+    $('tDown').style.display = inH || inA || P.fly || inSub || (P.swim && !P.veh) ? '' : 'none'; $('tDown').textContent = P.veh && P.veh.type === 'plane' ? 'GAS −' : inSub ? 'TAUCHEN' : inH || inA || P.fly ? 'RUNTER' : 'TAUCHEN';
     const inP = P.veh && P.veh.type === 'plane';
     if (inP) $('tDown').style.display = '';
-    $('tJump').textContent = !P.veh && !P.onGround && !P.chute && !P.swim && P.pos.y - IE.supportH(P.pos.x, P.pos.z, P.pos.y) > 8 ? 'SCHIRM' : inP ? 'GAS +' : inH || inA || P.fly ? 'HOCH' : inC || inB ? 'BREMSE' : P.swim ? 'AUF' : 'SPRUNG';
+    $('tJump').textContent = !P.veh && !P.onGround && !P.chute && !P.swim && P.pos.y - IE.supportH(P.pos.x, P.pos.z, P.pos.y) > 8 ? 'SCHIRM' : inP ? 'GAS +' : inH || inA || P.fly ? 'HOCH' : inSub ? 'AUF' : inC || inB ? 'BREMSE' : P.swim ? 'AUF' : 'SPRUNG';
     $('tSprint').style.display = P.veh ? 'none' : ''; $('tAim').style.display = P.veh ? 'none' : '';
     $('tFire').style.display = (inH || (P.veh && P.veh.type === 'plane')) && !P.veh.def.armed ? 'none' : '';
     $('tBomb').style.display = P.veh && (inH || P.veh.type === 'plane') && P.veh.def.armed ? '' : 'none';
@@ -1854,10 +1914,12 @@ function frameBody() {
   if (!uiOpen()) {
     if (dlg.active) { if (pressed.has('space') || pressed.has('act') || pressed.has('enter')) advanceDlg(); }
     else if (!game.dead) {
-      if (pressed.has('enter')) tryEnterExit();
-      if (pressed.has('act')) {
+      if (pressed.has('enter') && !P.jailed) tryEnterExit();
+      if (pressed.has('act') && P.jailed) { /* gefangen: keine Aktionen */ }
+      else if (pressed.has('act')) {
         const m = curMission();
-        if (IE.extraAct && IE.extraAct()) { }
+        if (ONL() && IEonline.freeNearbyJailed && IEonline.freeNearbyJailed()) { }
+        else if (IE.extraAct && IE.extraAct()) { }
         else if (!mission.active && m && Math.hypot(P.pos.x - m.x, P.pos.z - m.z) < 7) startMission();
         else if (P.interior && Math.hypot(P.pos.x - P.interior.it.door.x, P.pos.z - P.interior.it.door.z) < 2.6) exitInterior();
         else if (P.interior && P.interior.shop && Math.hypot(P.pos.x - P.interior.it.counter.x, P.pos.z - P.interior.it.counter.z) < 3.4) openShop(P.interior.shop);
@@ -1887,7 +1949,7 @@ function frameBody() {
   if (game.ch.zombies) zombieSpawner(dt);
   for (let i = IE.npcs.length - 1; i >= 0; i--) { const n = IE.npcs[i]; npcUpdate(n, dt); if (n.remove) { scene.remove(n.group); IE.npcs.splice(i, 1); } }
   vehiclesUpdate(dt);
-  spawner(dt); policeUpdate(dt); missionUpdate(dt);
+  spawner(dt); policeUpdate(dt); jailUpdate(dt); missionUpdate(dt);
   // Geld aufsammeln
   for (let i = pickups.length - 1; i >= 0; i--) { const p = pickups[i]; p.t += dt; p.m.rotation.y += dt * 3; if (p.m.position.distanceTo(P.pos) < 2.2 + (P.veh ? 2 : 0)) { addMoney(p.amt); scene.remove(p.m); pickups.splice(i, 1); } else if (p.t > 60) { scene.remove(p.m); pickups.splice(i, 1); } }
   // Schätze in Schiffswracks

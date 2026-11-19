@@ -201,6 +201,7 @@ IE.boats = [
   { id: 'gommone', name: 'Gommone (Schlauchboot)', price: 25000, speed: 26, accel: 12, color: 0x2a2a2a, accent: 0xe05a20, kind: 'gommone' },
   { id: 'riva',    name: 'Motoscafo Riva',  price: 95000,  speed: 46, accel: 18, color: 0x7a4422, accent: 0xf3efe6, kind: 'riva' },
   { id: 'offshore',name: 'Offshore Veloce', price: 240000, speed: 62, accel: 24, color: 0xd11f2a, accent: 0xffffff, kind: 'speed' },
+  { id: 'sub',     name: 'U-Boot (Torpedos)', price: 3000000, speed: 34, accel: 12, color: 0x2a3a46, accent: 0xc8d0d6, kind: 'sub', torpedo: true },
   { id: 'xmasyacht', name: 'Weihnachts-Yacht', price: 0, speed: 34, accel: 9, color: 0xb3001b, accent: 0xd6b04a, kind: 'yacht', xmas: true },
   { id: 'yacht',   name: 'Yacht Azzurra',   price: 750000, speed: 30, accel: 8,  color: 0xf6f6f2, accent: 0x1b3d6e, kind: 'yacht' }
 ];
@@ -273,6 +274,11 @@ IE.planes = [
   { id: 'anfibio',  name: 'Anfibio Grande',          price: 420000,  speed: 82,  minSpeed: 26, turn: 0.9, color: 0xc8372d, accent: 0xf2f2ee, kind: 'sea' },
   { id: 'jetxl',    name: 'Jet Executive XL',        price: 2400000, speed: 175, minSpeed: 45, turn: 0.85, color: 0x1a1a1a, accent: 0xd9b45a, kind: 'jet' },
   { id: 'schlitten', name: 'Rentierschlitten', price: 0, speed: 100, minSpeed: 16, turn: 1.7, color: 0xc8102e, accent: 0xd6b04a, kind: 'sleigh', xmas: true },
+  { id: 'airliner',  name: 'Linienflugzeug',      price: 5000000,  speed: 170, minSpeed: 50, turn: 0.55, color: 0xf2f2ee, accent: 0x1f4fb0, kind: 'jet' },
+  { id: 'wasserjet', name: 'Düsen-Wasserflugzeug', price: 900000,   speed: 120, minSpeed: 34, turn: 1.0,  color: 0x1e7fc8, accent: 0xffffff, kind: 'sea' },
+  { id: 'doppelprop', name: 'Doppelpropeller',     price: 320000,   speed: 95,  minSpeed: 28, turn: 1.1,  color: 0x2e8b57, accent: 0xf2f2ee, kind: 'prop' },
+  { id: 'kunstrot',  name: 'Kunstflug Rosso',      price: 450000,   speed: 112, minSpeed: 24, turn: 2.4,  color: 0xd11f2a, accent: 0x1a1a1a, kind: 'stunt' },
+  { id: 'ueberschall', name: 'Überschalljet',      price: 6500000,  speed: 235, minSpeed: 55, turn: 1.0,  color: 0x9aa0a8, accent: 0xd6b04a, kind: 'jet' },
   { id: 'caccia',   name: 'Caccia (Kampfjet)',       price: 3500000,       speed: 190, minSpeed: 45, turn: 1.4, color: 0x7b8590, accent: 0x4a5236, kind: 'fighter', armed: true, military: true }
 ];
 IE.planeById = {}; IE.planes.forEach(p => IE.planeById[p.id] = p);

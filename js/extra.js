@@ -598,6 +598,16 @@ function updateLaunch(dt) {
     else { setMoon(false); g.teleportTo(RK.x + 30, RK.h, RK.z + 30); if (g.P.fly) g.setFly(false); g.banner('Zurück auf der Erde', 'Mondrakete · Mailand', '', 3); }
   }
 }
+function moonAliensClear() { updateMoon.aliensOn = false; for (const n of IE.npcs) if (n.kind === 'alien') n.remove = true; }
+function moonAliens(dt) {
+  const g = G(), P = g.P; updateMoon.aliensOn = true;
+  if (P.interior || g.game.dead) return;
+  updateMoon.alienT = (updateMoon.alienT || 0) - dt; if (updateMoon.alienT > 0) return; updateMoon.alienT = 2.5;
+  let live = 0; for (const n of IE.npcs) if (n.kind === 'alien' && !n.dead) { live++; if (n.pos.distanceTo(P.pos) > 200) n.remove = true; }
+  const max = G().isTouch ? 7 : 11;
+  const pp = P.veh ? P.veh.pos : P.pos;
+  if (live < max) for (let k = 0; k < 8; k++) { const a = rnd() * 6.28, r = 45 + rnd() * 70, x = pp.x + Math.cos(a) * r, z = pp.z + Math.sin(a) * r; if (x < 9000) continue; const n = IE.spawnNPC(g.scene, 'alien', x, z, {}); n.alert = true; n.id = (rnd() * 100) | 0; n.keep = false; break; }
+}
 function spawnRover() { const g = G(); for (const v of IE.vehicles) if (v.moonRover && !v.driver) v.removeMe = true; const v = IE.spawnCar(g.scene, 'rally', MOON.x - 18, MOON.z + 30, 0, { color: 0xf2f2ee }); v.moonRover = true; v.owned = true; v.def = Object.assign({}, v.def, { name: 'Mond-Rover', speed: 32, kind: 'suv' }); }
 function updateMoon(dt) {
   const g = G(), P = g.P, S = g.S;
@@ -610,8 +620,9 @@ function updateMoon(dt) {
     if (P.veh) { P.veh.yaw += Math.PI; if (P.veh.vel) P.veh.vel.x = -Math.abs(P.veh.vel.x); if (P.veh.speed) P.veh.speed *= 0.5; }
     if (!updateMoon.warn || performance.now() - updateMoon.warn > 4000) { updateMoon.warn = performance.now(); g.toast('Hier ist das Ende der Welt – zum Mond geht es nur mit der Rakete bei Mailand', 3); }
   }
-  if (!IE.onMoon) return;
+  if (!IE.onMoon) { if (updateMoon.aliensOn) moonAliensClear(); return; }
   stars.position.copy(g.camera.position); earth.position.set(g.camera.position.x - 2500, g.camera.position.y + 3200, g.camera.position.z - 4200);
+  moonAliens(dt);
   S.moonGems = S.moonGems || [];
   for (const m of moonGems) {
     const got = S.moonGems.includes(m.id); m.gem.visible = m.beam.visible = !got; if (got) continue;
@@ -625,7 +636,14 @@ function updateMoon(dt) {
 const XM = { test: false, built: false, on: false, snow: false, lights: null, trees: null, flakes: null, terrCol: null, treeCols: [], canes: [], caneT: 5 };
 const dayHash = d => { const x = Math.sin(d * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); };
 IE.xmasActive = () => XM.test || new Date().getMonth() === 11;
-IE.snowToday = () => { if (XM.test) return true; const d = new Date(); if (d.getMonth() !== 11) return false; const day = d.getDate(); return [6, 13, 20, 24, 25, 26, 31].includes(day) || dayHash(day) < 0.45; };
+IE.snowToday = () => {
+  if (XM.test) return true;
+  const d = new Date(), m = d.getMonth(), day = d.getDate();
+  if (m === 11) return [6, 13, 20, 24, 25, 26, 31].includes(day) || dayHash(day) < 0.45; // Dezember: oft
+  if (m === 10) return dayHash(day + 200) < 0.30;                                          // November: manchmal (bis 1. Dez)
+  if (m === 0 || m === 1) return dayHash(day + m * 50) < 0.30;                              // Jan/Feb: manchmal
+  return false;
+};
 IE.adventDay = () => { if (XM.test) return 24; const d = new Date(); return d.getMonth() === 11 ? Math.min(24, d.getDate()) : 0; };
 function buildXmas() {
   if (XM.built) return; XM.built = true;
@@ -666,7 +684,9 @@ function buildXmas() {
     IE.addBox(x - 2, z - 2, x + 2, z + 2, y + 20);
   }
   XM.trees = trees;
-  // Schneeflocken um die Kamera
+}
+function buildSnow() {
+  if (XM.flakes) return; const scene = G().scene;
   const N = 2500, fp = new Float32Array(N * 3); for (let i = 0; i < N; i++) fp.set([(rnd() - 0.5) * 160, rnd() * 80, (rnd() - 0.5) * 160], i * 3);
   const fg = new T.BufferGeometry(); fg.setAttribute('position', new T.BufferAttribute(fp, 3));
   XM.flakes = new T.Points(fg, new T.PointsMaterial({ color: 0xffffff, size: 0.45, transparent: true, opacity: 0.9 })); XM.flakes.visible = false; XM.flakes.frustumCulled = false; scene.add(XM.flakes);
@@ -691,10 +711,11 @@ function setSnow(on) {
   if (XM.flakes) XM.flakes.visible = on;
 }
 function updateXmas(dt) {
-  const g = G(), P = g.P, on = IE.xmasActive() && !IE.onMoon;
+  const g = G(), P = g.P, on = IE.xmasActive() && !IE.onMoon;   // Deko & Kalender: nur im Dezember
+  const snow = IE.snowToday() && !IE.onMoon;                    // Schnee: auch im Nov/Winter
   if (on && !XM.built) buildXmas();
   if (XM.built) { XM.lights.visible = on; XM.trees.visible = on; }
-  const snow = on && IE.snowToday();
+  if (snow && !XM.flakes) buildSnow();
   if (snow !== XM.snow) setSnow(snow);
   if (XM.flakes && XM.flakes.visible) {
     const a = XM.flakes.geometry.attributes.position, c = g.camera.position;
@@ -1651,6 +1672,76 @@ function updateMissiles(dt) {
   }
 }
 
+// ================= GEFÄNGNIS =================
+IE.jail = null;
+IE.buildJail = function () {
+  if (IE.jail) return IE.jail;
+  const g = G(), scene = g.scene;
+  const c = IE.cityById && (IE.cityById.rom || IE.cities[0]);
+  const x = c ? c.x + 30 : 0, z = c ? c.z + c.r + 80 : 300;
+  let y = IE.terrainH(x, z); if (y < 1) y = 1;
+  const hw = 9, hd = 7;
+  const grp = new T.Group(); scene.add(grp);
+  const conc = new T.MeshLambertMaterial({ color: 0x8a8f96 });
+  const bar = new T.MeshStandardMaterial({ color: 0x2b2f35, metalness: 0.6, roughness: 0.5 });
+  const floor = new T.Mesh(new T.BoxGeometry(hw * 2 + 2, 0.6, hd * 2 + 2), new T.MeshLambertMaterial({ color: 0x6f747a })); floor.position.set(x, y + 0.3, z); grp.add(floor);
+  IE.addBox(x - hw - 1, z - hd - 1, x + hw + 1, z + hd + 1, y + 0.6);
+  const roof = new T.Mesh(new T.BoxGeometry(hw * 2 + 2, 0.5, hd * 2 + 2), conc); roof.position.set(x, y + 6, z); grp.add(roof);
+  const wall = (px, pz, w, d) => { const m = new T.Mesh(new T.BoxGeometry(w, 5.4, d), conc); m.position.set(px, y + 3, pz); grp.add(m); IE.addBox(px - w / 2, pz - d / 2, px + w / 2, pz + d / 2, y + 5.4); };
+  wall(x, z - hd, hw * 2 + 2, 0.6); wall(x - hw, z, 0.6, hd * 2); wall(x + hw, z, 0.6, hd * 2);
+  for (let i = -hw + 0.4; i <= hw; i += 1.3) { const b = new T.Mesh(new T.CylinderGeometry(0.11, 0.11, 5.2, 6), bar); b.position.set(x + i, y + 2.8, z + hd); grp.add(b); }
+  const topBar = new T.Mesh(new T.BoxGeometry(hw * 2, 0.26, 0.26), bar); topBar.position.set(x, y + 5.2, z + hd); grp.add(topBar);
+  const midBar = new T.Mesh(new T.BoxGeometry(hw * 2, 0.2, 0.2), bar); midBar.position.set(x, y + 2.6, z + hd); grp.add(midBar);
+  // Pritsche
+  const bed = new T.Mesh(new T.BoxGeometry(5, 0.8, 2.2), new T.MeshLambertMaterial({ color: 0x4a5560 })); bed.position.set(x - hw + 3.2, y + 1.0, z - hd + 2); grp.add(bed);
+  // Schild
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const cx = cv.getContext('2d');
+  cx.fillStyle = '#1a1d22'; cx.fillRect(0, 0, 256, 64); cx.fillStyle = '#d9b45a'; cx.font = 'bold 34px Arial'; cx.textAlign = 'center'; cx.fillText('GEFÄNGNIS', 128, 44);
+  const sign = new T.Mesh(new T.PlaneGeometry(7, 1.8), new T.MeshBasicMaterial({ map: new T.CanvasTexture(cv), transparent: true })); sign.position.set(x, y + 6.8, z + hd + 0.1); grp.add(sign);
+  IE.jail = { x, z, y: y + 0.6, hw, hd, grp };
+  return IE.jail;
+};
+
+// ================= TORPEDOS (U-Boot) =================
+const torpedoes = []; let torpedoCool = 0;
+IE.fireTorpedo = function (v) {
+  const g = G(); v = v || (g.P && g.P.veh);
+  if (!v || v.dead || !v.def || !v.def.torpedo) return;
+  if (torpedoCool > 0) { g.toast('Torpedo lädt …', 0.7); return; }
+  torpedoCool = 1.2;
+  const f = fwd(v.yaw), dir = new T.Vector3(f.x, 0, f.z).normalize();
+  for (const side of [-0.6, 0.6]) {
+    const m = new T.Group();
+    const body = new T.Mesh(new T.CylinderGeometry(0.26, 0.26, 2.4, 10), new T.MeshLambertMaterial({ color: 0xf0d24a })); body.rotation.x = Math.PI / 2; m.add(body);
+    const nose = new T.Mesh(new T.ConeGeometry(0.26, 0.6, 10), new T.MeshLambertMaterial({ color: 0xc8372d })); nose.rotation.x = Math.PI / 2; nose.position.z = 1.5; m.add(nose);
+    for (const a of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) { const fin = new T.Mesh(new T.BoxGeometry(0.06, 0.45, 0.45), new T.MeshLambertMaterial({ color: 0x444444 })); fin.position.set(Math.cos(a) * 0.3, Math.sin(a) * 0.3, -1.1); fin.rotation.z = a; m.add(fin); }
+    const off = { x: f.z * side, z: -f.x * side };
+    m.position.set(v.pos.x + f.x * (v.m.L * 0.5 + 1) + off.x, v.pos.y - 0.3, v.pos.z + f.z * (v.m.L * 0.5 + 1) + off.z);
+    m.rotation.order = 'YXZ'; m.rotation.set(0, v.yaw, 0); g.scene.add(m);
+    torpedoes.push({ m, dir: dir.clone(), vel: Math.max(30, Math.abs(v.speed) + 20), t: 0, start: m.position.clone(), owner: v });
+  }
+  g.sfx('shot', 0.7); g.toast('🫧 Torpedo los!', 0.9);
+};
+function updateTorpedoes(dt) {
+  torpedoCool = Math.max(0, torpedoCool - dt);
+  const g = G();
+  for (let i = torpedoes.length - 1; i >= 0; i--) {
+    const b = torpedoes[i]; b.t += dt; b.vel = Math.min(80, b.vel + 60 * dt);
+    const p = b.m.position; p.addScaledVector(b.dir, b.vel * dt);
+    // Blasenspur
+    if ((b.sm = (b.sm || 0) + dt) > 0.05) { b.sm = 0; const sm = new T.Mesh(new T.SphereGeometry(0.3 + Math.random() * 0.25, 6, 4), new T.MeshBasicMaterial({ color: 0xcfe8f5, transparent: true, opacity: 0.5, depthWrite: false })); sm.position.copy(p).addScaledVector(b.dir, -1.3); g.scene.add(sm); let a = 0; const iv = setInterval(() => { a += 0.1; sm.scale.setScalar(1 + a * 2.5); sm.material.opacity = 0.5 * (1 - a); if (a >= 1) { clearInterval(iv); g.scene.remove(sm); sm.geometry.dispose(); sm.material.dispose(); } }, 40); }
+    const floor = IE.terrainH(p.x, p.z);
+    let hit = p.y <= floor + 0.3 || p.y > 1.5;
+    if (!hit) for (const vv of IE.vehicles) { if (vv === b.owner || vv.dead) continue; if (p.distanceTo(vv.pos) < (vv.type === 'boat' ? vv.m.L * 0.5 + 2 : 4)) { hit = true; if (vv.health != null) vv.health -= 900; break; } }
+    if (!hit) for (const n of IE.npcs) { if (n.dead) continue; if (p.distanceTo(n.pos) < 3) { hit = true; if (g.damageNPC) g.damageNPC(n, 200); break; } }
+    const far = b.start.distanceTo(p) > 900 || b.t > 10;
+    if (hit || far) {
+      g.scene.remove(b.m); torpedoes.splice(i, 1);
+      if (hit) { const at = p.clone(); at.y = Math.max(at.y, floor + 0.4); g.explosion(at, 10); if (window.IEonline && IEonline.active) IEonline.blast(at, 14, 300); }
+    }
+  }
+}
+
 // ================= RAUSSPRINGEN (lange EIN/AUS) + FALLSCHIRM =================
 IE.vehFast = v => {
   if (!v || v.type === 'airship') return false;
@@ -1896,7 +1987,7 @@ function bizTick(dt) {
   for (const s of IE.shops) { if (s.type !== 'biz') continue; const b = S.biz[s.id]; if (!b) continue; const D = IE.bizDefs[s.biz], incMin = D.inc * (1 + 0.5 * (b.lv - 1)); b.cash = Math.min(incMin * 720, (b.cash || 0) + incMin / 60 * dt); }
 }
 IE.extraUpdate = function (dt) {
-  bizTick(dt); guardManager(dt); updateBombs(dt); updateMissiles(dt); updateXmas(dt); updateBoost(dt); updateChute(); updateDriftSmoke(dt); updateHouses(); petTick(dt); homePetsTick(dt); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
+  bizTick(dt); guardManager(dt); updateBombs(dt); updateMissiles(dt); updateTorpedoes(dt); updateXmas(dt); updateBoost(dt); updateChute(); updateDriftSmoke(dt); updateHouses(); petTick(dt); homePetsTick(dt); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
   if (IE.raceBeam) IE.raceBeam.visible = !R;
   updateRace(dt); updateRob(dt);
 };
