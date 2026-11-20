@@ -24,15 +24,12 @@
   const css = document.createElement('style');
   css.textContent = `
   #sveIntro,#launcher,#dubaiScreen{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;font-family:'Barlow',system-ui,sans-serif}
-  #sveIntro{background:radial-gradient(ellipse at 50% 40%,#13203a,#05070c 70%);transition:opacity .6s}
-  .sve-wrap{text-align:center;animation:sveIn 1.1s cubic-bezier(.2,.8,.2,1)}
-  .sve-mark{width:120px;height:120px;margin:0 auto 18px;border-radius:26px;background:linear-gradient(145deg,#1f6feb,#0a2a6b);display:grid;place-items:center;box-shadow:0 20px 60px rgba(31,111,235,.4);position:relative;overflow:hidden}
-  .sve-mark b{font:800 54px 'Barlow',sans-serif;color:#fff;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.4)}
-  .sve-mark::after{content:"";position:absolute;top:-60%;left:-30%;width:60%;height:220%;background:rgba(255,255,255,.22);transform:rotate(20deg);animation:sveShine 2.4s ease-in-out .4s}
-  .sve-name{font:700 40px 'Barlow Condensed',sans-serif;letter-spacing:.32em;color:#eaf1ff;text-transform:uppercase}
-  .sve-sub{font:600 14px 'Barlow Condensed',sans-serif;letter-spacing:.4em;color:#6f8bbf;text-transform:uppercase;margin-top:8px}
-  @keyframes sveIn{from{opacity:0;transform:translateY(16px) scale(.96)}}
-  @keyframes sveShine{0%{left:-40%}60%,100%{left:140%}}
+  #sveIntro{background:#000;transition:opacity .6s}
+  .sve-wrap{text-align:center;width:min(760px,88vw);animation:sveIn 1.4s cubic-bezier(.2,.8,.2,1)}
+  .sve-logo{width:100%;height:auto;display:block;filter:drop-shadow(0 0 30px rgba(180,200,230,.12))}
+  .sve-sub{font:600 13px 'Barlow Condensed',sans-serif;letter-spacing:.5em;color:#7a7a7a;text-transform:uppercase;margin-top:14px;animation:sveFade 1.2s ease .6s both}
+  @keyframes sveIn{from{opacity:0;transform:scale(1.06)}}
+  @keyframes sveFade{from{opacity:0}}
 
   #launcher,#dubaiScreen{overflow-y:auto;padding:28px 16px;background:radial-gradient(ellipse at 50% 20%,#1a2740,#05070c 75%)}
   #launcher[hidden],#dubaiScreen[hidden],#sveIntro[hidden]{display:none!important}
@@ -81,7 +78,7 @@
   const mk = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 
   const sve = mk('div'); sve.id = 'sveIntro';
-  sve.innerHTML = `<div class="sve-wrap"><div class="sve-mark"><b>SVE</b></div><div class="sve-name">SVE Studios</div><div class="sve-sub">präsentiert</div></div>`;
+  sve.innerHTML = `<div class="sve-wrap"><img class="sve-logo" src="js/sve-logo.png?v=69" alt="SVE Studios"><div class="sve-sub">präsentiert</div></div>`;
   document.body.appendChild(sve);
 
   const launcher = mk('div'); launcher.id = 'launcher'; launcher.hidden = true;
