@@ -283,6 +283,9 @@ IE.extraVillaRoads = [
   { pts: [[1040, 1030], [1110, 1030], [1180, 1030], [1250, 1030], [1310, 1030]], h: 112 }      // Kalabrien bei Reggio
 ];
 for (const r of IE.extraVillaRoads) for (let i = 1; i < r.pts.length; i++) { const a = r.pts[i - 1], b = r.pts[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 5, hd: Math.abs(b[1] - a[1]) / 2 + 6, h: r.h, f: 18, small: true }); }
+// Tunnel/Einschnitt durch die Villen-Bergkette (damit man nicht den ganzen steilen Hang hoch muss)
+IE.tunnel = { x: 360, z0: -40, z1: 225, y: 44, coverZ0: 10, coverZ1: 115 };
+IE.flatZones.push({ x: IE.tunnel.x, z: (IE.tunnel.z0 + IE.tunnel.z1) / 2, hw: 9, hd: (IE.tunnel.z1 - IE.tunnel.z0) / 2, h: IE.tunnel.y, f: 16, small: true });
 // Private Inseln im offenen Meer (werden zu Land erhoben, kaufbar & ausbaubar)
 IE.islands = [
   { id: 'iadria',   name: 'Isola Adriatica', x: 1200, z: -630, r: 60, h: 6, price: 350000000 },

@@ -358,6 +358,7 @@ IE.buildExtras = function (scene) {
   try { buildTrack(scene); } catch (e) { console.error('Strecke', e); }
   try { buildVillas(scene); IE.villas.forEach((v, i) => buildRoom(v, i, scene)); } catch (e) { console.error('Villen', e); }
   try { buildIslands(scene); } catch (e) { console.error('Inseln', e); }
+  try { buildTunnel(scene); } catch (e) { console.error('Tunnel', e); }
   try { buildGas(scene); } catch (e) { console.error('Tankstellen', e); }
 };
 
@@ -1671,6 +1672,43 @@ function updateMissiles(dt) {
       if (hit || b.t <= 6) { g.explosion(p.clone(), 9); if (window.IEonline && IEonline.active) IEonline.blast(p, 12, 260); }
     }
   }
+}
+
+// ================= TUNNEL durch die Villen-Bergkette =================
+function buildTunnel(scene) {
+  const T2 = IE.tunnel; if (!T2) return;
+  const x = T2.x, y = T2.y;
+  const conc = new T.MeshLambertMaterial({ color: 0x9397a0 });
+  const dark = new T.MeshLambertMaterial({ color: 0x23262b });
+  const mk = (w, h, d, mat, px, py, pz) => { const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat); m.position.set(px, py, pz); scene.add(m); return m; };
+  // Straße durch den Einschnitt/Tunnel (liegt auf dem geebneten Korridor, Höhe y)
+  const road = openPolyline([[x, T2.z0], [x, (T2.z0 + T2.z1) / 2], [x, T2.z1]], 4); withDirs(road, false);
+  scene.add(new T.Mesh(ribbon(road, -4, 4, 0.15, false), new T.MeshLambertMaterial({ color: 0x45474b })));
+  // Mittelstreifen
+  scene.add(new T.Mesh(ribbon(road, -0.15, 0.15, 0.17, false), new T.MeshLambertMaterial({ color: 0xd8c23a })));
+  // Überdachter Tunnelabschnitt
+  const cz0 = T2.coverZ0, cz1 = T2.coverZ1, len = cz1 - cz0, cz = (cz0 + cz1) / 2;
+  for (const sx of [-1, 1]) mk(0.8, 9, len, conc, x + sx * 5, y + 4.5, cz);       // Seitenwände
+  mk(11.6, 1.0, len, conc, x, y + 9, cz);                                           // Decke außen
+  mk(10, 0.4, len, dark, x, y + 8.4, cz);                                           // Decke innen (dunkel)
+  // Deckel oben (berg-grün), damit es von oben wie durchgehender Berg aussieht
+  mk(12, 0.8, len, new T.MeshLambertMaterial({ color: 0x6f9b52 }), x, y + 9.7, cz);
+  // Lampen innen
+  for (let z = cz0 + 10; z < cz1; z += 22) mk(1.6, 0.3, 0.7, new T.MeshBasicMaterial({ color: 0xffe79a }), x, y + 8.1, z);
+  // Portale an beiden Enden (Pfeiler + Sturz, Mitte offen zum Durchfahren)
+  for (const pz of [cz0, cz1]) {
+    for (const sx of [-1, 1]) mk(2.2, 11, 1.6, conc, x + sx * 5.6, y + 5.5, pz);
+    mk(14, 2.4, 1.6, conc, x, y + 10.2, pz);
+    // dunkles Tunnelmaul (etwas nach innen versetzt)
+    const inset = pz === cz0 ? 0.9 : -0.9;
+    const mouth = new T.Mesh(new T.PlaneGeometry(9.2, 8.6), new T.MeshLambertMaterial({ color: 0x15171b })); mouth.position.set(x, y + 4.3, pz + inset); mouth.rotation.y = pz === cz0 ? 0 : Math.PI; scene.add(mouth);
+  }
+  // Schild über dem Nordportal
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const g = cv.getContext('2d');
+  g.fillStyle = '#1a1d22'; g.fillRect(0, 0, 256, 64); g.fillStyle = '#e8e8e2'; g.font = 'bold 30px Arial'; g.textAlign = 'center'; g.fillText('GALLERIA', 128, 42);
+  const sign = new T.Mesh(new T.PlaneGeometry(8, 2), new T.MeshBasicMaterial({ map: new T.CanvasTexture(cv), transparent: true })); sign.position.set(x, y + 12.2, cz0 - 0.5); scene.add(sign);
+  // Begehbares Tunneldach (Collider), damit die Bench darüber durchgehend bleibt
+  IE.addBox(x - 6, cz0, x + 6, cz1, y + 10.2);
 }
 
 // ================= GEFÄNGNIS =================
