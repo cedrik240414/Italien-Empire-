@@ -263,7 +263,7 @@ function buildVillas(scene) {
   const road = openPolyline(IE.villaRoad, 3); withDirs(road, false);
   IE.villaRoadPts = road;
   scene.add(new T.Mesh(ribbon(road, -4.5, 4.5, 0.12, false), new T.MeshLambertMaterial({ color: 0x46484c })));
-  if (IE.villaRoad2) { const road2 = openPolyline(IE.villaRoad2, 3); withDirs(road2, false); IE.villaRoad2Pts = road2; scene.add(new T.Mesh(ribbon(road2, -4.5, 4.5, 0.12, false), new T.MeshLambertMaterial({ color: 0x46484c }))); }
+  if (IE.extraVillaRoads) for (const er of IE.extraVillaRoads) { const r2 = openPolyline(er.pts, 3); withDirs(r2, false); scene.add(new T.Mesh(ribbon(r2, -4.5, 4.5, 0.12, false), new T.MeshLambertMaterial({ color: 0x46484c }))); }
   const wallMat = new T.MeshLambertMaterial({ color: 0xd9c8a3 });
   // Mauer talseitig entlang der Panoramastraße
   for (let i = 0; i < road.length; i += 3) { const p = road[i]; if (p.s < 150) continue; const x = p.x + p.dz * 5.2, z = p.z - p.dx * 5.2; const m = box(0.5, 1, 3.2, wallMat, x, IE.groundH(x, z) + 0.5, z, scene); m.rotation.y = Math.atan2(p.dx, p.dz); }
@@ -1678,9 +1678,10 @@ IE.jail = null;
 IE.buildJail = function () {
   if (IE.jail) return IE.jail;
   const g = G(), scene = g.scene;
-  // Gefängnis liegt in der Militärbasis (Sardinien)
-  const base = IE.base ? IE.geo(IE.base.lon, IE.base.lat) : null;
-  const x = base ? base.x + 70 : 0, z = base ? base.z - 40 : 300;
+  // Gefängnis liegt NEBEN der Militärbasis (nördlich davor, außerhalb der Sperrzone –
+  // damit man beim Rauskommen nicht sofort von Soldaten beschossen wird)
+  const base = IE.base;
+  const x = base ? base.x : 0, z = base ? base.z - base.hd - 95 : 300;
   let y = IE.terrainH(x, z); if (y < 1) y = 1;
   const hw = 9, hd = 7;
   const grp = new T.Group(); scene.add(grp);

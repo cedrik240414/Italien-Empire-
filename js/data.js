@@ -252,6 +252,20 @@ IE.villas.push(
   { id: 'b4', name: 'Villa Vetta',          x: 580, z: 76, h: 82, side: 's', price: 6000000 },
   { id: 'b5', name: 'Villa Aquila',         x: 690, z: 8,  h: 82, side: 'n', price: 8000000 },
   { id: 'b6', name: 'Villa Belvedere Alto', x: 690, z: 76, h: 82, side: 's', price: 11000000 });
+// Dritte Villen-Gegend: Toskana-Hügel bei Pisa
+IE.villas.push(
+  { id: 't1', name: 'Villa Toscana',  x: -730, z: -1010, h: 92, side: 'n', price: 1800000 },
+  { id: 't2', name: 'Villa Chianti',  x: -680, z: -940,  h: 92, side: 's', price: 2800000 },
+  { id: 't3', name: 'Villa Firenze',  x: -620, z: -1010, h: 92, side: 'n', price: 4000000 },
+  { id: 't4', name: 'Villa Girasole', x: -570, z: -940,  h: 92, side: 's', price: 5500000 },
+  { id: 't5', name: 'Villa Collina',  x: -520, z: -1010, h: 92, side: 'n', price: 7000000 });
+// Vierte Villen-Gegend: Berge bei Reggio Calabria (Süden)
+IE.villas.push(
+  { id: 'c1', name: 'Villa Calabra',     x: 1080, z: 995,  h: 112, side: 'n', price: 2000000 },
+  { id: 'c2', name: 'Villa Scilla',      x: 1130, z: 1065, h: 112, side: 's', price: 3000000 },
+  { id: 'c3', name: 'Villa Jonica',      x: 1180, z: 995,  h: 112, side: 'n', price: 4200000 },
+  { id: 'c4', name: 'Villa Aspromonte',  x: 1230, z: 1065, h: 112, side: 's', price: 6000000 },
+  { id: 'c5', name: 'Villa dello Stretto',x: 1270, z: 995, h: 112, side: 'n', price: 8500000 });
 IE.villas.push(
   { id: 'm1', name: 'Villa Lago di Como',     x: -926,  z: -1720, h: 45, side: 'n', price: 28000000, mega: true },
   { id: 'm2', name: 'Tenuta Toscana',         x: -416,  z: -440,  h: 7,  side: 'n', price: 22000000, mega: true },
@@ -262,10 +276,13 @@ IE.villas.push(
 for (const v of IE.villas) v.s = v.mega ? 3 : v.big ? 2 : 1.6;
 for (let i = 7; i < IE.villaRoad.length; i++) { const a = IE.villaRoad[i - 1], b = IE.villaRoad[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 3, hd: Math.abs(b[1] - a[1]) / 2 + 6, h: IE.villaRoadH, f: 16, small: true }); }
 for (const v of IE.villas) IE.flatZones.push({ x: v.x, z: v.z + (v.mega ? 3 : 1.25 * v.s), hw: v.mega ? 62 : 10 * v.s + 3, hd: v.mega ? 36 : 9.25 * v.s + 3, h: v.h !== undefined ? v.h : IE.villaRoadH + 1.5, f: v.mega ? 30 : 20, small: true });
-// Panoramastraße der zweiten Villen-Gegend (Berghang)
-IE.villaRoad2 = [[415, 42], [480, 42], [540, 42], [600, 42], [660, 42], [735, 42]];
-IE.villaRoad2H = 82;
-for (let i = 1; i < IE.villaRoad2.length; i++) { const a = IE.villaRoad2[i - 1], b = IE.villaRoad2[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 5, hd: Math.abs(b[1] - a[1]) / 2 + 6, h: IE.villaRoad2H, f: 18, small: true }); }
+// Panoramastraßen der zusätzlichen Villen-Gegenden (Berghänge)
+IE.extraVillaRoads = [
+  { pts: [[415, 42], [480, 42], [540, 42], [600, 42], [660, 42], [735, 42]], h: 82 },        // Berg bei Rom/Neapel
+  { pts: [[-770, -975], [-690, -975], [-610, -975], [-530, -975], [-480, -975]], h: 92 },     // Toskana bei Pisa
+  { pts: [[1040, 1030], [1110, 1030], [1180, 1030], [1250, 1030], [1310, 1030]], h: 112 }      // Kalabrien bei Reggio
+];
+for (const r of IE.extraVillaRoads) for (let i = 1; i < r.pts.length; i++) { const a = r.pts[i - 1], b = r.pts[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 5, hd: Math.abs(b[1] - a[1]) / 2 + 6, h: r.h, f: 18, small: true }); }
 // Private Inseln im offenen Meer (werden zu Land erhoben, kaufbar & ausbaubar)
 IE.islands = [
   { id: 'iadria',   name: 'Isola Adriatica', x: 1200, z: -630, r: 60, h: 6, price: 350000000 },
