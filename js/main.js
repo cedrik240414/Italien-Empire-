@@ -6,7 +6,7 @@ const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 const angDiff = (a, b) => { let d = b - a; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return d; };
-const fmt = n => '€ ' + Math.round(n).toLocaleString('de-DE');
+const fmt = n => (window.IE_GAME === 'dubai' ? 'AED ' : '€ ') + Math.round(n).toLocaleString('de-DE');
 const touchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 let isTouch = touchDevice; // wird nach dem Laden der Optionen gesetzt (Steuerung: Touch oder Tastatur & Maus)
 
@@ -2018,7 +2018,9 @@ function startGame(cont, mode) {
     // Jack kommt am Bahnhof von Neapel an – mit kaputtem Wagen
     placePlayer(m.x + 3, m.z + 4); P.yaw = Math.atan2(m.x - P.pos.x, m.z - P.pos.z); cam.yaw = P.yaw;
     const v = IE.spawnCar(scene, 'cinquino', m.x - 8, m.z + 4, 0, { color: 0x8a6f4a }); v.health = 450;
-    setTimeout(() => banner(IE.chapters[0], 'Aeroporto di Napoli', 'Gelber Lichtstrahl = Mission · Dein Hangar ist nebenan', 6), 300);
+    setTimeout(() => window.IE_GAME === 'dubai'
+      ? banner('Dubai Empire', 'Willkommen in Dubai', 'Karim landet aus Hamburg – bau dein Imperium auf', 6)
+      : banner(IE.chapters[0], 'Aeroporto di Napoli', 'Gelber Lichtstrahl = Mission · Dein Hangar ist nebenan', 6), 300);
   } else {
     const c = IE.cityById[IE.chars[S.char].home]; placePlayer(c.cx + 30, c.cz + 55);
   }
