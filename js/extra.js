@@ -1677,31 +1677,35 @@ function updateMissiles(dt) {
 // ================= TUNNEL durch die Villen-Bergkette =================
 function buildTunnel(scene) {
   const T2 = IE.tunnel; if (!T2) return;
-  const y = T2.y, L = T2.len, cov = L * 0.72;
+  const y = T2.y, L = T2.len, cov = T2.cover;
   const g = new T.Group(); g.position.set(T2.cx, y, T2.cz); g.rotation.y = T2.ang; scene.add(g);
   const conc = new T.MeshLambertMaterial({ color: 0x9397a0 });
-  const dark = new T.MeshLambertMaterial({ color: 0x23262b });
+  const dark = new T.MeshLambertMaterial({ color: 0x1a1d21 });
+  const rock = new T.MeshLambertMaterial({ color: 0x6f9b52 });
   const mk = (w, h, d, mat, px, py, pz) => { const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat); m.position.set(px, py, pz); g.add(m); return m; };
-  // Straße durch den Tunnel (lokal entlang z), Mittelstreifen
+  // Straße durch den Tunnel (lokal entlang z) inkl. Zufahrtsrampen, Mittelstreifen
   const rd = new T.Mesh(new T.PlaneGeometry(8, L), new T.MeshLambertMaterial({ color: 0x45474b })); rd.rotation.x = -Math.PI / 2; rd.position.y = 0.2; g.add(rd);
   const cl = new T.Mesh(new T.PlaneGeometry(0.3, L), new T.MeshLambertMaterial({ color: 0xd8c23a })); cl.rotation.x = -Math.PI / 2; cl.position.y = 0.22; g.add(cl);
-  // Überdachter Mittelteil: Wände, Decke, grüner Deckel oben
-  for (const sx of [-1, 1]) mk(0.8, 9, cov, conc, sx * 5, 4.5, 0);
-  mk(11.6, 1.0, cov, conc, 0, 9, 0);
-  mk(10, 0.4, cov, dark, 0, 8.4, 0);
-  mk(12, 0.8, cov, new T.MeshLambertMaterial({ color: 0x6f9b52 }), 0, 9.7, 0);
-  for (let z = -cov / 2 + 8; z < cov / 2; z += 20) mk(1.6, 0.3, 0.7, new T.MeshBasicMaterial({ color: 0xffe79a }), 0, 8.1, z);
-  // Portale (Pfeiler + Sturz) an beiden Enden des überdachten Teils
+  // Tunnelröhre (überdachter Mittelteil): Wände + Decke
+  for (const sx of [-1, 1]) mk(0.8, 11, cov, conc, sx * 4.8, 5.5, 0);
+  mk(10.4, 0.8, cov, conc, 0, 11, 0);
+  mk(9, 0.4, cov, dark, 0, 10.5, 0);          // dunkle Innendecke
+  // BERG-DECKEL: Fels/Grün über der Röhre bis aufs Bergniveau -> der Berg bleibt oben drüber ganz
+  mk(13, 24, cov, rock, 0, 11 + 12, 0);       // von y+11 bis y+35 (= Bergoberfläche ~79)
+  // Lampen innen
+  for (let z = -cov / 2 + 9; z < cov / 2; z += 18) mk(1.6, 0.3, 0.7, new T.MeshBasicMaterial({ color: 0xffe79a }), 0, 10.2, z);
+  // Portale (Pfeiler + Sturz) an beiden Enden, Mitte offen zum Durchfahren
   for (const pz of [-cov / 2, cov / 2]) {
-    for (const sx of [-1, 1]) mk(2.2, 11, 1.6, conc, sx * 5.6, 5.5, pz);
-    mk(14, 2.4, 1.6, conc, 0, 10.2, pz);
+    for (const sx of [-1, 1]) mk(2.4, 12, 1.4, conc, sx * 5.4, 6, pz);
+    mk(13.5, 2.6, 1.4, conc, 0, 11.3, pz);
+    const mouth = new T.Mesh(new T.PlaneGeometry(8.6, 9.6), new T.MeshLambertMaterial({ color: 0x101216 })); mouth.position.set(0, 4.8, pz + (pz < 0 ? 0.8 : -0.8)); mouth.rotation.y = pz < 0 ? 0 : Math.PI; g.add(mouth);
   }
-  // Schild über einem Portal
+  // Schild über dem Portal
   const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const ctx = cv.getContext('2d');
   ctx.fillStyle = '#1a1d22'; ctx.fillRect(0, 0, 256, 64); ctx.fillStyle = '#e8e8e2'; ctx.font = 'bold 30px Arial'; ctx.textAlign = 'center'; ctx.fillText('GALLERIA', 128, 42);
-  const sign = new T.Mesh(new T.PlaneGeometry(8, 2), new T.MeshBasicMaterial({ map: new T.CanvasTexture(cv), transparent: true })); sign.position.set(0, 12.2, -cov / 2 - 0.4); g.add(sign);
-  // Begehbares Tunneldach (Collider, achsenparallel genähert)
-  IE.addBox(T2.cx - 12, T2.cz - 12, T2.cx + 12, T2.cz + 12, y + 10.2);
+  const sign = new T.Mesh(new T.PlaneGeometry(8, 2), new T.MeshBasicMaterial({ map: new T.CanvasTexture(cv), transparent: true })); sign.position.set(0, 13.2, -cov / 2 - 0.3); g.add(sign);
+  // Begehbares Deckel-Dach (Collider, achsenparallel genähert) auf Bergniveau
+  IE.addBox(T2.cx - 13, T2.cz - 13, T2.cx + 13, T2.cz + 13, y + 35);
 }
 
 // ================= GEFÄNGNIS =================

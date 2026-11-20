@@ -283,10 +283,10 @@ IE.extraVillaRoads = [
   { pts: [[1040, 1030], [1110, 1030], [1180, 1030], [1250, 1030], [1310, 1030]], h: 112 }      // Kalabrien bei Reggio
 ];
 for (const r of IE.extraVillaRoads) for (let i = 1; i < r.pts.length; i++) { const a = r.pts[i - 1], b = r.pts[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 5, hd: Math.abs(b[1] - a[1]) / 2 + 6, h: r.h, f: 18, small: true }); }
-// Tunnel genau auf der Straßen-Querung über den Villen-Rücken (diagonal bei x~715, z~8),
-// die ganze Querung wird auf Höhe 52 abgesenkt, damit die echte Straße nicht über den Gipfel (~80) muss
-IE.tunnel = { cx: 715, cz: 8, y: 52, ang: Math.PI / 4, len: 60 };
-IE.flatZones.push({ x: IE.tunnel.cx, z: IE.tunnel.cz, hw: 32, hd: 34, h: IE.tunnel.y, f: 20, small: true });
+// Echter Tunnel DURCH den Villen-Rücken: schmaler Einschnitt entlang der Straße (diagonal),
+// darüber bleibt der Berg als Deckel stehen -> man fährt durch den Berg, nicht über ihn.
+IE.tunnel = { cx: 716, cz: 7, y: 44, ang: Math.PI / 4, len: 66, cover: 42 };
+(function () { const t = IE.tunnel, dx = Math.sin(t.ang), dz = Math.cos(t.ang); for (let s = -t.len / 2; s <= t.len / 2; s += 5) IE.flatZones.push({ x: t.cx + dx * s, z: t.cz + dz * s, hw: 7, hd: 7, h: t.y, f: 7, small: true }); })();
 // Private Inseln im offenen Meer (werden zu Land erhoben, kaufbar & ausbaubar)
 IE.islands = [
   { id: 'iadria',   name: 'Isola Adriatica', x: 1200, z: -630, r: 60, h: 6, price: 350000000 },
