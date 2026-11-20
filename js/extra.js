@@ -358,7 +358,6 @@ IE.buildExtras = function (scene) {
   try { buildTrack(scene); } catch (e) { console.error('Strecke', e); }
   try { buildVillas(scene); IE.villas.forEach((v, i) => buildRoom(v, i, scene)); } catch (e) { console.error('Villen', e); }
   try { buildIslands(scene); } catch (e) { console.error('Inseln', e); }
-  try { buildTunnel(scene); } catch (e) { console.error('Tunnel', e); }
   try { buildGas(scene); } catch (e) { console.error('Tankstellen', e); }
 };
 

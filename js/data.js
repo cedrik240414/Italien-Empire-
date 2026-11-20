@@ -250,7 +250,7 @@ IE.villas.push(
   { id: 'b2', name: 'Villa Cima',           x: 470, z: 76, h: 82, side: 's', price: 3200000 },
   { id: 'b3', name: 'Villa Nevosa',         x: 580, z: 8,  h: 82, side: 'n', price: 4500000 },
   { id: 'b4', name: 'Villa Vetta',          x: 580, z: 76, h: 82, side: 's', price: 6000000 },
-  { id: 'b5', name: 'Villa Aquila',         x: 400, z: 8,  h: 82, side: 'n', price: 8000000 },
+  { id: 'b5', name: 'Villa Aquila',         x: 690, z: 8,  h: 82, side: 'n', price: 8000000 },
   { id: 'b6', name: 'Villa Belvedere Alto', x: 690, z: 76, h: 82, side: 's', price: 11000000 });
 // Dritte Villen-Gegend: Toskana-Hügel bei Pisa
 IE.villas.push(
@@ -283,10 +283,6 @@ IE.extraVillaRoads = [
   { pts: [[1040, 1030], [1110, 1030], [1180, 1030], [1250, 1030], [1310, 1030]], h: 112 }      // Kalabrien bei Reggio
 ];
 for (const r of IE.extraVillaRoads) for (let i = 1; i < r.pts.length; i++) { const a = r.pts[i - 1], b = r.pts[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 5, hd: Math.abs(b[1] - a[1]) / 2 + 6, h: r.h, f: 18, small: true }); }
-// Echter Tunnel DURCH den Villen-Rücken: schmaler Einschnitt entlang der Straße (diagonal),
-// darüber bleibt der Berg als Deckel stehen -> man fährt durch den Berg, nicht über ihn.
-IE.tunnel = { cx: 716, cz: 7, y: 44, ang: Math.PI / 4, len: 66, cover: 42 };
-(function () { const t = IE.tunnel, dx = Math.sin(t.ang), dz = Math.cos(t.ang); for (let s = -t.len / 2; s <= t.len / 2; s += 5) IE.flatZones.push({ x: t.cx + dx * s, z: t.cz + dz * s, hw: 7, hd: 7, h: t.y, f: 7, small: true }); })();
 // Private Inseln im offenen Meer (werden zu Land erhoben, kaufbar & ausbaubar)
 IE.islands = [
   { id: 'iadria',   name: 'Isola Adriatica', x: 1200, z: -630, r: 60, h: 6, price: 350000000 },
