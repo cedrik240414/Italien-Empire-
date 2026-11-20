@@ -244,6 +244,14 @@ IE.villas.push(
   { id: 'v9',  name: 'Villa Mare',      x: 460, z: 188, side: 's', price: 2600000 },
   { id: 'v10', name: 'Villa Panorama',  x: 660, z: 188, side: 's', price: 3800000 },
   { id: 'v11', name: 'Villa Corallo',   x: 700, z: 188, side: 's', price: 5200000 });
+// Zweite Villen-Gegend: Berghang nördlich (verschneiter Gipfel, Panorama über Rom & den Golf)
+IE.villas.push(
+  { id: 'b1', name: 'Villa Montebianco',    x: 470, z: 8,  h: 82, side: 'n', price: 2000000 },
+  { id: 'b2', name: 'Villa Cima',           x: 470, z: 76, h: 82, side: 's', price: 3200000 },
+  { id: 'b3', name: 'Villa Nevosa',         x: 580, z: 8,  h: 82, side: 'n', price: 4500000 },
+  { id: 'b4', name: 'Villa Vetta',          x: 580, z: 76, h: 82, side: 's', price: 6000000 },
+  { id: 'b5', name: 'Villa Aquila',         x: 690, z: 8,  h: 82, side: 'n', price: 8000000 },
+  { id: 'b6', name: 'Villa Belvedere Alto', x: 690, z: 76, h: 82, side: 's', price: 11000000 });
 IE.villas.push(
   { id: 'm1', name: 'Villa Lago di Como',     x: -926,  z: -1720, h: 45, side: 'n', price: 28000000, mega: true },
   { id: 'm2', name: 'Tenuta Toscana',         x: -416,  z: -440,  h: 7,  side: 'n', price: 22000000, mega: true },
@@ -254,6 +262,10 @@ IE.villas.push(
 for (const v of IE.villas) v.s = v.mega ? 3 : v.big ? 2 : 1.6;
 for (let i = 7; i < IE.villaRoad.length; i++) { const a = IE.villaRoad[i - 1], b = IE.villaRoad[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 3, hd: Math.abs(b[1] - a[1]) / 2 + 6, h: IE.villaRoadH, f: 16, small: true }); }
 for (const v of IE.villas) IE.flatZones.push({ x: v.x, z: v.z + (v.mega ? 3 : 1.25 * v.s), hw: v.mega ? 62 : 10 * v.s + 3, hd: v.mega ? 36 : 9.25 * v.s + 3, h: v.h !== undefined ? v.h : IE.villaRoadH + 1.5, f: v.mega ? 30 : 20, small: true });
+// Panoramastraße der zweiten Villen-Gegend (Berghang)
+IE.villaRoad2 = [[415, 42], [480, 42], [540, 42], [600, 42], [660, 42], [735, 42]];
+IE.villaRoad2H = 82;
+for (let i = 1; i < IE.villaRoad2.length; i++) { const a = IE.villaRoad2[i - 1], b = IE.villaRoad2[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 5, hd: Math.abs(b[1] - a[1]) / 2 + 6, h: IE.villaRoad2H, f: 18, small: true }); }
 // Private Inseln im offenen Meer (werden zu Land erhoben, kaufbar & ausbaubar)
 IE.islands = [
   { id: 'iadria',   name: 'Isola Adriatica', x: 1200, z: -630, r: 60, h: 6, price: 350000000 },

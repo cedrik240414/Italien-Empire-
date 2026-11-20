@@ -1194,7 +1194,7 @@ function arrestPlayer() {
   P.pos.set(j.x, j.y + 0.1, j.z - 1); P.vy = 0; P.onGround = true;
   P.jailed = true; P.jailT = 90; jailIdle.t = 0;
   $('speed').hidden = true;
-  banner('VERHAFTET', 'Du sitzt 5 Minuten im Gefängnis von Rom', 'Ein anderer Spieler kann dich befreien', 5);
+  banner('VERHAFTET', 'Du sitzt im Militärgefängnis', 'Ein anderer Spieler kann dich befreien', 5);
   sfx('beep', 0.5); saveGame && saveGame();
 }
 function releaseJail(msg) {
