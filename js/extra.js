@@ -355,6 +355,7 @@ IE.buildExtras = function (scene) {
   try { buildBackrooms(scene); } catch (e) { console.error('Backrooms', e); }
   try { buildRocket(scene); } catch (e) { console.error('Rakete', e); }
   try { buildMoon(scene); } catch (e) { console.error('Mond', e); }
+  try { buildDubai(scene); } catch (e) { console.error('Dubai', e); }
   try { buildTrack(scene); } catch (e) { console.error('Strecke', e); }
   try { buildVillas(scene); IE.villas.forEach((v, i) => buildRoom(v, i, scene)); } catch (e) { console.error('Villen', e); }
   try { buildIslands(scene); } catch (e) { console.error('Inseln', e); }
@@ -534,9 +535,92 @@ function moonH(x, z) {
   if (d > MOON.R) h += Math.min(140, Math.pow(d - MOON.R, 1.2) * 0.25); // niedriges Ringgebirge am Rand
   return h;
 }
+// ================= DUBAI – eigene Map (eigenes Areal, wie der Mond) =================
+const DUBAI = { x: -12000, z: 0, base: 2.2, R: 1500 };
+IE.DUBAI = DUBAI;
+function dubaiH(x, z) {
+  const dx = x - DUBAI.x, dz = z - DUBAI.z, d = Math.hypot(dx, dz);
+  let h = DUBAI.base + Math.sin(dx * 0.006) * 1.3 + Math.cos(dz * 0.0075) * 1.0 + Math.sin((dx - dz) * 0.013) * 0.5;
+  if (d > DUBAI.R) h = DUBAI.base - (d - DUBAI.R) * 0.09; // Strand -> Golf
+  return h < -7 ? -7 : h;
+}
+IE.dubaiH = dubaiH;
+IE.dubaiSpawn = { x: DUBAI.x + 40, z: DUBAI.z + 470 };
+
 const _gh = IE.groundH, _isLand = IE.isLand;
-IE.groundH = (x, z) => x > 9000 ? moonH(x, z) : _gh(x, z);
-IE.isLand = (x, z) => x > 9000 ? true : _isLand(x, z);
+IE.groundH = (x, z) => x > 9000 ? moonH(x, z) : (x < -9000 ? dubaiH(x, z) : _gh(x, z));
+IE.isLand = (x, z) => x > 9000 ? true : (x < -9000 ? dubaiH(x, z) > 0.4 : _isLand(x, z));
+
+function buildDubai(scene0) {
+  const scene = new T.Group(); scene0.add(scene); IE.dubaiGroup = scene;
+  const rnd = seeded(20241121);
+  // --- Wüsten-/Sandgelände ---
+  const size = 3400, seg = 150, geo = new T.PlaneGeometry(size, size, seg, seg); geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position, col = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) { const x = pos.getX(i) + DUBAI.x, z = pos.getZ(i) + DUBAI.z, h = dubaiH(x, z); pos.setY(i, h); const s = 0.84 + rnd() * 0.06 + Math.max(0, h) * 0.004; col.set([s, s * 0.86, s * 0.6], i * 3); }
+  geo.setAttribute('color', new T.BufferAttribute(col, 3)); geo.computeVertexNormals();
+  scene.add(new T.Mesh(geo, new T.MeshLambertMaterial({ vertexColors: true })));
+  // --- Golf-Wasser ---
+  const water = new T.Mesh(new T.PlaneGeometry(4200, 4200), new T.MeshStandardMaterial({ color: 0x1b8fc0, metalness: 0.3, roughness: 0.2, transparent: true, opacity: 0.9 }));
+  water.rotation.x = -Math.PI / 2; water.position.set(DUBAI.x, 0.05, DUBAI.z); scene.add(water);
+
+  const glass = new T.MeshStandardMaterial({ color: 0x9cc3e0, metalness: 0.5, roughness: 0.08, transparent: true, opacity: 0.72 });
+  const glass2 = new T.MeshStandardMaterial({ color: 0x7fb4d6, metalness: 0.6, roughness: 0.1 });
+  const conc = IE.mat.concrete, gold = IE.mat.gold, dark = IE.mat.dark, lit = new T.MeshBasicMaterial({ color: 0xffe6a0 });
+  const bx = (w, h, d, mat, x, y, z) => { const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); scene.add(m); return m; };
+
+  // Hochhaus mit Kollider
+  function tower(x, z, w, dd, h, mat) {
+    const y0 = dubaiH(x, z);
+    bx(w, h, dd, mat || glass, x, y0 + h / 2, z);
+    bx(w * 1.04, 1, dd * 1.04, glass2, x, y0 + h, z);
+    bx(w * 0.2, 2.4, dd * 0.2, dark, x, y0 + h + 1.5, z); // Antenne/Technik
+    if (rnd() < 0.5) bx(w * 0.5, 0.5, dd * 0.5, lit, x, y0 + h - 2, z);
+    IE.addBox(x - w / 2, z - dd / 2, x + w / 2, z + dd / 2, y0 + h);
+  }
+  // --- Burj Khalifa (zentrales Super-Hochhaus) ---
+  (function burj() {
+    const x = DUBAI.x, z = DUBAI.z - 120, y0 = dubaiH(x, z); let w = 46, dd = 46, y = y0, seg = 11;
+    for (let i = 0; i < seg; i++) { const hh = 24; bx(w, hh, dd, i % 2 ? glass2 : glass, x, y + hh / 2, z); y += hh; w *= 0.86; dd *= 0.86; if (i === 0) IE.addBox(x - 24, z - 24, x + 24, z + 24, y0 + hh * 3); }
+    bx(2.4, 70, 2.4, conc, x, y + 35, z); // Spitze
+    bx(1, 90, 1, dark, x, y + 90, z);
+    bx(5, 5, 5, lit, x, y - 4, z);
+  })();
+
+  // --- Downtown: Raster aus Glas-Hochhäusern ---
+  for (let gx = -6; gx <= 6; gx++) for (let gz = -5; gz <= 6; gz++) {
+    const x = DUBAI.x + gx * 78 + (rnd() - 0.5) * 14, z = DUBAI.z + gz * 78 + (rnd() - 0.5) * 14;
+    if (Math.hypot(x - DUBAI.x, z - (DUBAI.z - 120)) < 70) continue; // Platz um Burj
+    if (Math.abs(x - DUBAI.x) < 16) continue; // Boulevard frei
+    const w = 20 + rnd() * 20, dd = 20 + rnd() * 18, h = 40 + Math.pow(rnd(), 1.4) * 150;
+    tower(x, z, w, dd, h, rnd() < 0.3 ? glass2 : glass);
+  }
+  // --- Sheikh-Zayed-Boulevard (breite Straße durch Downtown) ---
+  const road = new T.Mesh(new T.PlaneGeometry(22, 1700), new T.MeshLambertMaterial({ color: 0x3c3f45 }));
+  road.rotation.x = -Math.PI / 2; road.position.set(DUBAI.x, dubaiH(DUBAI.x, DUBAI.z) + 0.1, DUBAI.z + 120); scene.add(road);
+  for (let z = -680; z < 820; z += 26) { const m = new T.Mesh(new T.PlaneGeometry(0.6, 10), new T.MeshBasicMaterial({ color: 0xd8c23a })); m.rotation.x = -Math.PI / 2; m.position.set(DUBAI.x, dubaiH(DUBAI.x, DUBAI.z) + 0.12, DUBAI.z + 120 + z); scene.add(m); }
+  // Quer-Straßen
+  for (let gz = -4; gz <= 5; gz++) { const r = new T.Mesh(new T.PlaneGeometry(900, 10), new T.MeshLambertMaterial({ color: 0x3c3f45 })); r.rotation.x = -Math.PI / 2; r.position.set(DUBAI.x, dubaiH(DUBAI.x, DUBAI.z) + 0.09, DUBAI.z + gz * 78); scene.add(r); }
+
+  // --- Palmeninsel (Palm Jumeirah, vereinfacht) im Golf ---
+  (function palm() {
+    const px = DUBAI.x - 150, pz = DUBAI.z + 1250, sand = new T.MeshLambertMaterial({ color: 0xe8d9a8 });
+    const trunk = new T.Mesh(new T.BoxGeometry(60, 1.2, 260), sand); trunk.position.set(px, 0.6, pz); scene.add(trunk); IE.addBox(px - 30, pz - 130, px + 30, pz + 130, 1.4);
+    for (let i = 0; i < 7; i++) { const fz = pz - 110 + i * 34; for (const s of [-1, 1]) { const fr = new T.Mesh(new T.BoxGeometry(90, 1.2, 12), sand); fr.position.set(px + s * 60, 0.6, fz); fr.rotation.y = s * 0.5; scene.add(fr); } }
+    // Luxusvillen auf dem Stamm
+    for (let i = 0; i < 6; i++) { const vz = pz - 100 + i * 36; bx(14, 7, 10, IE.mat.white, px, 4, vz); bx(15, 0.5, 11, gold, px, 7.6, vz); }
+  })();
+
+  // --- Strand-Palmen ---
+  const palmMat = new T.MeshLambertMaterial({ color: 0x3f7a35 }), trunkMat = new T.MeshLambertMaterial({ color: 0x7a5a3a });
+  for (let k = 0; k < 40; k++) { const a = rnd() * 6.28, d = 900 + rnd() * 560, x = DUBAI.x + Math.cos(a) * d, z = DUBAI.z + Math.sin(a) * d, yb = dubaiH(x, z); if (yb < 0.6) continue; const g = new T.Group(); g.position.set(x, yb, z); scene.add(g); bx2(g, 0.5, 7, 0.5, trunkMat, 0, 3.5, 0); for (let l = 0; l < 6; l++) { const lf = new T.Mesh(new T.BoxGeometry(0.4, 0.15, 4), palmMat); const pv = new T.Group(); pv.rotation.y = l / 6 * 6.28; lf.position.set(0, 7, 1.8); lf.rotation.x = 0.35; pv.add(lf); g.add(pv); } }
+  function bx2(parent, w, h, d, mat, x, y, z) { const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); parent.add(m); return m; }
+
+  // Spawn-Schild
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const c = cv.getContext('2d'); c.fillStyle = '#10131a'; c.fillRect(0, 0, 256, 64); c.fillStyle = '#d6b04a'; c.font = 'bold 34px Arial'; c.textAlign = 'center'; c.fillText('DUBAI', 128, 44);
+  const sign = new T.Mesh(new T.PlaneGeometry(16, 4), new T.MeshBasicMaterial({ map: new T.CanvasTexture(cv), transparent: true })); sign.position.set(IE.dubaiSpawn.x, dubaiH(IE.dubaiSpawn.x, IE.dubaiSpawn.z) + 9, IE.dubaiSpawn.z + 20); scene.add(sign);
+}
+IE.buildDubai = buildDubai;
 let moonGems = [], stars = null, earth = null, moonRocket = null;
 function buildMoon(scene0) {
   const scene = new T.Group(); scene0.add(scene); IE.moonGroup = scene; scene.visible = false;
@@ -712,8 +796,8 @@ function setSnow(on) {
   if (XM.flakes) XM.flakes.visible = on;
 }
 function updateXmas(dt) {
-  const g = G(), P = g.P, on = IE.xmasActive() && !IE.onMoon;   // Deko & Kalender: nur im Dezember
-  const snow = IE.snowToday() && !IE.onMoon;                    // Schnee: auch im Nov/Winter
+  const g = G(), P = g.P, inDubai = P.pos.x < -9000, on = IE.xmasActive() && !IE.onMoon && !inDubai;   // Deko & Kalender: nur im Dezember, nicht in Dubai
+  const snow = IE.snowToday() && !IE.onMoon && !inDubai;                    // Schnee: auch im Nov/Winter, aber nicht in Dubai (Wüste)
   if (on && !XM.built) buildXmas();
   if (XM.built) { XM.lights.visible = on; XM.trees.visible = on; }
   if (snow && !XM.flakes) buildSnow();

@@ -31,8 +31,9 @@ O.newCode = () => { let c = ''; for (let i = 0; i < 5; i++) c += CODE_CHARS[(Mat
 O.join = async function (isPublic, code, title) {
   O.isPublic = isPublic; O.code = isPublic ? '' : code;
   O.lobby = isPublic ? code : 'privat-' + code; O.title = isPublic ? (title || 'Öffentliche Lobby') : 'Private Lobby';
-  lobbyRoom.presence({ lb: isPublic ? O.lobby : null, lt: isPublic ? O.title.slice(0, 40) : null, nm: (window.IEaccount && IEaccount.nick) || '' }).catch(() => { });
-  room = await lobbyRoom.join(O.lobby);
+  const GP = gamePrefix(); O.game = GP; const roomName = GP + '-' + O.lobby; // getrennte Räume pro Spiel (Italien/Dubai)
+  lobbyRoom.presence({ lb: isPublic ? O.lobby : null, lg: GP, lt: isPublic ? O.title.slice(0, 40) : null, nm: (window.IEaccount && IEaccount.nick) || '' }).catch(() => { });
+  room = await lobbyRoom.join(roomName);
   O.room = room; O.active = true;
   room.onPeers(onPeers, e => G().toast('Online-Verbindung beendet (' + e.code + ')', 4));
   room.on('hit', onHit); room.on('kill', onKill); room.on('job', onJob); room.on('jobstep', onJobStep); room.on('jobkill', onJobKill);
@@ -385,10 +386,15 @@ async function goOnline(isPublic, code, title) {
 // ---------- Lobby-Browser ----------
 const FIXED_LOBBIES = [{ id: 'pub-italia-1', t: 'Italia 1' }, { id: 'pub-italia-2', t: 'Italia 2' }, { id: 'pub-italia-3', t: 'Italia 3' }];
 const MAX_PLAYERS = 16;
+const DUBAI_LOBBIES = [{ id: 'pub-dubai-1', t: 'Dubai 1' }, { id: 'pub-dubai-2', t: 'Dubai 2' }, { id: 'pub-dubai-3', t: 'Dubai 3' }];
+const gamePrefix = () => (window.IE_GAME === 'dubai' ? 'du' : 'it');
 function lobbyList() {
-  const map = new Map(FIXED_LOBBIES.map(l => [l.id, { id: l.id, t: l.t, n: 0, names: [] }]));
+  const GP = gamePrefix(), fixed = GP === 'du' ? DUBAI_LOBBIES : FIXED_LOBBIES;
+  const map = new Map(fixed.map(l => [l.id, { id: l.id, t: l.t, n: 0, names: [] }]));
   if (lobbyRoom) for (const p of lobbyRoom.peers()) {
     const pr = p.presence || {}; if (typeof pr.lb !== 'string' || !/^pub-[a-z0-9-]{1,40}$/.test(pr.lb)) continue;
+    if (pr.lg && pr.lg !== GP) continue;          // nur Lobbys des aktuellen Spiels zeigen
+    if (!pr.lg && GP === 'du') continue;           // alte (ungetaggte) Lobbys gehören zu Italien
     if (!map.has(pr.lb)) map.set(pr.lb, { id: pr.lb, t: typeof pr.lt === 'string' ? pr.lt.slice(0, 40) : pr.lb, n: 0, names: [] });
     const l = map.get(pr.lb); l.n++; if (pr.nm) l.names.push(String(pr.nm).slice(0, 16));
   }

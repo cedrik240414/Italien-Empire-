@@ -2002,6 +2002,7 @@ function startGame(cont, mode) {
     $('title').hidden = true; $('hudRoot').hidden = false; document.body.classList.add('playing', 'online');
     buildPlayerModel(); P.health = maxHP();
     const c = IE.cityById[IE.chars[S.char].home]; placePlayer(c.cx + 20 + Math.random() * 30, c.cz + 50 + Math.random() * 20);
+    if (window.IE_GAME === 'dubai' && IE.dubaiSpawn) placePlayer(IE.dubaiSpawn.x + (Math.random() - 0.5) * 40, IE.dubaiSpawn.z + Math.random() * 30);
     missionStartMarker(); game.state = 'play'; last = performance.now();
     if (!isTouch) { try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => { }); } catch (e) { } }
     setInterval(() => { if (game.state === 'play') saveGame(); }, 20000);
@@ -2009,18 +2010,21 @@ function startGame(cont, mode) {
   }
   const sv = cont ? store.get() : null;
   if (sv) Object.assign(S, sv); else { store.del(); }
+  if (window.IE_GAME === 'dubai') S.mission = IE.missions.length; // Dubai: vorerst freies Spiel, keine Italien-Missionen
   IE.fixMissionSpots();
   $('title').hidden = true; $('hudRoot').hidden = false; document.body.classList.add('playing');
   buildPlayerModel(); P.health = maxHP();
   for (const w of IE.wrecks) if (S.wrecks.includes(w.id)) { w.got = true; w.chest.visible = false; }
   const m = curMission();
-  if (!sv) {
+  if (window.IE_GAME === 'dubai' && IE.dubaiSpawn) {
+    placePlayer(IE.dubaiSpawn.x, IE.dubaiSpawn.z); P.yaw = Math.PI; cam.yaw = P.yaw;
+    if (!sv) { const v = IE.spawnCar(scene, 'cinquino', IE.dubaiSpawn.x - 8, IE.dubaiSpawn.z + 4, 0, { color: 0xe8d9a8 }); v.health = 450; }
+    setTimeout(() => banner('Dubai Empire', 'Willkommen in Dubai', 'Karim landet aus Hamburg – bau dein Imperium auf', 6), 300);
+  } else if (!sv) {
     // Jack kommt am Bahnhof von Neapel an – mit kaputtem Wagen
     placePlayer(m.x + 3, m.z + 4); P.yaw = Math.atan2(m.x - P.pos.x, m.z - P.pos.z); cam.yaw = P.yaw;
     const v = IE.spawnCar(scene, 'cinquino', m.x - 8, m.z + 4, 0, { color: 0x8a6f4a }); v.health = 450;
-    setTimeout(() => window.IE_GAME === 'dubai'
-      ? banner('Dubai Empire', 'Willkommen in Dubai', 'Karim landet aus Hamburg – bau dein Imperium auf', 6)
-      : banner(IE.chapters[0], 'Aeroporto di Napoli', 'Gelber Lichtstrahl = Mission · Dein Hangar ist nebenan', 6), 300);
+    setTimeout(() => banner(IE.chapters[0], 'Aeroporto di Napoli', 'Gelber Lichtstrahl = Mission · Dein Hangar ist nebenan', 6), 300);
   } else {
     const c = IE.cityById[IE.chars[S.char].home]; placePlayer(c.cx + 30, c.cz + 55);
   }
