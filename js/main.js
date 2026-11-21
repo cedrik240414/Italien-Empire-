@@ -11,6 +11,8 @@ const touchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 let isTouch = touchDevice; // wird nach dem Laden der Optionen gesetzt (Steuerung: Touch oder Tastatur & Maus)
 
 // ---------- Speicher ----------
+let MODE = 'story'; // aktueller Speicher-Slot: 'story' oder 'online' (nur startGame ändert das)
+const saveKeyFor = m => (m === 'online' ? 'italienEmpire_online_v1' : 'italienEmpire_v1') + ACC;
 let SAVE_KEY = 'italienEmpire_v1', ACC = '';
 const store = {
   get() { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { return null; } },
@@ -26,7 +28,7 @@ const S = { cheat250: false, villas: [], biz: {}, guards: 0, guardsOn: true, mon
 // Spielstand: lokal + (mit Konto auf dem eigenen Server) in der Cloud – so ist er auf jedem Gerät da
 const CLOUD = { busy: false, lastPush: 0, timer: null, pending: null };
 const cloudAcc = () => window.IECF && IECF.account && window.IEaccount && IEaccount.token ? IECF.account : null;
-const saveSlot = () => SAVE_KEY.indexOf('online') >= 0 ? 'online' : 'story';
+const saveSlot = () => MODE;
 function cloudPush(now) {
   const a = cloudAcc(); if (!a || !ACC) return;
   const go = () => { CLOUD.timer = null; CLOUD.lastPush = Date.now(); a.save(saveSlot(), JSON.stringify(S), S._t || Date.now()).catch(() => { }); };
@@ -1996,7 +1998,7 @@ function startGame(cont, mode) {
   if (CLOUD.busy) { CLOUD.pending = [cont, mode]; toast('Spielstand wird vom Konto geladen …', 2); return; }
   audioInit();
   if (mode === 'online') {
-    SAVE_KEY = 'italienEmpire_online_v1' + ACC; Object.assign(S, JSON.parse(JSON.stringify(S_DEFAULT)), { money: 25000, mission: IE.missions.length });
+    MODE = 'online'; SAVE_KEY = saveKeyFor('online'); Object.assign(S, JSON.parse(JSON.stringify(S_DEFAULT)), { money: 25000, mission: IE.missions.length });
     const so = store.get(); if (so) Object.assign(S, so, { mission: IE.missions.length });
     IE.setOnlineWorld(true);
     $('title').hidden = true; $('hudRoot').hidden = false; document.body.classList.add('playing', 'online');
@@ -2008,6 +2010,7 @@ function startGame(cont, mode) {
     setInterval(() => { if (game.state === 'play') saveGame(); }, 20000);
     return;
   }
+  MODE = 'story'; SAVE_KEY = saveKeyFor('story'); // Story-Spiel: immer der Story-Slot
   const sv = cont ? store.get() : null;
   if (sv) Object.assign(S, sv); else { store.del(); }
   if (window.IE_GAME === 'dubai') S.mission = IE.missions.length; // Dubai: vorerst freies Spiel, keine Italien-Missionen
@@ -2060,7 +2063,7 @@ function boot() {
 }
 $('bNew').addEventListener('click', () => startGame(false));
 $('bCont').addEventListener('click', () => startGame(true));
-function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = 'italienEmpire_v1' + ACC; $('bCont').hidden = !store.get(); cloudPull(); }
+function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = saveKeyFor(MODE); $('bCont').hidden = !store.get(); cloudPull(); }
 window.IEgame = { explosion, get isTouch() { return isTouch; }, damageNPC, tracer, flash, enterInterior, exitInterior, putInVehicle, setWanted, maxHP, placePlayer, teleportTo, CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, closeModals, openPause, IE };
 boot();
 })();
