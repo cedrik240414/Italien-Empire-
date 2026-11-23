@@ -581,3 +581,89 @@ IE.skins = [
   { id: 'admin', name: '★ Admin-Imperator', cat: 'Admin', price: 0, admin: true, look: { pants: 0x111111, jacket: 0xd6b04a, shirt: 0x111111, tie: 0xc8202a, skin: SK.mid, hair: 0x111111, hat: 'crown', glasses: 'sun', chain: true, back: 'ADMIN', backColor: '#111111', shoes: 0xd6b04a } }
 ];
 IE.skinById = {}; IE.skins.forEach(s => IE.skinById[s.id] = s);
+
+// ===================== MOTORRÄDER (normal kaufbar im Autosalone) =====================
+IE.cars.push(
+  { id: 'scatto',   name: 'Scatto 600 (Motorrad)',        price: 38000,  speed: 74,  accel: 40, grip: 2.6, color: 0xc8102e, kind: 'moto' },
+  { id: 'strada',   name: 'Strada Cruiser (Motorrad)',    price: 46000,  speed: 58,  accel: 26, grip: 2.3, color: 0x1a1a1a, kind: 'moto' },
+  { id: 'cross',    name: 'Cross Enduro (Motorrad)',      price: 34000,  speed: 60,  accel: 34, grip: 2.9, color: 0x2fae4a, kind: 'moto' },
+  { id: 'fulmoto',  name: 'Fulmine Elettrica (Motorrad)', price: 120000, speed: 92,  accel: 56, grip: 2.8, color: 0x18c2d8, kind: 'moto' }
+);
+
+// ===================== ERWEITERUNGEN / PACKS – exklusive Inhalte =====================
+// Pack-Fahrzeuge/-Waffen: price 0 + pack-Flag -> in normalen Läden versteckt, nur über Packs freischaltbar
+IE.cars.push(
+  { id: 'ufo',       name: 'Disco Volante X (Sci-Fi)',   price: 0, speed: 118, accel: 60, grip: 3.3, color: 0x18e0e0, kind: 'super',  pack: 'scifi' },
+  { id: 'hover',     name: 'Hover GT (Sci-Fi)',          price: 0, speed: 110, accel: 54, grip: 3.1, color: 0x8a3cf0, kind: 'sport',  pack: 'scifi' },
+  { id: 'hearse',    name: 'Leichenwagen (Halloween)',   price: 0, speed: 70,  accel: 26, grip: 2.3, color: 0x0b0b0d, kind: 'limo',   pack: 'halloween' },
+  { id: 'pumpkin',   name: 'Kürbis-Monster (Halloween)', price: 0, speed: 66,  accel: 34, grip: 2.8, color: 0xe8761a, kind: 'suv',    pack: 'halloween' },
+  { id: 'firework',  name: 'Raketen-GT (Silvester)',     price: 0, speed: 112, accel: 58, grip: 2.9, color: 0xf2c230, kind: 'super',  pack: 'silvester' },
+  { id: 'beachbug',  name: 'Strandflitzer (Sommer)',     price: 0, speed: 72,  accel: 30, grip: 2.5, color: 0x18c2d8, kind: 'cabrio', pack: 'sommer' },
+  { id: 'herbstgt',  name: 'Herbst GT (Herbst)',         price: 0, speed: 84,  accel: 36, grip: 2.6, color: 0xc8641a, kind: 'sport',  pack: 'herbst' },
+  { id: 'schoolbus', name: 'Schulbus (Schule)',          price: 0, speed: 48,  accel: 14, grip: 2.0, color: 0xf2c230, kind: 'van',    pack: 'schule' },
+  { id: 'moped',     name: 'Schul-Moped (Schule)',       price: 0, speed: 40,  accel: 20, grip: 2.4, color: 0x3a6fb0, kind: 'moto',   pack: 'schule' },
+  { id: 'f1rosso',   name: 'F1 Rosso (Formel 1)',        price: 0, speed: 116, accel: 62, grip: 3.6, color: 0xc8101a, kind: 'super',  pack: 'formel1' },
+  { id: 'f1argento', name: 'F1 Argento (Formel 1)',      price: 0, speed: 116, accel: 62, grip: 3.6, color: 0xcfd6dc, kind: 'super',  pack: 'formel1' }
+);
+IE.boats.push(
+  { id: 'hoverboat',  name: 'Hover-Gleiter (Sci-Fi)',     price: 0, speed: 70, accel: 30, color: 0x18e0e0, accent: 0x8a3cf0, kind: 'speed', pack: 'scifi' },
+  { id: 'ghostyacht', name: 'Geister-Yacht (Halloween)',  price: 0, speed: 34, accel: 9,  color: 0x1a1a1f, accent: 0x8a3cf0, kind: 'yacht', pack: 'halloween' },
+  { id: 'partyyacht', name: 'Party-Yacht (Silvester)',    price: 0, speed: 36, accel: 10, color: 0x101018, accent: 0xf2c230, kind: 'yacht', pack: 'silvester' },
+  { id: 'sunyacht',   name: 'Sonnen-Yacht (Sommer)',      price: 0, speed: 34, accel: 9,  color: 0xf6f0e0, accent: 0x18c2d8, kind: 'yacht', pack: 'sommer' }
+);
+IE.planes.push(
+  { id: 'ufojet',     name: 'UFO-Jet (Sci-Fi)',           price: 0, speed: 220, minSpeed: 30, turn: 1.8, color: 0x18e0e0, accent: 0x8a3cf0, kind: 'jet',     pack: 'scifi' },
+  { id: 'batplane',   name: 'Fledermaus-Jet (Halloween)', price: 0, speed: 160, minSpeed: 40, turn: 1.5, color: 0x1a1a1f, accent: 0x8a3cf0, kind: 'fighter', pack: 'halloween' },
+  { id: 'fireworkjet',name: 'Feuerwerk-Jet (Silvester)',  price: 0, speed: 170, minSpeed: 42, turn: 1.6, color: 0xf2c230, accent: 0xc8101a, kind: 'fighter', pack: 'silvester' }
+);
+IE.weapons.push(
+  { id: 'laserpulse',  name: 'Puls-Laser (Sci-Fi)',        price: 0, dmg: 70,  rate: 0.1,  range: 350, spread: 0,     ammoPrice: 0, clip: 400, pellets: 1, auto: true,  laser: true,  pack: 'scifi' },
+  { id: 'kuerbis',     name: 'Kürbis-Werfer (Halloween)',  price: 0, dmg: 70,  rate: 0.9,  range: 120, spread: 0.01,  ammoPrice: 0, clip: 20,  pellets: 1, auto: false, explode: 6,   pack: 'halloween' },
+  { id: 'raketenbox',  name: 'Feuerwerks-Box (Silvester)', price: 0, dmg: 120, rate: 1.0,  range: 300, spread: 0.02,  ammoPrice: 0, clip: 12,  pellets: 4, auto: false, explode: 7,   pack: 'silvester' },
+  { id: 'wasserwerfer',name: 'Wasserwerfer (Sommer)',      price: 0, dmg: 8,   rate: 0.05, range: 70,  spread: 0.04,  ammoPrice: 0, clip: 400, pellets: 1, auto: true,  pack: 'sommer' },
+  { id: 'schneeball',  name: 'Schneeball-MG (Weihnachten)',price: 0, dmg: 12,  rate: 0.08, range: 90,  spread: 0.05,  ammoPrice: 0, clip: 300, pellets: 1, auto: true,  pack: 'xmas' },
+  { id: 'konfetti',    name: 'Konfetti-Kanone (Schule)',   price: 0, dmg: 10,  rate: 0.1,  range: 60,  spread: 0.08,  ammoPrice: 0, clip: 300, pellets: 3, auto: true,  pack: 'schule' }
+);
+IE.skins.push(
+  { id: 'santa',      name: 'Weihnachtsmann', cat: 'Pack', price: 0, fromPack: 'xmas',      look: { pants: 0xb3001b, jacket: 0xc8102e, shirt: 0xffffff, skin: SK.light, hair: 0xf2f2f2, beard: 0xf2f2f2, hat: 'cap', hatColor: 0xc8102e } },
+  { id: 'alienpilot', name: 'Alien-Pilot',    cat: 'Pack', price: 0, fromPack: 'scifi',     look: { pants: 0x2a3a2a, jacket: 0x1fae8a, shirt: 0x0f2a1a, skin: 0x8fbf6a, hair: 0x1fae8a, glasses: 'visor', hands: 0x8fbf6a } },
+  { id: 'geist',      name: 'Geist',          cat: 'Pack', price: 0, fromPack: 'halloween', look: { pants: 0xe8e8e8, jacket: 0xf2f2f2, shirt: 0xf2f2f2, skin: 0xe8e8e8, hair: 0xf2f2f2, mask: 'face', maskColor: 0xffffff, hands: 0xf2f2f2 } },
+  { id: 'partyking',  name: 'Party-König',    cat: 'Pack', price: 0, fromPack: 'silvester', look: { pants: 0x101018, jacket: 0xf2c230, shirt: 0x101018, tie: 0xf2c230, skin: SK.mid, hair: 0x111111, glasses: 'sun', chain: true, hat: 'crown' } },
+  { id: 'strand',     name: 'Strand-Typ',     cat: 'Pack', price: 0, fromPack: 'sommer',    look: { pants: 0xf2a61a, jacket: 0x18c2d8, shirt: 0xf2d24a, skin: SK.tan, hair: 0xb89a6a, glasses: 'sun' } },
+  { id: 'jaeger',     name: 'Jäger',          cat: 'Pack', price: 0, fromPack: 'herbst',    look: { pants: 0x5a4a2a, jacket: 0x6b5a2a, shirt: 0x3a4a2a, skin: SK.tan, hair: 0x3a2a1a, hat: 'cowboy', hatColor: 0x4a3a1a, beard: 0x3a2a1a } },
+  { id: 'schueler',   name: 'Schüler',        cat: 'Pack', price: 0, fromPack: 'schule',    look: { pants: 0x1f2c48, jacket: 0xb3202a, shirt: 0xffffff, tie: 0x1f2c48, skin: SK.light, hair: 0x2a1a10 } }
+);
+// ById-Maps neu aufbauen, damit die neuen Inhalte enthalten sind
+IE.carById = {}; IE.cars.forEach(c => IE.carById[c.id] = c);
+IE.boatById = {}; IE.boats.forEach(b => IE.boatById[b.id] = b);
+IE.planeById = {}; IE.planes.forEach(p => IE.planeById[p.id] = p);
+IE.weaponById = {}; IE.weapons.forEach(w => IE.weaponById[w.id] = w);
+IE.skinById = {}; IE.skins.forEach(s => IE.skinById[s.id] = s);
+
+IE.packs = [
+  { id: 'sport',     name: 'Sportwagen', emoji: '🏎️', color: 0xc8101a, price: 3000000,  desc: 'Die schnellsten Supersportwagen Italiens.',
+    cars: ['toro', 'rosso', 'fulmine', 'gt3'], skins: ['rennfahrer'] },
+  { id: 'xmas',      name: 'Weihnachten', emoji: '🎄', color: 0xc8102e, price: 2500000,  desc: 'Alle Weihnachtsautos, Rentierschlitten, Weihnachts-Yacht & Schneeball-MG.',
+    cars: ['xsanta', 'xeis', 'xflitzer', 'xtanne'], boats: ['xmasyacht'], planes: ['schlitten'], weapons: ['schneeball'], skins: ['santa'] },
+  { id: 'herbst',    name: 'Herbst', emoji: '🍂', color: 0xc8641a, price: 1500000,  desc: 'Herbstlicher Flitzer, Oldtimer & Jäger-Outfit.',
+    cars: ['herbstgt', 'classica'], skins: ['jaeger'] },
+  { id: 'sommer',    name: 'Sommer', emoji: '☀️', color: 0x18c2d8, price: 1800000,  desc: 'Cabrio, Jetski, Sonnen-Yacht & Wasserwerfer.',
+    cars: ['beachbug', 'spider'], boats: ['sunyacht', 'jetski'], weapons: ['wasserwerfer'], skins: ['strand'] },
+  { id: 'scifi',     name: 'Sci-Fi', emoji: '🛸', color: 0x18e0e0, price: 5000000,  desc: 'Hover-Autos, UFO-Jet, Hover-Boot & Puls-Laser.',
+    cars: ['ufo', 'hover'], boats: ['hoverboat'], planes: ['ufojet'], weapons: ['laserpulse'], skins: ['alienpilot'] },
+  { id: 'schule',    name: 'Schule', emoji: '🎒', color: 0xf2c230, price: 800000,   desc: 'Schulbus, Moped, Konfetti-Kanone & Schüler-Outfit.',
+    cars: ['schoolbus', 'moped'], weapons: ['konfetti'], skins: ['schueler'] },
+  { id: 'militaer',  name: 'Militär', emoji: '🪖', color: 0x59613d, price: 6000000,  desc: 'Panzer, Militärjeep, Kampfjet, Kampfheli & schwere Waffen.',
+    cars: ['panzer', 'jeep'], planes: ['caccia'], helis: ['predatore'], weapons: ['ak', 'rpg'], skins: ['soldat'] },
+  { id: 'italien',   name: 'Italien', emoji: '🇮🇹', color: 0x2e8b57, price: 1200000,  desc: 'Italienische Klassiker, Riva-Boot & Tricolore-Jet.',
+    cars: ['classica', 'topolino', 'barchetta'], boats: ['riva'], planes: ['freccia'], skins: ['calcio'] },
+  { id: 'silvester', name: 'Silvester', emoji: '🎆', color: 0xf2c230, price: 2200000, desc: 'Feuerwerk-GT, Party-Yacht, Feuerwerk-Jet & Raketen-Box.',
+    cars: ['firework'], boats: ['partyyacht'], planes: ['fireworkjet'], weapons: ['raketenbox'], skins: ['partyking'] },
+  { id: 'halloween', name: 'Halloween', emoji: '🎃', color: 0xe8761a, price: 2000000, desc: 'Leichenwagen, Kürbis-Monster, Geister-Yacht, Bat-Jet & Kürbis-Werfer.',
+    cars: ['hearse', 'pumpkin'], boats: ['ghostyacht'], planes: ['batplane'], weapons: ['kuerbis'], skins: ['geist'] },
+  { id: 'formel1',   name: 'Formel 1', emoji: '🏁', color: 0xc8101a, price: 4000000,  desc: 'Zwei Formel-1-Boliden & Rennfahrer-Outfit.',
+    cars: ['f1rosso', 'f1argento'], skins: ['rennfahrer'] },
+  { id: 'luxus',     name: 'Luxus', emoji: '💎', color: 0xd6b04a, price: 12000000, desc: 'Vergoldete Hyper-Autos, Luxus-Jet & Yacht Azzurra.',
+    cars: ['oro', 'diamante', 'leggenda', 'imperatore'], boats: ['yacht'], planes: ['jetxl'], skins: ['gold'] }
+];
+IE.packById = {}; IE.packs.forEach(p => IE.packById[p.id] = p);

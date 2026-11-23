@@ -192,6 +192,18 @@ body.touch #wheelBtn { top: calc(232px + env(safe-area-inset-top, 0px)); }
 /* Skins */
 .skins { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; padding: 14px 22px 22px; }
 .skin { display: grid; justify-items: center; gap: 2px; padding: 8px 6px 10px; background: rgba(13,15,19,0.6); border: 1px solid rgba(243,234,216,0.15); border-radius: 8px; color: var(--paper); font-family: var(--f-hud); }
+.packGrid { display: grid; grid-template-columns: repeat(auto-fill,minmax(270px,1fr)); gap: 14px; padding: 16px 22px; overflow-y: auto; }
+.packCard { display: flex; flex-direction: column; gap: 8px; background: rgba(13,15,19,0.7); border: 2px solid rgba(243,234,216,0.2); border-radius: 12px; padding: 0 0 12px; color: var(--paper); font-family: var(--f-hud); overflow: hidden; }
+.packCard .pHead { display: flex; align-items: center; gap: 10px; padding: 12px 14px; font-size: 20px; font-weight: 700; }
+.packCard .pEmoji { font-size: 26px; }
+.packCard .pName { flex: 1; }
+.packCard .pOwned { font-size: 13px; color: #48e07a; }
+.packCard .pDesc { padding: 0 14px; font-size: 14px; opacity: 0.85; line-height: 1.3; }
+.packCard .pItems { display: flex; flex-wrap: wrap; gap: 5px; padding: 4px 14px; }
+.packCard .pItem { font-size: 12px; background: rgba(243,234,216,0.1); border-radius: 6px; padding: 3px 7px; }
+.packCard .pBuy { margin: 6px 14px 0; padding: 9px; border-radius: 8px; border: 0; background: #48e07a; color: #0c140d; font-family: var(--f-hud); font-size: 16px; font-weight: 700; cursor: pointer; }
+.packCard .pBuy:disabled { cursor: default; opacity: 0.45; }
+.packCard .pBuy.done { background: #1d3a2a; color: #9fe3b8; opacity: 1; }
 .skin img { width: 96px; height: 120px; object-fit: contain; }
 .skin .sn { font-size: 15px; font-weight: 600; text-align: center; line-height: 1.1; min-height: 2.2em; display: grid; place-items: center; }
 .skin .sp { font-size: 14px; color: var(--gold); font-variant-numeric: tabular-nums; }
@@ -299,7 +311,7 @@ body.touch.playing #touch { display: block; }
       <div><b>FEUER</b> Schießen (mit Zielhilfe)</div><div><b>EIN/AUS</b> Fahrzeug</div>
       <div><b>E</b> Shop / Mission</div><div><b>HOCH / RUNTER</b> Springen · Heli</div><div><b>TAUCHEN / AUF</b> Unter Wasser schwimmen</div><div><b>SICHT</b> Ego-Sicht umschalten</div><div><b>Kreis links</b> Waffenrad</div><div><b>Flugzeug</b> GAS +/− für Schub, Joystick hoch = Nase hoch</div>
     </div>
-    <div class="ver">Version 73</div>
+    <div class="ver">Version 74</div>
   </div>
 </div>
 
@@ -380,6 +392,8 @@ body.touch.playing #touch { display: block; }
 <div class="modal" id="shopModal" hidden><div class="panel"><header><h2 id="shopT">Laden</h2><div style="display:flex;gap:14px;align-items:center"><span class="cash" id="shopCash"></span><button class="x" data-close>✕</button></div></header><div class="rows" id="shopRows"></div><div class="hint" id="shopHint"></div></div></div>
 <div class="modal" id="mapModal" hidden><div class="panel"><header><h2>Italia</h2><div style="display:flex;gap:14px;align-items:center"><span class="st maphelp">Tippen: Wegpunkt · Ziehen: verschieben</span><button class="x" id="mapOut" aria-label="Herauszoomen">−</button><span id="mapZoom" class="st maphelp">1.0×</span><button class="x" id="mapIn" aria-label="Hineinzoomen">+</button><button class="x" id="mapMe">Ich</button><button class="x" data-close>✕</button></div></header><canvas id="bigmap"></canvas></div></div>
 <div class="modal" id="charModal" hidden><div class="panel"><header><h2>Die Crew</h2><button class="x" data-close>✕</button></header><div class="chars" id="charList"></div><div class="hint">Beim Wechsel landest du in der Heimatstadt des Charakters. Während einer Mission nicht möglich.</div></div></div>
+<div class="modal" id="packsModal" hidden><div class="panel" style="width:min(960px,100%)"><header><h2>🎁 Erweiterungen</h2><div style="display:flex;gap:14px;align-items:center"><span class="cash" id="packsCash"></span><button class="x" data-close>✕</button></div></header><div class="hint" style="border:0">Kaufe themen­basierte Packs mit Ingame-Geld – jedes schaltet schnelle Autos, Yachten, Flugzeuge, Skins und Spezialwaffen dauerhaft frei. Autos holst du danach im Autosalone / über „Meine Fahrzeuge“, Boote am Steg, Flugzeuge im Hangar, Skins im Kleiderschrank.</div><div class="packGrid" id="packsRows"></div></div></div>
+
 <div class="modal" id="pauseModal" hidden><div class="panel"><header><h2>Pausa</h2><button class="x" data-close>✕</button></header>
   <div id="onPause" hidden>
     <div class="opt"><span id="onLobbyTxt"></span><span><button class="btn ghost" id="onLeave" style="font-size:16px;padding:6px 14px;border-color:var(--rosso);color:var(--rosso)">Online verlassen</button></span></div>
@@ -387,7 +401,7 @@ body.touch.playing #touch { display: block; }
     <div class="opt"><span>Crew-Aufträge <small style="color:var(--muted);font-size:14px">· starten für alle in der Lobby</small></span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" id="onPassive" style="font-size:15px;padding:6px 12px">Passivmodus: Aus</button><button class="btn ghost" id="onBoard2" style="font-size:15px;padding:6px 12px">Rangliste</button></span></div>
     <div id="onJobs" class="jobs"></div>
   </div>
-  <div class="opt"><span>Skins, Upgrades &amp; Admin</span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn" id="pGarage" style="font-size:16px;padding:6px 14px">Meine Fahrzeuge (G)</button><button class="btn" id="pSecurity" style="font-size:16px;padding:6px 14px">Security</button><button class="btn" id="pPets" style="font-size:16px;padding:6px 14px">🐾 Haustiere</button><button class="btn" id="pAdvent" style="font-size:16px;padding:6px 14px;background:#8a1020;border-color:#d6b04a" hidden>🎄 Adventskalender</button><button class="btn" id="pSkins" style="font-size:16px;padding:6px 14px">Skins</button><button class="btn" id="pUp" style="font-size:16px;padding:6px 14px">Upgrades</button><button class="btn ghost" id="pAdmin" style="font-size:16px;padding:6px 14px" hidden>Admin-Panel</button></span></div>
+  <div class="opt"><span>Skins, Upgrades &amp; Admin</span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn" id="pGarage" style="font-size:16px;padding:6px 14px">Meine Fahrzeuge (G)</button><button class="btn" id="pSecurity" style="font-size:16px;padding:6px 14px">Security</button><button class="btn" id="pPets" style="font-size:16px;padding:6px 14px">🐾 Haustiere</button><button class="btn" id="pPacks" style="font-size:16px;padding:6px 14px;background:#2a1a4a;border-color:#8a3cf0">🎁 Erweiterungen</button><button class="btn" id="pAdvent" style="font-size:16px;padding:6px 14px;background:#8a1020;border-color:#d6b04a" hidden>🎄 Adventskalender</button><button class="btn" id="pSkins" style="font-size:16px;padding:6px 14px">Skins</button><button class="btn" id="pUp" style="font-size:16px;padding:6px 14px">Upgrades</button><button class="btn ghost" id="pAdmin" style="font-size:16px;padding:6px 14px" hidden>Admin-Panel</button></span></div>
   <div class="opt"><span>Steuerung <small style="color:var(--muted);font-size:14px">· Tastatur &amp; Maus: WASD, Maus umsehen, Links schießen, Rechts zielen</small></span><span><button class="btn ghost" id="optCtrl" style="font-size:16px;padding:6px 14px">Touch</button></span></div>
   <div class="opt"><span>Grafik</span><span><button class="btn ghost" id="optGfx" style="font-size:16px;padding:6px 14px">Hoch</button></span></div>
   <div class="opt"><label for="optSens">Kamera-Empfindlichkeit</label><input type="range" id="optSens" min="0.3" max="2.5" step="0.1" value="1"></div>
@@ -413,13 +427,14 @@ body.touch.playing #touch { display: block; }
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/data.js?v=73"></script>
-<script src="js/world.js?v=73"></script>
-<script src="js/entities.js?v=73"></script>
-<script src="js/extra.js?v=73"></script>
-<script src="js/main.js?v=73"></script>
-<script src="js/server-config.js?v=73"></script>
-<script src="js/cfnet.js?v=73"></script>
-<script src="js/online.js?v=73"></script>
-<script src="js/account.js?v=73"></script>
-<script src="js/launcher.js?v=73"></script>
+<script src="js/data.js?v=74"></script>
+<script src="js/world.js?v=74"></script>
+<script src="js/entities.js?v=74"></script>
+<script src="js/extra.js?v=74"></script>
+<script src="js/main.js?v=74"></script>
+<script src="js/server-config.js?v=74"></script>
+<script src="js/cfnet.js?v=74"></script>
+<script src="js/online.js?v=74"></script>
+<script src="js/account.js?v=74"></script>
+<script src="js/launcher.js?v=74"></script>
+<script src="js/packs.js?v=74"></script>

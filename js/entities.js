@@ -123,6 +123,7 @@ function clipY(pts, c, above) {
 }
 IE.makeCar = function (kind, color, police) {
   if (kind === 'tank') return IE.makeTank(color);
+  if (kind === 'moto') return IE.makeMoto(color);
   const P = profiles[kind];
   const outer = new T.Group(), g = new T.Group(); outer.add(g); g.rotation.y = -Math.PI / 2;
   const key = kind;
@@ -182,6 +183,42 @@ IE.makeTank = function (color) {
   const wheels = []; const wg = new T.CylinderGeometry(0.42, 0.42, 0.3, 10); wg.rotateX(Math.PI / 2);
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const w = new T.Group(); w.position.set(sx * 2.6, 0.42, sz * 1.75); w.add(new T.Mesh(wg, dk)); w.add(new T.Mesh(wg, dk)); g.add(w); wheels.push(w); }
   return { group: outer, wheels, L: 7, W: 3.4, bodyMat: m, siren: null, turret, tank: true };
+};
+
+// ---------- Motorrad ----------
+IE.makeMoto = function (color) {
+  const outer = new T.Group(), g = new T.Group(); outer.add(g); g.rotation.y = -Math.PI / 2;
+  const bodyMat = new T.MeshStandardMaterial({ color, metalness: 0.6, roughness: 0.35 });
+  const dk = lam(0x18181c), chrome = new T.MeshStandardMaterial({ color: 0xcfcfcf, metalness: 0.9, roughness: 0.25 });
+  const lean = new T.Group(); g.add(lean); // Aufbau + Fahrer neigen sich, Räder bleiben aufrecht
+  const R = 0.46, wb = 1.25;
+  const frame = new T.Mesh(new T.BoxGeometry(1.5, 0.18, 0.22), dk); frame.position.set(0, 0.74, 0); lean.add(frame);
+  const tank = new T.Mesh(new T.BoxGeometry(0.78, 0.34, 0.36), bodyMat); tank.position.set(0.08, 0.96, 0); lean.add(tank);
+  const seat = new T.Mesh(new T.BoxGeometry(0.72, 0.16, 0.3), dk); seat.position.set(-0.55, 0.9, 0); lean.add(seat);
+  const tailMesh = new T.Mesh(new T.BoxGeometry(0.3, 0.3, 0.3), bodyMat); tailMesh.position.set(-0.85, 0.92, 0); lean.add(tailMesh);
+  const fair = new T.Mesh(new T.BoxGeometry(0.42, 0.52, 0.36), bodyMat); fair.position.set(0.74, 0.84, 0); lean.add(fair);
+  const hb = new T.Mesh(new T.CylinderGeometry(0.03, 0.03, 0.62, 6), chrome); hb.rotation.x = Math.PI / 2; hb.position.set(0.7, 1.12, 0); lean.add(hb);
+  const head = new T.Mesh(new T.BoxGeometry(0.1, 0.2, 0.2), headMat); head.position.set(0.95, 0.88, 0); lean.add(head);
+  const ex = new T.Mesh(new T.CylinderGeometry(0.06, 0.06, 0.95, 8), chrome); ex.rotation.z = Math.PI / 2; ex.position.set(-0.55, 0.5, 0.2); lean.add(ex);
+  for (const s of [1, -1]) { const fk = new T.Mesh(new T.CylinderGeometry(0.04, 0.04, 0.72, 6), chrome); fk.rotation.z = 0.32; fk.position.set(0.68, 0.58, s * 0.1); lean.add(fk); }
+  // Fahrer
+  const rider = new T.Group(); rider.position.set(-0.28, 0, 0); lean.add(rider);
+  const rc = lam(0x2a2a30);
+  const torso = new T.Mesh(new T.BoxGeometry(0.44, 0.52, 0.42), rc); torso.position.set(0, 1.32, 0); torso.rotation.z = 0.25; rider.add(torso);
+  const headR = new T.Mesh(new T.SphereGeometry(0.17, 10, 8), lam(0xd8d8dc)); headR.position.set(0.12, 1.72, 0); rider.add(headR);
+  for (const s of [1, -1]) {
+    const arm = new T.Mesh(new T.BoxGeometry(0.5, 0.12, 0.12), rc); arm.rotation.z = -0.55; arm.position.set(0.32, 1.32, s * 0.18); rider.add(arm);
+    const leg = new T.Mesh(new T.BoxGeometry(0.16, 0.46, 0.14), lam(0x16161c)); leg.position.set(-0.12, 0.98, s * 0.16); rider.add(leg);
+  }
+  const mkWheel = () => {
+    const w = new T.Group();
+    const tg = new T.CylinderGeometry(R, R, 0.18, 16); tg.rotateX(Math.PI / 2); w.add(new T.Mesh(tg, tireMat));
+    const rg = new T.CylinderGeometry(R * 0.5, R * 0.5, 0.2, 10); rg.rotateX(Math.PI / 2); w.add(new T.Mesh(rg, rimMat));
+    return w;
+  };
+  const front = mkWheel(); front.position.set(wb, R, 0); g.add(front);
+  const rear = mkWheel(); rear.position.set(-wb, R, 0); g.add(rear);
+  return { group: outer, wheels: [rear, rear, front, front], L: 2.9, W: 0.9, bodyMat, siren: null, inner: g, lean, topY: 1.3, bottom: 0, moto: true };
 };
 
 // ---------- Boote ----------
@@ -593,6 +630,7 @@ IE.updateCar = function (v, inp, dt) {
   v.m.wheels.forEach((w, i) => { w.children[0].rotation.z = -v.wheelRot; w.children[1].rotation.z = -v.wheelRot; if (i % 2 === 1) w.rotation.y = 0; });
   // Vorderräder lenken (Index 2,3 = vorne, da sx=+1)
   v.m.wheels[2].rotation.y = v.steer * 0.45; v.m.wheels[3].rotation.y = v.steer * 0.45;
+  if (v.m.lean) v.m.lean.rotation.x = -v.steer * Math.min(Math.abs(v.speed) / 12, 1) * 0.5;
   if (v.m.siren) { const on = (performance.now() / 200 | 0) % 2; v.m.siren[0].visible = !!on; v.m.siren[1].visible = !on; }
 };
 
