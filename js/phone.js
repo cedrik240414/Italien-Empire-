@@ -191,13 +191,19 @@
       // Live-Streams zuerst
       const live = [];
       if (streaming) live.push({ title: '🔴 DU bist LIVE – ' + (g.streamViewers || 0) + ' Zuschauer', thumb: gradThumb('LIVE: Mein Stream', 0, '🔴'), mine: true, ch: { name: 'Mein Kanal', emoji: '⭐' }, views: g.streamViewers || 0, live: true });
+      // Live-Streams anderer echter Spieler (Online-Lobby)
+      const onl = window.IEonline && window.IEonline.active;
+      if (onl && window.IEonline.livePeers) for (const c of window.IEonline.livePeers()) live.push({ title: '🔴 ' + c.name + ' ist LIVE – zuschauen!', thumb: gradThumb('LIVE: ' + c.name, 200, '🔴'), ch: { name: c.name, emoji: '🧑' }, views: c.subs, live: true, spectate: c.r });
       live.push({ title: '🔴 ' + chById('speedy').name + ' LIVE: Rennen!', thumb: npcThumb(NPC_VIDS[0]), ch: chById('speedy'), views: 12000 + ((Math.random() * 4000) | 0), live: true });
       const mine = (S.videos || []).filter(v => v.uploaded).map(v => ({ ...v, ch: { name: 'Mein Kanal', emoji: '⭐', mine: true }, thumbImg: v.thumb }));
-      const all = live.concat(mine.map(v => ({ title: v.title, thumb: v.thumb, ch: v.ch, views: v.views, ref: v })), NPC_VIDS.map(v => ({ title: v.title, thumb: npcThumb(v), ch: chById(v.ch), views: v.views, npc: v })));
+      // Kanäle anderer echter Spieler
+      const peerVids = (onl && window.IEonline.channels) ? window.IEonline.channels().filter(c => !c.live).map(c => ({ title: c.name + ' – Kanal', thumb: gradThumb(c.name + ' Kanal', 150, '🧑'), ch: { name: c.name, emoji: '🧑' }, views: c.subs })) : [];
+      const all = live.concat(mine.map(v => ({ title: v.title, thumb: v.thumb, ch: v.ch, views: v.views, ref: v })), peerVids, NPC_VIDS.map(v => ({ title: v.title, thumb: npcThumb(v), ch: chById(v.ch), views: v.views, npc: v })));
       for (const v of all) {
         const card = document.createElement('div'); card.className = 'vidCard';
-        card.innerHTML = '<img src="' + v.thumb + '"><div style="flex:1"><div class="vt">' + v.title + '</div><div class="vm">' + v.ch.emoji + ' ' + v.ch.name + ' · ' + fmtN(v.views) + ' Aufrufe' + (v.live ? ' · 🔴' : '') + '</div></div>';
-        card.onclick = () => playVideo(v.ref || v.npc || v, v.ch, () => render(host, back), host);
+        card.innerHTML = '<img src="' + v.thumb + '"><div style="flex:1"><div class="vt">' + v.title + '</div><div class="vm">' + v.ch.emoji + ' ' + v.ch.name + ' · ' + fmtN(v.views) + (v.spectate ? ' Abos · 👁️ ZUSCHAUEN' : ' Aufrufe') + (v.live ? ' · 🔴' : '') + '</div></div>';
+        if (v.spectate) card.onclick = () => { const gg = G(); if (gg && gg.startSpectate) { $('phoneModal').hidden = true; $('tvModal').hidden = true; gg.startSpectate(v.spectate); } };
+        else card.onclick = () => playVideo(v.ref || v.npc || v, v.ch, () => render(host, back), host);
         host.appendChild(card);
       }
     };
@@ -332,4 +338,5 @@
     const tv = $('pTV'); if (tv && !tv._w) { tv._w = 1; tv.addEventListener('click', () => { const g = G(); if (g && g.game.state === 'play') openTV(); }); }
   }
   document.addEventListener('DOMContentLoaded', wire); wire();
+  IE.onCloseModals = function () { if (viewTimer) { clearInterval(viewTimer); viewTimer = null; } };
 })();

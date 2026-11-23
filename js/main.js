@@ -221,6 +221,7 @@ function readMove() {
 const CHEATS = [
   { seq: ['E', 'E', 'ZIELEN', 'SPRUNG', 'RENNEN'], name: 'Helikopter', f() { const f = IE.fwd(P.yaw), x = P.pos.x + f.x * 12, z = P.pos.z + f.z * 12; IE.spawnHeli(scene, 'aquila', x, Math.max(IE.supportH(x, z, P.pos.y + 3), 0.5), z, P.yaw); } },
   { seq: ['ZIELEN', 'ZIELEN', 'E', 'E', 'SPRUNG'], name: 'Alle Waffen', f() { for (const w of IE.weapons) S.weapons[w.id] = w.id === 'faust' ? 0 : Math.max(S.weapons[w.id] || 0, w.clip * 3); updateGunModel(); } },
+  { seq: ['WAFFE', 'E', 'WAFFE', 'E', 'ZIELEN'], name: 'Live-Stream zuschauen', f() { if (!ONL()) { toast('Zuschauen geht nur im Online-Modus (Lobby)'); return; } const live = IEonline.livePeers ? IEonline.livePeers() : []; if (live.length) startSpectate(live[0].r); else toast('Gerade streamt niemand in deiner Lobby'); } },
   { seq: ['WAFFE', 'WAFFE', 'E', 'ZIELEN'], name: 'Minigun', f() { S.weapons.minigun = Math.max(S.weapons.minigun || 0, 1200); S.cur = 'minigun'; updateGunModel(); } },
   { seq: ['SPRUNG', 'SPRUNG', 'E', 'RENNEN'], name: 'Supersportwagen', f() { const f = IE.fwd(P.yaw); IE.spawnCar(scene, 'toro', P.pos.x + f.x * 7, P.pos.z + f.z * 7, P.yaw); } },
   { seq: ['RENNEN', 'SPRUNG', 'RENNEN', 'SPRUNG', 'E'], name: 'Panzer', f() { const f = IE.fwd(P.yaw); const v = IE.spawnCar(scene, 'panzer', P.pos.x + f.x * 9, P.pos.z + f.z * 9, P.yaw); v.health = v.maxHealth = 6000; } },
@@ -270,8 +271,9 @@ let missionBeam, waypoint = null, wpBeam;
 const effects = [];
 const pickups = [];
 
-function uiOpen() { return ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal', 'adminModal', 'upModal', 'skinModal', 'xModal'].some(id => !$(id).hidden); }
-function closeModals() { document.body.classList.remove('modalopen'); ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal', 'adminModal', 'upModal', 'skinModal', 'xModal'].forEach(id => $(id).hidden = true); }
+const MODAL_IDS = ['shopModal', 'mapModal', 'charModal', 'pauseModal', 'wheel', 'boardModal', 'lobbyModal', 'adminModal', 'upModal', 'skinModal', 'xModal', 'packsModal', 'phoneModal', 'tvModal'];
+function uiOpen() { return MODAL_IDS.some(id => $(id) && !$(id).hidden); }
+function closeModals() { document.body.classList.remove('modalopen'); MODAL_IDS.forEach(id => { if ($(id)) $(id).hidden = true; }); if (window.IE && IE.onCloseModals) try { IE.onCloseModals(); } catch (e) { } }
 
 // ---------- Waffenrad ----------
 const GUN_SVG = {
@@ -776,6 +778,7 @@ function flyUpdate(dt, ctrl, mx, my) {
 
 // ---------- Spieler-Update ----------
 function updatePlayer(dt) {
+  if (game.spectate) return; // beim Zuschauen bewegt sich der eigene Charakter nicht
   if (game.dead) { if (P.ride) { P.ride = null; P.h.group.visible = true; } return; }
   if (P.ride) { // Beifahrer: folgt dem Auto des Fahrers
     const r = ONL() && IEonline.peers.get(P.ride);
@@ -1779,6 +1782,14 @@ function updateCamera(dt) {
   const sens = 0.0026 * opts.sens * (inp.aim && (IE.weaponById[S.cur] || {}).scope ? 0.3 : 1);
   if (!uiOpen()) { cam.yaw -= inp.lookX * sens; cam.pitch = clamp(cam.pitch + inp.lookY * sens, opts.fp ? -1.3 : -0.6, opts.fp ? 1.3 : 1.25); }
   inp.lookX = inp.lookY = 0;
+  if (game.spectate && game.spectate.pos) {
+    const st = game.spectate.pos, ff = IE.fwd(cam.yaw), cpc = Math.cos(cam.pitch), spc = Math.sin(cam.pitch), dd = 8;
+    cam.target.set(st.x, st.y + 1.6, st.z);
+    tmpV.set(cam.target.x - ff.x * cpc * dd, cam.target.y + spc * dd + 1.5, cam.target.z - ff.z * cpc * dd);
+    const gyy = IE.groundH(tmpV.x, tmpV.z) + 0.5; if (tmpV.y < gyy) tmpV.y = gyy;
+    camera.position.copy(tmpV); camera.lookAt(cam.target); camera.fov = lerp(camera.fov, 62, dt * 5); camera.updateProjectionMatrix();
+    return;
+  }
   let tgt, dist, h;
   if (P.veh) {
     const v = P.veh; tgt = v.pos; dist = v.type === 'airship' ? 70 : v.type === 'plane' ? 12 + v.m.L * 0.9 : v.type === 'heli' ? 17 : v.type === 'boat' ? 7 + v.m.L * 0.7 : v.m.tank ? 15 : 8 + v.m.L * 0.4; h = v.type === 'airship' ? 10 : v.type === 'plane' ? 3.5 : v.type === 'heli' ? 2.5 : v.type === 'boat' ? 1.5 + v.m.H : v.m.tank ? 4 : 1.6;
@@ -1923,7 +1934,8 @@ function frameBody() {
   game.time += dt;
   readMove();
   // Einmal-Aktionen
-  if (pressed.has('pause')) { if (uiOpen()) closeModals(); else openPause(); }
+  if (game.spectate && (!game.spectate.pos || (ONL() && IEonline.peers && !IEonline.peers.has(game.spectate.peer)) || !(game.spectate.pr && game.spectate.pr.str))) stopSpectate();
+  if (pressed.has('pause')) { if (game.spectate) stopSpectate(); else if (uiOpen()) closeModals(); else openPause(); }
   if (!uiOpen()) {
     if (dlg.active) { if (pressed.has('space') || pressed.has('act') || pressed.has('enter')) advanceDlg(); }
     else if (!game.dead) {
@@ -2075,6 +2087,21 @@ function boot() {
 $('bNew').addEventListener('click', () => startGame(false));
 $('bCont').addEventListener('click', () => startGame(true));
 function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = saveKeyFor(MODE); $('bCont').hidden = !store.get(); cloudPull(); }
-window.IEgame = { explosion, get isTouch() { return isTouch; }, damageNPC, tracer, flash, enterInterior, exitInterior, putInVehicle, setWanted, maxHP, placePlayer, teleportTo, CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, closeModals, openPause, IE };
+// ---------- Zuschauen (Spectate) ----------
+function startSpectate(r) {
+  if (!r || !r.pos) { toast('Dieser Spieler ist gerade nicht erreichbar', 2); return; }
+  closeModals(); game.spectate = r;
+  if (locked) { try { document.exitPointerLock(); } catch (e) { } }
+  let bar = $('spectBar');
+  if (!bar) { bar = document.createElement('div'); bar.id = 'spectBar'; bar.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:70;background:rgba(10,14,20,0.9);color:#fff;font-family:var(--f-hud);padding:8px 14px;border-radius:10px;display:flex;gap:12px;align-items:center;border:1px solid rgba(255,255,255,0.2)'; document.body.appendChild(bar); }
+  bar.innerHTML = '<span>🔴 Du schaust <b>' + (r.name || 'Spieler') + '</b> live zu</span>';
+  const b = document.createElement('button'); b.textContent = 'Beenden'; b.style.cssText = 'background:#c8101a;border:0;color:#fff;border-radius:6px;padding:4px 10px;font-family:var(--f-hud);cursor:pointer'; b.onclick = stopSpectate; bar.appendChild(b);
+  bar.style.display = '';
+  toast('Zuschauen: ' + (r.name || 'Spieler') + ' · Maus = umsehen · ESC = beenden', 3);
+}
+function stopSpectate() { game.spectate = null; const bar = $('spectBar'); if (bar) bar.style.display = 'none'; }
+IE.startSpectate = startSpectate; IE.stopSpectate = stopSpectate;
+
+window.IEgame = { startSpectate, stopSpectate, explosion, get isTouch() { return isTouch; }, damageNPC, tracer, flash, enterInterior, exitInterior, putInVehicle, setWanted, maxHP, placePlayer, teleportTo, CHEATS, runCheat, openSkins, setFly, spawnAirship, openUpgrades, setAccount, S, P, game, mission, cam, scene, camera, startGame, startMission, startJob, nextStep, failMission, hurtPlayer, addMoney, toast, banner, fmt, saveGame, sfx, closeModals, openPause, IE };
 boot();
 })();

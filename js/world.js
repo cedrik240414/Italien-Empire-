@@ -798,6 +798,21 @@ function buildShops(scene) {
     }
     if (!s.mx) { s.mx = s.x; s.mz = s.z; }
   }
+  // Handy-Laden direkt am Start (Flughafen Neapel), damit man ihn sofort findet
+  try {
+    const sp = (IE.missions && IE.missions[0]) || { x: IE.airport.x, z: IE.airport.z };
+    const base = IE.snapLand ? IE.snapLand(sp.x + 22, sp.z + 10, sp.x, sp.z) : { x: sp.x + 22, z: sp.z + 10 };
+    const hx = base.x, hz = base.z, y = rawH(hx, hz);
+    add(scene, new T.BoxGeometry(10, 6, 8), new T.MeshStandardMaterial({ color: 0x1b2b4a, metalness: 0.4, roughness: 0.4 }), hx, y + 2.7, hz);
+    add(scene, new T.BoxGeometry(10.4, 0.6, 8.4), new T.MeshLambertMaterial({ color: 0x3a9bff }), hx, y + 5.9, hz);
+    add(scene, new T.BoxGeometry(6, 2, 0.2), IE.mat.glass, hx, y + 2.6, hz - 4.05);
+    const sg = new T.Mesh(new T.PlaneGeometry(8, 2), new T.MeshBasicMaterial({ map: signTex('HANDY-LADEN', '#0b1830', '#3a9bff') }));
+    sg.position.set(hx, y + 5.1, hz - 4.12); scene.add(sg);
+    IE.addBox(hx - 5, hz - 4, hx + 5, hz + 4, y + 6);
+    const shop = { type: 'phone', fixed: true, spawnShop: true, x: hx, z: hz, mx: hx, mz: hz + 6 };
+    shop.marker = marker(scene, hx, y, hz + 6, 0x3a9bff);
+    IE.shops.push(shop);
+  } catch (e) { }
 }
 
 // ---------- Hafen ----------

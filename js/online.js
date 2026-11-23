@@ -141,7 +141,8 @@ const r2 = v => Math.round(v * 100) / 100;
 function sendPresence() {
   const g = G(), P = g.P, v = P.veh;
   const pr = { x: r2(P.pos.x), y: r2(P.pos.y), z: r2(P.pos.z), yaw: r2(P.yaw), c: g.S.char, hp: Math.round(P.health), dead: g.game.dead ? 1 : 0,
-    sw: P.under ? 2 : P.swim ? 1 : 0, sk: g.S.skin || '', uid: O.myId || '', nm: (window.IEaccount && IEaccount.nick) || '', k: O.kills, d: O.deaths, pa: O.passive ? 1 : 0, w: g.S.cur };
+    sw: P.under ? 2 : P.swim ? 1 : 0, sk: g.S.skin || '', uid: O.myId || '', nm: (window.IEaccount && IEaccount.nick) || '', k: O.kills, d: O.deaths, pa: O.passive ? 1 : 0, w: g.S.cur,
+    str: g.streaming ? 1 : 0, csub: (g.S.channel && g.S.channel.subs) || 0 };
   const ship = IE.vehicles.find(q => q.type === 'airship' && q.mine && !q.removeMe);
   pr.ship = ship ? { x: r2(ship.pos.x), y: r2(ship.pos.y), z: r2(ship.pos.z), yaw: r2(ship.yaw) } : null;
   pr.rd = P.ride || null; pr.pet = IE.myPetId ? IE.myPetId() : ''; pr.rc = IE.racePresence ? IE.racePresence() : null;
@@ -149,6 +150,11 @@ function sendPresence() {
   pr.jail = P.jailed ? 1 : 0;
   room.presence(pr).catch(() => { });
 }
+// Kanäle/Live anderer Spieler (fürs Handy & Zuschauen)
+O.channels = function () { return [...O.peers.values()].filter(r => r.pos && r.pr && !r.pr.dead).map(r => ({ name: r.name || 'Spieler', peer: r.peer, live: !!(r.pr && r.pr.str), subs: (r.pr && r.pr.csub) || 0, r: r })); };
+O.livePeers = function () { return O.channels().filter(c => c.live); };
+O.peerByName = function (nm) { return O.channels().find(c => c.name === nm); };
+
 O.update = function (dt) {
   if (!room) return;
   sendT -= dt; if (sendT <= 0) { sendT = 0.1; sendPresence(); }
