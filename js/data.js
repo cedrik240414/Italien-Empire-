@@ -671,3 +671,39 @@ IE.packs = [
     cars: ['oro', 'diamante', 'leggenda', 'imperatore'], boats: ['yacht'], planes: ['jetxl'], skins: ['gold'] }
 ];
 IE.packById = {}; IE.packs.forEach(p => IE.packById[p.id] = p);
+
+// ===================== ENGEL & TEUFEL PACK + HANDY-LÄDEN =====================
+IE.cars.push(
+  { id: 'engel',  name: 'Engel-GT (Engel & Teufel)',  price: 0, speed: 104, accel: 50, grip: 3.1, color: 0xf7f3e8, kind: 'super', pack: 'engelteufel' },
+  { id: 'teufel', name: 'Teufel-GT (Engel & Teufel)', price: 0, speed: 104, accel: 52, grip: 3.0, color: 0x7a0c14, kind: 'super', pack: 'engelteufel' }
+);
+IE.planes.push(
+  { id: 'engelflug',  name: 'Engels-Jet',  price: 0, speed: 170, minSpeed: 40, turn: 1.6, color: 0xffffff, accent: 0xd6b04a, kind: 'fighter', pack: 'engelteufel' },
+  { id: 'teufelflug', name: 'Teufels-Jet', price: 0, speed: 180, minSpeed: 42, turn: 1.5, color: 0x1a0a0a, accent: 0xc8101a, kind: 'fighter', pack: 'engelteufel' }
+);
+IE.weapons.push(
+  { id: 'heiligenschein', name: 'Heiligenschein-Laser', price: 0, dmg: 85,  rate: 0.12, range: 360, spread: 0,    ammoPrice: 0, clip: 300, pellets: 1, auto: true,  laser: true, pack: 'engelteufel' },
+  { id: 'dreizack',       name: 'Höllen-Dreizack',      price: 0, dmg: 130, rate: 1.0,  range: 280, spread: 0.02, ammoPrice: 0, clip: 14,  pellets: 1, auto: false, explode: 7,  pack: 'engelteufel' }
+);
+IE.skins.push(
+  { id: 'engelskin',  name: 'Engel',  cat: 'Pack', price: 0, fromPack: 'engelteufel', look: { pants: 0xf4f1e6, jacket: 0xfbf8ef, shirt: 0xffffff, skin: SK.light, hair: 0xf2e2b0, chain: true, shoes: 0xf4f1e6 } },
+  { id: 'teufelskin', name: 'Teufel', cat: 'Pack', price: 0, fromPack: 'engelteufel', look: { pants: 0x160808, jacket: 0x7a0c14, shirt: 0x160808, tie: 0xc8101a, skin: 0xc8402e, hair: 0x160808, glasses: 'sun', hands: 0xc8402e, shoes: 0x160808 } }
+);
+IE.carById = {}; IE.cars.forEach(c => IE.carById[c.id] = c);
+IE.planeById = {}; IE.planes.forEach(p => IE.planeById[p.id] = p);
+IE.weaponById = {}; IE.weapons.forEach(w => IE.weaponById[w.id] = w);
+IE.skinById = {}; IE.skins.forEach(s => IE.skinById[s.id] = s);
+IE.packs.push(
+  { id: 'engelteufel', name: 'Engel & Teufel', emoji: '😇', color: 0xc8101a, price: 180000000,
+    desc: 'Himmlische & höllische Supersportwagen, Engels- & Teufels-Jet, Heiligenschein-Laser, Höllen-Dreizack sowie Engel- & Teufel-Outfit.',
+    cars: ['engel', 'teufel'], planes: ['engelflug', 'teufelflug'], weapons: ['heiligenschein', 'dreizack'], skins: ['engelskin', 'teufelskin'] }
+);
+IE.packById = {}; IE.packs.forEach(p => IE.packById[p.id] = p);
+
+// Handy-Läden in großen Städten (kein Innenraum – Kauf per E am Marker)
+IE.shops.push(
+  { type: 'phone', city: 'neapel',  dx: 40,   dz: -70 },
+  { type: 'phone', city: 'rom',     dx: -110, dz: -30 },
+  { type: 'phone', city: 'mailand', dx: 30,   dz: 90 },
+  { type: 'phone', city: 'venedig', dx: 70,   dz: -40 }
+);

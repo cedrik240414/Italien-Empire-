@@ -24,7 +24,7 @@ isTouch = opts.ctrl === 'kbm' ? false : opts.ctrl === 'touch' ? true : touchDevi
 opts.gfx = opts.gfx || (touchDevice ? 'mittel' : 'hoch'); opts.fp = !!opts.fp; opts.sens = opts.sens || 1; if (opts.snd === undefined) opts.snd = true;
 const saveOpts = () => { try { localStorage.setItem('italienEmpire_opts', JSON.stringify(opts)); } catch (e) { } };
 
-const S = { cheat250: false, villas: [], biz: {}, guards: 0, guardsOn: true, money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], up: {}, skins: [], skin: '', packs: [], mission: 0, char: 'jack', armor: 0, done: false };
+const S = { cheat250: false, villas: [], biz: {}, guards: 0, guardsOn: true, money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], up: {}, skins: [], skin: '', packs: [], phone: false, phonePro: false, videos: [], subs: [], channel: { subs: 0, views: 0, cash: 0 }, mission: 0, char: 'jack', armor: 0, done: false };
 // Spielstand: lokal + (mit Konto auf dem eigenen Server) in der Cloud – so ist er auf jedem Gerät da
 const CLOUD = { busy: false, lastPush: 0, timer: null, pending: null };
 const cloudAcc = () => window.IECF && IECF.account && window.IEaccount && IEaccount.token ? IECF.account : null;
@@ -1523,6 +1523,15 @@ function renderShop() {
         [{ t: 'Tuning', f: () => { closeModals(); IE.openTuning(c.id); } }, { t: 'Abholen', buy: true, f: () => { spawnOwnedCar(c.id, s); closeModals(); } }] :
         [{ t: 'Kaufen · ' + fmt(c.price), buy: true, dis: S.money < c.price, f: () => { S.money -= c.price; S.cars.push(c.id); sfx('cash'); spawnOwnedCar(c.id, s); closeModals(); toast(c.name + ' gekauft!'); } }], c.color);
     }
+  } else if (s.type === 'phone') {
+    $('shopT').textContent = 'Handy-Laden · ' + city;
+    $('shopHint').textContent = 'Mit dem Handy kannst du streamen, Videos aufnehmen & hochladen, Kanäle abonnieren und fernsehen. Öffne es danach im Pause-Menü (📱 Handy).';
+    if (!S.phone) {
+      row('Smartphone „Napoli X"', 'Dein erstes Handy – schaltet Streamen, Videos, Abos & Kanäle frei', [{ t: 'Kaufen · ' + fmt(150000), buy: true, dis: S.money < 150000, f: () => { S.money -= 150000; S.phone = true; sfx('cash'); toast('Handy gekauft! Öffne es im Pause-Menü (📱 Handy)', 3); } }], 0x3a9bff);
+    } else {
+      row('Dein Smartphone', 'Handy öffnen – Streamen, Videos, Abos & TV', [{ t: 'Handy öffnen', buy: true, f: () => { closeModals(); if (IE.openPhone) IE.openPhone(); } }], 0x3a9bff);
+      row('Pro-Kamera-Upgrade', S.phonePro ? 'Installiert – deutlich mehr Aufrufe & Abos' : 'Mehr Aufrufe und Abos für deine Videos & Streams', S.phonePro ? [] : [{ t: 'Kaufen · ' + fmt(500000), buy: true, dis: S.money < 500000, f: () => { S.money -= 500000; S.phonePro = true; sfx('cash'); toast('Pro-Kamera installiert!'); } }], 0xd6b04a);
+    }
   } else if (s.type === 'biz') {
     const D = IE.bizDefs[s.biz]; S.biz = S.biz || {}; const b = S.biz[s.id];
     $('shopT').textContent = D.name + ' · ' + city;
@@ -1868,7 +1877,7 @@ function updateHUD(dt) {
     }
     else if (!P.veh) {
       const s = nearestShop();
-      if (s) pr = `<b>E</b> · ${s.type === 'weapon' ? 'Waffenladen betreten' : s.type === 'car' ? 'Autohaus betreten' : s.type === 'luxury' ? 'Luxus-Autohaus betreten' : s.type === 'biz' ? (S.biz && S.biz[s.id] ? 'Dein Geschäft: ' + IE.bizDefs[s.biz].name + ' (Kasse: ' + fmt(Math.floor(S.biz[s.id].cash)) + ')' : IE.bizDefs[s.biz].name + ' kaufen · ' + fmt(IE.bizDefs[s.biz].price)) : s.type === 'boat' ? 'Bootsladen betreten' : s.type === 'plane' ? 'Hangar: Flugzeug wählen' : 'Helikopterplatz'}`;
+      if (s) pr = `<b>E</b> · ${s.type === 'weapon' ? 'Waffenladen betreten' : s.type === 'car' ? 'Autohaus betreten' : s.type === 'luxury' ? 'Luxus-Autohaus betreten' : s.type === 'biz' ? (S.biz && S.biz[s.id] ? 'Dein Geschäft: ' + IE.bizDefs[s.biz].name + ' (Kasse: ' + fmt(Math.floor(S.biz[s.id].cash)) + ')' : IE.bizDefs[s.biz].name + ' kaufen · ' + fmt(IE.bizDefs[s.biz].price)) : s.type === 'boat' ? 'Bootsladen betreten' : s.type === 'plane' ? 'Hangar: Flugzeug wählen' : s.type === 'phone' ? (S.phone ? 'Handy-Laden' : 'Handy kaufen · ' + fmt(150000)) : 'Helikopterplatz'}`;
       else { for (const v of IE.vehicles) if (!v.dead && vehDist(v) < vehReach(v)) { pr = v.type === 'airship' ? '<b>F</b> · Ans Steuer der Flug-Yacht' : `<b>F</b> · Einsteigen: ${v.def.name}`; break; }
       if (!pr && P.ride) pr = '<b>F</b> · Aussteigen (Beifahrer)';
       if (!pr && !P.ride && ONL() && IEonline.nearCarPeer && IEonline.nearCarPeer(P.pos)) pr = '<b>F</b> · Als Beifahrer einsteigen bei ' + IEonline.nearCarPeer(P.pos).name;

@@ -204,6 +204,32 @@ body.touch #wheelBtn { top: calc(232px + env(safe-area-inset-top, 0px)); }
 .packCard .pBuy { margin: 6px 14px 0; padding: 9px; border-radius: 8px; border: 0; background: #48e07a; color: #0c140d; font-family: var(--f-hud); font-size: 16px; font-weight: 700; cursor: pointer; }
 .packCard .pBuy:disabled { cursor: default; opacity: 0.45; }
 .packCard .pBuy.done { background: #1d3a2a; color: #9fe3b8; opacity: 1; }
+/* Handy */
+.phoneShell { width: min(380px,94vw); height: min(760px,92vh); background: #0b0f16; border: 3px solid #2a2f3a; border-radius: 34px; padding: 12px; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+.phoneTop { display: flex; justify-content: space-between; align-items: center; color: var(--paper); font-family: var(--f-hud); font-weight: 700; padding: 4px 10px 8px; }
+.phoneScreen { flex: 1; background: linear-gradient(160deg,#141b28,#0d1017); border-radius: 22px; overflow-y: auto; padding: 14px; color: var(--paper); font-family: var(--f-hud); }
+.appGrid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+.app { display: flex; flex-direction: column; align-items: center; gap: 5px; background: rgba(255,255,255,0.06); border: 0; border-radius: 16px; padding: 12px 4px; color: var(--paper); font-family: var(--f-hud); font-size: 12px; cursor: pointer; }
+.app .ai { font-size: 30px; }
+.app:active { transform: scale(0.95); }
+.pBack { background: rgba(255,255,255,0.1); border: 0; color: var(--paper); border-radius: 8px; padding: 6px 12px; font-family: var(--f-hud); cursor: pointer; margin-bottom: 10px; }
+.vidCard { display: flex; gap: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 8px; margin-bottom: 10px; cursor: pointer; align-items: center; }
+.vidCard img { width: 110px; height: 62px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }
+.vidCard .vt { font-size: 13px; font-weight: 700; }
+.vidCard .vm { font-size: 11px; opacity: 0.7; }
+.catGrid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+.catGrid figure { margin: 0; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; }
+.catGrid img { width: 100%; display: block; }
+.catGrid figcaption { font-size: 11px; padding: 5px 7px; display: flex; justify-content: space-between; align-items: center; }
+.catGrid button { background: none; border: 0; color: #ff6a7a; cursor: pointer; font-size: 14px; }
+.liveBadge { position: fixed; top: 64px; left: 14px; z-index: 60; background: #c8101a; color: #fff; font-family: var(--f-hud); font-weight: 700; font-size: 13px; padding: 5px 11px; border-radius: 8px; display: flex; gap: 7px; align-items: center; box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
+.liveBadge .dot { width: 9px; height: 9px; border-radius: 50%; background: #fff; animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: 0.2; } }
+.tvBody { padding: 16px 22px; }
+.tvChans { display: grid; grid-template-columns: repeat(auto-fill,minmax(150px,1fr)); gap: 12px; }
+.tvChan { display: flex; flex-direction: column; align-items: center; gap: 6px; border: 2px solid rgba(243,234,216,0.2); border-radius: 12px; padding: 16px 8px; background: rgba(13,15,19,0.6); color: var(--paper); font-family: var(--f-hud); font-size: 14px; cursor: pointer; }
+.tvChan .ci { font-size: 34px; }
+.tvScreen { background: #000; border-radius: 10px; min-height: 300px; color: #fff; font-family: var(--f-hud); overflow: hidden; }
 .skin img { width: 96px; height: 120px; object-fit: contain; }
 .skin .sn { font-size: 15px; font-weight: 600; text-align: center; line-height: 1.1; min-height: 2.2em; display: grid; place-items: center; }
 .skin .sp { font-size: 14px; color: var(--gold); font-variant-numeric: tabular-nums; }
@@ -311,7 +337,7 @@ body.touch.playing #touch { display: block; }
       <div><b>FEUER</b> Schießen (mit Zielhilfe)</div><div><b>EIN/AUS</b> Fahrzeug</div>
       <div><b>E</b> Shop / Mission</div><div><b>HOCH / RUNTER</b> Springen · Heli</div><div><b>TAUCHEN / AUF</b> Unter Wasser schwimmen</div><div><b>SICHT</b> Ego-Sicht umschalten</div><div><b>Kreis links</b> Waffenrad</div><div><b>Flugzeug</b> GAS +/− für Schub, Joystick hoch = Nase hoch</div>
     </div>
-    <div class="ver">Version 76</div>
+    <div class="ver">Version 77</div>
   </div>
 </div>
 
@@ -394,6 +420,10 @@ body.touch.playing #touch { display: block; }
 <div class="modal" id="charModal" hidden><div class="panel"><header><h2>Die Crew</h2><button class="x" data-close>✕</button></header><div class="chars" id="charList"></div><div class="hint">Beim Wechsel landest du in der Heimatstadt des Charakters. Während einer Mission nicht möglich.</div></div></div>
 <div class="modal" id="packsModal" hidden><div class="panel" style="width:min(960px,100%)"><header><h2>🎁 Erweiterungen</h2><div style="display:flex;gap:14px;align-items:center"><span class="cash" id="packsCash"></span><button class="x" data-close>✕</button></div></header><div class="hint" style="border:0">Kaufe themen­basierte Packs mit Ingame-Geld – jedes schaltet schnelle Autos, Yachten, Flugzeuge, Skins und Spezialwaffen dauerhaft frei. Autos holst du danach im Autosalone / über „Meine Fahrzeuge“, Boote am Steg, Flugzeuge im Hangar, Skins im Kleiderschrank.</div><div class="packGrid" id="packsRows"></div></div></div>
 
+<div class="modal" id="phoneModal" hidden><div class="phoneShell"><div class="phoneTop"><span id="phoneTitle">📱 Handy</span><span style="display:flex;gap:10px;align-items:center"><span class="cash" id="phoneCash" style="font-size:14px"></span><button class="x" data-close style="position:static">✕</button></span></div><div class="phoneScreen" id="phoneScreen"></div></div></div>
+
+<div class="modal" id="tvModal" hidden><div class="panel" style="width:min(960px,100%)"><header><h2 id="tvTitle">📺 Fernseher</h2><button class="x" data-close>✕</button></header><div class="tvBody" id="tvBody"></div></div></div>
+
 <div class="modal" id="pauseModal" hidden><div class="panel"><header><h2>Pausa</h2><button class="x" data-close>✕</button></header>
   <div id="onPause" hidden>
     <div class="opt"><span id="onLobbyTxt"></span><span><button class="btn ghost" id="onLeave" style="font-size:16px;padding:6px 14px;border-color:var(--rosso);color:var(--rosso)">Online verlassen</button></span></div>
@@ -401,7 +431,7 @@ body.touch.playing #touch { display: block; }
     <div class="opt"><span>Crew-Aufträge <small style="color:var(--muted);font-size:14px">· starten für alle in der Lobby</small></span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" id="onPassive" style="font-size:15px;padding:6px 12px">Passivmodus: Aus</button><button class="btn ghost" id="onBoard2" style="font-size:15px;padding:6px 12px">Rangliste</button></span></div>
     <div id="onJobs" class="jobs"></div>
   </div>
-  <div class="opt"><span>Skins, Upgrades &amp; Admin</span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn" id="pGarage" style="font-size:16px;padding:6px 14px">Meine Fahrzeuge (G)</button><button class="btn" id="pSecurity" style="font-size:16px;padding:6px 14px">Security</button><button class="btn" id="pPets" style="font-size:16px;padding:6px 14px">🐾 Haustiere</button><button class="btn" id="pPacks" style="font-size:16px;padding:6px 14px;background:#2a1a4a;border-color:#8a3cf0">🎁 Erweiterungen</button><button class="btn" id="pAdvent" style="font-size:16px;padding:6px 14px;background:#8a1020;border-color:#d6b04a" hidden>🎄 Adventskalender</button><button class="btn" id="pSkins" style="font-size:16px;padding:6px 14px">Skins</button><button class="btn" id="pUp" style="font-size:16px;padding:6px 14px">Upgrades</button><button class="btn ghost" id="pAdmin" style="font-size:16px;padding:6px 14px" hidden>Admin-Panel</button></span></div>
+  <div class="opt"><span>Skins, Upgrades &amp; Admin</span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn" id="pGarage" style="font-size:16px;padding:6px 14px">Meine Fahrzeuge (G)</button><button class="btn" id="pSecurity" style="font-size:16px;padding:6px 14px">Security</button><button class="btn" id="pPets" style="font-size:16px;padding:6px 14px">🐾 Haustiere</button><button class="btn" id="pPacks" style="font-size:16px;padding:6px 14px;background:#2a1a4a;border-color:#8a3cf0">🎁 Erweiterungen</button><button class="btn" id="pPhone" style="font-size:16px;padding:6px 14px;background:#122033;border-color:#3a9bff">📱 Handy</button><button class="btn" id="pTV" style="font-size:16px;padding:6px 14px;background:#1a1420;border-color:#d6b04a">📺 Fernseher</button><button class="btn" id="pAdvent" style="font-size:16px;padding:6px 14px;background:#8a1020;border-color:#d6b04a" hidden>🎄 Adventskalender</button><button class="btn" id="pSkins" style="font-size:16px;padding:6px 14px">Skins</button><button class="btn" id="pUp" style="font-size:16px;padding:6px 14px">Upgrades</button><button class="btn ghost" id="pAdmin" style="font-size:16px;padding:6px 14px" hidden>Admin-Panel</button></span></div>
   <div class="opt"><span>Steuerung <small style="color:var(--muted);font-size:14px">· Tastatur &amp; Maus: WASD, Maus umsehen, Links schießen, Rechts zielen</small></span><span><button class="btn ghost" id="optCtrl" style="font-size:16px;padding:6px 14px">Touch</button></span></div>
   <div class="opt"><span>Grafik</span><span><button class="btn ghost" id="optGfx" style="font-size:16px;padding:6px 14px">Hoch</button></span></div>
   <div class="opt"><label for="optSens">Kamera-Empfindlichkeit</label><input type="range" id="optSens" min="0.3" max="2.5" step="0.1" value="1"></div>
@@ -427,14 +457,15 @@ body.touch.playing #touch { display: block; }
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/data.js?v=76"></script>
-<script src="js/world.js?v=76"></script>
-<script src="js/entities.js?v=76"></script>
-<script src="js/extra.js?v=76"></script>
-<script src="js/main.js?v=76"></script>
-<script src="js/server-config.js?v=76"></script>
-<script src="js/cfnet.js?v=76"></script>
-<script src="js/online.js?v=76"></script>
-<script src="js/account.js?v=76"></script>
-<script src="js/launcher.js?v=76"></script>
-<script src="js/packs.js?v=76"></script>
+<script src="js/data.js?v=77"></script>
+<script src="js/world.js?v=77"></script>
+<script src="js/entities.js?v=77"></script>
+<script src="js/extra.js?v=77"></script>
+<script src="js/main.js?v=77"></script>
+<script src="js/server-config.js?v=77"></script>
+<script src="js/cfnet.js?v=77"></script>
+<script src="js/online.js?v=77"></script>
+<script src="js/account.js?v=77"></script>
+<script src="js/launcher.js?v=77"></script>
+<script src="js/packs.js?v=77"></script>
+<script src="js/phone.js?v=77"></script>

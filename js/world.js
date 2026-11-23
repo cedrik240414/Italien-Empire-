@@ -767,6 +767,18 @@ function buildShops(scene) {
       IE.addBox(bx - ext * (Math.abs(az) > 0.7 ? bw / (2 * ext) : bd / (2 * ext)), bz - ext * (Math.abs(az) > 0.7 ? bd / (2 * ext) : bw / (2 * ext)),
                 bx + ext * (Math.abs(az) > 0.7 ? bw / (2 * ext) : bd / (2 * ext)), bz + ext * (Math.abs(az) > 0.7 ? bd / (2 * ext) : bw / (2 * ext)), y + bh);
       s.marker = marker(scene, s.x, y, s.z, 0x48e07a);
+    } else if (s.type === 'phone') {
+      const bw = 10, bd = 8, bh = 6;
+      const bx = s.x + ax * (bd / 2 + 4), bz = s.z + az * (bd / 2 + 4), rot = Math.atan2(ax, az);
+      add(scene, new T.BoxGeometry(bw, bh, bd), new T.MeshStandardMaterial({ color: 0x1b2b4a, metalness: 0.4, roughness: 0.4 }), bx, y + bh / 2 - 0.3, bz, rot);
+      add(scene, new T.BoxGeometry(bw + 0.4, 0.6, bd + 0.4), new T.MeshLambertMaterial({ color: 0x3a9bff }), bx, y + bh - 0.1, bz, rot);
+      add(scene, new T.BoxGeometry(bw - 2, bh - 3, 0.2), IE.mat.glass, bx - ax * (bd / 2 + 0.05), y + bh / 2 - 0.6, bz - az * (bd / 2 + 0.05), rot);
+      const sg = new T.Mesh(new T.PlaneGeometry(bw * 0.8, bw * 0.8 / 4), new T.MeshBasicMaterial({ map: signTex('HANDY-LADEN', '#0b1830', '#3a9bff') }));
+      sg.position.set(bx - ax * (bd / 2 + 0.08), y + bh - 0.9, bz - az * (bd / 2 + 0.08)); sg.rotation.y = rot + Math.PI; scene.add(sg);
+      const ext = Math.max(bw, bd) / 2;
+      IE.addBox(bx - ext * (Math.abs(az) > 0.7 ? bw / (2 * ext) : bd / (2 * ext)), bz - ext * (Math.abs(az) > 0.7 ? bd / (2 * ext) : bw / (2 * ext)),
+                bx + ext * (Math.abs(az) > 0.7 ? bw / (2 * ext) : bd / (2 * ext)), bz + ext * (Math.abs(az) > 0.7 ? bd / (2 * ext) : bw / (2 * ext)), y + bh);
+      s.marker = marker(scene, s.x, y, s.z, 0x3a9bff);
     } else if (s.type === 'boat') {
       buildHarbor(scene, s);
       continue;
