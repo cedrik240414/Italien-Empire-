@@ -289,7 +289,7 @@ function updateBankRob(dt) {
   g.setWanted(Math.max(g.game.wanted, Math.min(5, 3 + pc * 2)));
   if (!g.mission.active) { $('obj').hidden = false; $('obj').innerHTML = `<small>🏦 Banküberfall · ${s.name}</small>Tresor wird geknackt … ${Math.round(pc * 100)} %`; }
   if (pc >= 1) {
-    const cash = 60000 + Math.round(rnd() * 140000);
+    const cash = 3000000 + Math.round(rnd() * 2000000);
     g.addMoney(cash); g.setWanted(5); s.cool = g.game.time + 600;
     g.banner('🏦 Banküberfall geschafft!', s.name, '+ ' + g.fmt(cash) + ' · 5 Sterne – entkomme der Armee!', 5); g.sfx('cash');
     bankRob = null; if (!g.mission.active) $('obj').hidden = true;
