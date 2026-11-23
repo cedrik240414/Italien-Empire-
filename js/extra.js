@@ -774,13 +774,13 @@ function updateMoon(dt) {
 // ================= WEIHNACHTEN (Dezember) =================
 const XM = { test: false, built: false, on: false, snow: false, lights: null, trees: null, flakes: null, terrCol: null, treeCols: [], canes: [], caneT: 5 };
 const dayHash = d => { const x = Math.sin(d * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); };
-IE.xmasActive = () => XM.test || new Date().getMonth() === 11;
+// Weihnachtszeit (Deko + Bäume): ab 20. November bis Ende Dezember
+IE.xmasActive = () => XM.test || (() => { const d = new Date(), m = d.getMonth(); return m === 11 || (m === 10 && d.getDate() >= 20); })();
 IE.snowToday = () => {
   if (XM.test) return true;
-  const d = new Date(), m = d.getMonth(), day = d.getDate();
-  if (m === 11) return [6, 13, 20, 24, 25, 26, 31].includes(day) || dayHash(day) < 0.45; // Dezember: oft
-  if (m === 10) return dayHash(day + 200) < 0.30;                                          // November: manchmal (bis 1. Dez)
-  if (m === 0 || m === 1) return dayHash(day + m * 50) < 0.30;                              // Jan/Feb: manchmal
+  const d = new Date(), m = d.getMonth();
+  if (m === 11 || (m === 10 && d.getDate() >= 20)) return true; // Weihnachtszeit: immer Schnee
+  if (m === 0 || m === 1) return dayHash(d.getDate() + m * 50) < 0.30; // Jan/Feb: manchmal
   return false;
 };
 IE.adventDay = () => { if (XM.test) return 24; const d = new Date(); return d.getMonth() === 11 ? Math.min(24, d.getDate()) : 0; };
@@ -873,7 +873,7 @@ function updateXmas(dt) {
   updateCanes(dt, on);
   // Hinweis auf neues Türchen
   if (on && g.game.state === 'play' && !XM.told) { XM.told = true; const d = IE.adventDay(), S = g.S; if (d && !(S.advent || []).includes(d)) setTimeout(() => g.toast('🎄 Im Adventskalender wartet Türchen ' + d + ' auf dich (Menü → Adventskalender)', 5), 4000); }
-  const pb = $('pAdvent'); if (pb) pb.hidden = !on;
+  const pb = $('pAdvent'); if (pb) pb.hidden = !IE.adventDay();
 }
 // ----- Zuckerstangen mit Geld -----
 let caneTex = null;

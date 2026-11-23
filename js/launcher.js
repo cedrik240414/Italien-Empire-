@@ -78,7 +78,7 @@
   const mk = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 
   const sve = mk('div'); sve.id = 'sveIntro';
-  sve.innerHTML = `<div class="sve-wrap"><img class="sve-logo" src="js/sve-logo.png?v=72" alt="SVE Studios"><div class="sve-sub">präsentiert</div></div>`;
+  sve.innerHTML = `<div class="sve-wrap"><img class="sve-logo" src="js/sve-logo.png?v=73" alt="SVE Studios"><div class="sve-sub">präsentiert</div></div>`;
   document.body.appendChild(sve);
 
   const launcher = mk('div'); launcher.id = 'launcher'; launcher.hidden = true;
