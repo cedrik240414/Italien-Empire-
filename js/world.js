@@ -464,7 +464,7 @@ function buildCities(scene) {
     for (let t = 0; t < 30; t += 6) reserve[cid].push({ x: hb.land.x - hb.dx * t, z: hb.land.z - hb.dz * t, r: 16 });
   }
   IE.shops.forEach(s => { if (s.fixed) return; const c = IE.cityById[s.city]; const p = IE.snapLand(c.x + s.dx, c.z + s.dz, c.x, c.z); s.x = p.x; s.z = p.z; reserve[s.city].push({ x: s.x, z: s.z, r: s.type === 'heli' ? 34 : s.type === 'luxury' ? 38 : 30 }); });
-  IE.shops.forEach(s => { if (s.fixed) reserve[s.city].push({ x: s.x, z: s.z, r: 26 }); });
+  IE.shops.forEach(s => { if (s.fixed && reserve[s.city]) reserve[s.city].push({ x: s.x, z: s.z, r: 26 }); });
   const resolvePt = (o, def) => { if (o.at === 'airport') { o.x = IE.airport.spawn.x; o.z = IE.airport.spawn.z; return o; } const c = IE.cityById[o.city || def]; const p = IE.snapLand(c.x + (o.dx || 0), c.z + (o.dz || 0), c.x, c.z); o.x = p.x; o.z = p.z; return o; };
   IE.airport.spawn = { x: IE.airport.x - 40, z: IE.airport.z + 40 };
   IE.missions.concat(IE.coopJobs || []).forEach(m => {
@@ -726,6 +726,7 @@ function buildShops(scene) {
   const hmat = new T.MeshLambertMaterial({ map: heliTex() });
   for (const s of IE.shops) {
     const c = IE.cityById[s.city];
+    if (!c) continue; // Dubai-Läden o. Ä. ohne Stadt werden separat (in buildDubai) gebaut
     // Gebäude hinter dem Marker, Richtung vom Zentrum weg
     let ax = s.x - c.cx, az = s.z - c.cz; const l = Math.hypot(ax, az) || 1; ax /= l; az /= l;
     const y = rawH(s.x, s.z);

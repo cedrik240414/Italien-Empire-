@@ -273,6 +273,13 @@ IE.villas.push(
   { id: 'm4', name: 'Palazzo Taormina',       x: 557,   z: 1652,  h: 33, side: 'n', price: 30000000, mega: true },
   { id: 'm5', name: 'Villa Portofino',        x: -773,  z: -1116, h: 19, side: 'n', price: 40000000, mega: true },
   { id: 'm6', name: 'Villa sul Garda',        x: -303,  z: -1232, h: 7,  side: 'n', price: 25000000, mega: true });
+// Kaufbare Häuser in Dubai (eigenes Areal bei x=-12000) – nutzen dasselbe Kauf-/Betreten-System
+IE.villas.push(
+  { id: 'du1', name: 'Villa Jumeirah',   x: -12300, z: 950, h: 3, side: 'n', price: 12000000 },
+  { id: 'du2', name: 'Villa Marina',     x: -12150, z: 950, h: 3, side: 'n', price: 18000000 },
+  { id: 'du3', name: 'Villa Palme',      x: -12000, z: 950, h: 3, side: 'n', price: 24000000 },
+  { id: 'du4', name: 'Residenz Al Burj', x: -11850, z: 950, h: 3, side: 'n', price: 35000000 },
+  { id: 'du5', name: 'Villa Oasis',      x: -11700, z: 950, h: 3, side: 'n', price: 28000000 });
 for (const v of IE.villas) v.s = v.mega ? 3 : v.big ? 2 : 1.6;
 for (let i = 7; i < IE.villaRoad.length; i++) { const a = IE.villaRoad[i - 1], b = IE.villaRoad[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 3, hd: Math.abs(b[1] - a[1]) / 2 + 6, h: IE.villaRoadH, f: 16, small: true }); }
 for (const v of IE.villas) IE.flatZones.push({ x: v.x, z: v.z + (v.mega ? 3 : 1.25 * v.s), hw: v.mega ? 62 : 10 * v.s + 3, hd: v.mega ? 36 : 9.25 * v.s + 3, h: v.h !== undefined ? v.h : IE.villaRoadH + 1.5, f: v.mega ? 30 : 20, small: true });

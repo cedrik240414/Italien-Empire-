@@ -538,10 +538,16 @@ function moonH(x, z) {
 // ================= DUBAI – eigene Map (eigenes Areal, wie der Mond) =================
 const DUBAI = { x: -12000, z: 0, base: 2.2, R: 1500 };
 IE.DUBAI = DUBAI;
+// Wüstenberge im Hinterland (Norden/Westen, hinter der Downtown)
+const DUBAI_MTN = [
+  { dx: -560, dz: -980, r: 440, h: 185 }, { dx: 220, dz: -1080, r: 400, h: 150 },
+  { dx: 760, dz: -760, r: 360, h: 125 }, { dx: -1000, dz: -360, r: 340, h: 110 }, { dx: -300, dz: -600, r: 300, h: 90 }
+];
 function dubaiH(x, z) {
   const dx = x - DUBAI.x, dz = z - DUBAI.z, d = Math.hypot(dx, dz);
   let h = DUBAI.base + Math.sin(dx * 0.006) * 1.3 + Math.cos(dz * 0.0075) * 1.0 + Math.sin((dx - dz) * 0.013) * 0.5;
-  if (d > DUBAI.R) h = DUBAI.base - (d - DUBAI.R) * 0.09; // Strand -> Golf
+  for (const m of DUBAI_MTN) { const md = Math.hypot(dx - m.dx, dz - m.dz); if (md < m.r) { const t = 1 - md / m.r; h += m.h * t * t * (0.75 + 0.25 * Math.sin(dx * 0.03 + dz * 0.02)); } }
+  if (d > DUBAI.R) h = Math.min(h, DUBAI.base - (d - DUBAI.R) * 0.09); // Strand -> Golf
   return h < -7 ? -7 : h;
 }
 IE.dubaiH = dubaiH;
@@ -555,11 +561,14 @@ function buildDubai(scene0) {
   const scene = new T.Group(); scene0.add(scene); IE.dubaiGroup = scene;
   const rnd = seeded(20241121);
   // --- Wüsten-/Sandgelände ---
-  const size = 3400, seg = 150, geo = new T.PlaneGeometry(size, size, seg, seg); geo.rotateX(-Math.PI / 2);
+  const size = 3800, seg = 190, geo = new T.PlaneGeometry(size, size, seg, seg); geo.rotateX(-Math.PI / 2);
   const pos = geo.attributes.position, col = new Float32Array(pos.count * 3);
-  for (let i = 0; i < pos.count; i++) { const x = pos.getX(i) + DUBAI.x, z = pos.getZ(i) + DUBAI.z, h = dubaiH(x, z); pos.setY(i, h); const s = 0.84 + rnd() * 0.06 + Math.max(0, h) * 0.004; col.set([s, s * 0.86, s * 0.6], i * 3); }
+  for (let i = 0; i < pos.count; i++) { const x = pos.getX(i) + DUBAI.x, z = pos.getZ(i) + DUBAI.z, h = dubaiH(x, z); pos.setY(i, h);
+    let s = 0.86 + rnd() * 0.05;
+    if (h > 35) { const t = Math.min(1, (h - 35) / 120); col.set([s * (0.74 - t * 0.2), s * (0.6 - t * 0.14), s * (0.46 - t * 0.1)], i * 3); } // Berge: felsig/rötlich
+    else col.set([s, s * 0.85, s * 0.58], i * 3); }                                                                                  // Sand
   geo.setAttribute('color', new T.BufferAttribute(col, 3)); geo.computeVertexNormals();
-  scene.add(new T.Mesh(geo, new T.MeshLambertMaterial({ vertexColors: true })));
+  const tm = new T.Mesh(geo, new T.MeshLambertMaterial({ vertexColors: true })); tm.position.set(DUBAI.x, 0, DUBAI.z); scene.add(tm);
   // --- Golf-Wasser ---
   const water = new T.Mesh(new T.PlaneGeometry(4200, 4200), new T.MeshStandardMaterial({ color: 0x1b8fc0, metalness: 0.3, roughness: 0.2, transparent: true, opacity: 0.9 }));
   water.rotation.x = -Math.PI / 2; water.position.set(DUBAI.x, 0.05, DUBAI.z); scene.add(water);
@@ -602,6 +611,35 @@ function buildDubai(scene0) {
   // Quer-Straßen
   for (let gz = -4; gz <= 5; gz++) { const r = new T.Mesh(new T.PlaneGeometry(900, 10), new T.MeshLambertMaterial({ color: 0x3c3f45 })); r.rotation.x = -Math.PI / 2; r.position.set(DUBAI.x, dubaiH(DUBAI.x, DUBAI.z) + 0.09, DUBAI.z + gz * 78); scene.add(r); }
 
+  // --- Flughafen (Dubai International) ---
+  (function airport() {
+    const ax = DUBAI.x + 1060, az = DUBAI.z + 340, y = dubaiH(ax, az);
+    const rw = new T.Mesh(new T.PlaneGeometry(46, 620), new T.MeshLambertMaterial({ color: 0x33363c })); rw.rotation.x = -Math.PI / 2; rw.position.set(ax, y + 0.12, az); scene.add(rw);
+    for (let z = -290; z < 290; z += 26) { const m = new T.Mesh(new T.PlaneGeometry(1.6, 11), new T.MeshBasicMaterial({ color: 0xf2f2f2 })); m.rotation.x = -Math.PI / 2; m.position.set(ax, y + 0.14, az + z); scene.add(m); }
+    IE.dubaiAirport = { x: ax, z: az };
+    // Terminal + Kontrollturm
+    bx(64, 13, 30, IE.mat.white, ax - 78, y + 6.5, az); IE.addBox(ax - 110, az - 15, ax - 46, az + 15, y + 13);
+    for (let k = -4; k <= 4; k++) bx(4, 8, 0.4, glass, ax - 78 + k * 6.6, y + 6, az + 15.2);
+    bx(7, 30, 7, conc, ax - 78, y + 15, az - 24); bx(12, 5, 12, glass2, ax - 78, y + 31, az - 24); IE.addBox(ax - 82, az - 28, ax - 74, az - 20, y + 32);
+    // Hangar
+    bx(42, 20, 46, new T.MeshLambertMaterial({ color: 0xc2c6cc }), ax + 70, y + 10, az); bx(42, 2, 46, IE.mat.dark, ax + 70, y + 20.5, az); IE.addBox(ax + 49, az - 23, ax + 91, az + 23, y + 20);
+    // geparktes Flugzeug
+    try { const v = IE.spawnPlane(scene0, 'jet', ax, az + 230, 0, y + 0.1); v.owned = false; } catch (e) { }
+  })();
+  // --- Militärbasis Dubai ---
+  (function base() {
+    const bx0 = DUBAI.x - 1060, bz0 = DUBAI.z + 640, y = dubaiH(bx0, bz0);
+    IE.dubaiBase = { x: bx0, z: bz0, hw: 120, hd: 100 };
+    const wall = new T.MeshLambertMaterial({ color: 0x8f917c });
+    for (const [wx, wz, ww, wd] of [[0, -100, 240, 6], [0, 100, 240, 6], [-120, 0, 6, 206], [120, 0, 6, 206]]) { bx(ww, 8, wd, wall, bx0 + wx, y + 4, bz0 + wz); IE.addBox(bx0 + wx - ww / 2, bz0 + wz - wd / 2, bx0 + wx + ww / 2, bz0 + wz + wd / 2, y + 8); }
+    bx(50, 11, 26, conc, bx0, y + 5.5, bz0 + 40); IE.addBox(bx0 - 25, bz0 + 27, bx0 + 25, bz0 + 53, y + 11);
+    bx(9, 20, 9, conc, bx0 - 90, y + 10, bz0 - 70); bx(13, 3, 13, IE.mat.dark, bx0 - 90, y + 21, bz0 - 70); IE.addBox(bx0 - 95, bz0 - 75, bx0 - 85, bz0 - 65, y + 20);
+    // Panzer-Deko
+    bx(16, 3.4, 9, IE.mat.dark, bx0 + 50, y + 1.7, bz0 - 50); bx(11, 2.4, 5, IE.mat.dark, bx0 + 50, y + 4, bz0 - 50); bx(1.1, 1.1, 11, IE.mat.dark, bx0 + 57, y + 4, bz0 - 50);
+    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const c = cv.getContext('2d'); c.fillStyle = '#20241a'; c.fillRect(0, 0, 256, 64); c.fillStyle = '#d6b04a'; c.font = 'bold 26px Arial'; c.textAlign = 'center'; c.fillText('SPERRGEBIET', 128, 42);
+    const sm = new T.Mesh(new T.PlaneGeometry(14, 3.5), new T.MeshBasicMaterial({ map: new T.CanvasTexture(cv), transparent: true })); sm.position.set(bx0, y + 6, bz0 - 103); scene.add(sm);
+  })();
+
   // --- Palmeninsel (Palm Jumeirah, vereinfacht) im Golf ---
   (function palm() {
     const px = DUBAI.x - 150, pz = DUBAI.z + 1250, sand = new T.MeshLambertMaterial({ color: 0xe8d9a8 });
@@ -615,6 +653,22 @@ function buildDubai(scene0) {
   const palmMat = new T.MeshLambertMaterial({ color: 0x3f7a35 }), trunkMat = new T.MeshLambertMaterial({ color: 0x7a5a3a });
   for (let k = 0; k < 40; k++) { const a = rnd() * 6.28, d = 900 + rnd() * 560, x = DUBAI.x + Math.cos(a) * d, z = DUBAI.z + Math.sin(a) * d, yb = dubaiH(x, z); if (yb < 0.6) continue; const g = new T.Group(); g.position.set(x, yb, z); scene.add(g); bx2(g, 0.5, 7, 0.5, trunkMat, 0, 3.5, 0); for (let l = 0; l < 6; l++) { const lf = new T.Mesh(new T.BoxGeometry(0.4, 0.15, 4), palmMat); const pv = new T.Group(); pv.rotation.y = l / 6 * 6.28; lf.position.set(0, 7, 1.8); lf.rotation.x = 0.35; pv.add(lf); g.add(pv); } }
   function bx2(parent, w, h, d, mat, x, y, z) { const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); parent.add(m); return m; }
+
+  // --- Dubai-Läden (Autohaus, Waffenladen, Bootsladen) ---
+  (function shops() {
+    const defs = [['car', 'Autohaus', DUBAI.x + 150, DUBAI.z + 380, 0x3aa0ff], ['weapon', 'Waffenladen', DUBAI.x - 150, DUBAI.z + 380, 0xff4a3a], ['boat', 'Bootsladen', DUBAI.x - 40, DUBAI.z + 1180, 0x1e7fc8]];
+    for (const [type, label, sx, sz, mc] of defs) {
+      const y = dubaiH(sx, sz), bw = type === 'car' ? 28 : 16, bh = type === 'car' ? 9 : 7, bd = type === 'car' ? 18 : 11;
+      bx(bw, bh, bd, type === 'car' ? glass2 : new T.MeshLambertMaterial({ color: 0x6b5a4a }), sx, y + bh / 2, sz); IE.addBox(sx - bw / 2, sz - bd / 2, sx + bw / 2, sz + bd / 2, y + bh);
+      const cv2 = document.createElement('canvas'); cv2.width = 256; cv2.height = 64; const cc = cv2.getContext('2d'); cc.fillStyle = '#10131a'; cc.fillRect(0, 0, 256, 64); cc.fillStyle = '#d6b04a'; cc.font = 'bold 26px Arial'; cc.textAlign = 'center'; cc.fillText(label, 128, 42);
+      const sg = new T.Mesh(new T.PlaneGeometry(bw * 0.8, bw * 0.2), new T.MeshBasicMaterial({ map: new T.CanvasTexture(cv2), transparent: true })); sg.position.set(sx, y + bh + 2, sz + bd / 2 + 0.3); scene.add(sg);
+      const mx = sx, mz = sz + bd / 2 + 4;
+      const shop = { type, id: 'du_' + type, x: sx, z: sz, mx, mz, fixed: true, dubai: true };
+      if (type === 'boat') shop.slots = [{ x: sx + 14, z: sz + 10, rot: 0 }, { x: sx - 14, z: sz + 10, rot: 0 }];
+      IE.shops.push(shop);
+      const mk2 = new T.Mesh(new T.CylinderGeometry(0.5, 0.5, 0.2, 12), new T.MeshBasicMaterial({ color: mc })); mk2.position.set(mx, y + 0.3, mz); scene.add(mk2); IE.markers.push(mk2);
+    }
+  })();
 
   // Spawn-Schild
   const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const c = cv.getContext('2d'); c.fillStyle = '#10131a'; c.fillRect(0, 0, 256, 64); c.fillStyle = '#d6b04a'; c.font = 'bold 34px Arial'; c.textAlign = 'center'; c.fillText('DUBAI', 128, 44);

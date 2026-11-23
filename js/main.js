@@ -1077,7 +1077,7 @@ function spawnCityTraffic(c, pp) {
 
 // ---------- Spawner (Verkehr, Passanten, Polizei) ----------
 function civCar(fancy) { const l = IE.cars.filter(c => !c.military && !c.luxury && !c.xmas && (fancy ? c.price >= 90000 : c.price < 90000)); return l[(Math.random() * l.length) | 0]; }
-function inBase(p, m) { const B = IE.base; return Math.abs(p.x - B.x) < B.hw + (m || 0) && Math.abs(p.z - B.z) < B.hd + (m || 0); }
+function inBase(p, m) { const mm = m || 0, B = IE.base; if (Math.abs(p.x - B.x) < B.hw + mm && Math.abs(p.z - B.z) < B.hd + mm) return true; const D = IE.dubaiBase; return !!D && Math.abs(p.x - D.x) < D.hw + mm && Math.abs(p.z - D.z) < D.hd + mm; }
 function baseAndHarbor() {
   const pp = P.pos, B = IE.base, dB = Math.hypot(pp.x - B.x, pp.z - B.z);
   if (dB < 650) {
