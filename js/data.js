@@ -603,18 +603,22 @@ IE.cars.push(
   { id: 'schoolbus', name: 'Schulbus (Schule)',          price: 0, speed: 48,  accel: 14, grip: 2.0, color: 0xf2c230, kind: 'van',    pack: 'schule' },
   { id: 'moped',     name: 'Schul-Moped (Schule)',       price: 0, speed: 40,  accel: 20, grip: 2.4, color: 0x3a6fb0, kind: 'moto',   pack: 'schule' },
   { id: 'f1rosso',   name: 'F1 Rosso (Formel 1)',        price: 0, speed: 116, accel: 62, grip: 3.6, color: 0xc8101a, kind: 'super',  pack: 'formel1' },
-  { id: 'f1argento', name: 'F1 Argento (Formel 1)',      price: 0, speed: 116, accel: 62, grip: 3.6, color: 0xcfd6dc, kind: 'super',  pack: 'formel1' }
+  { id: 'f1argento', name: 'F1 Argento (Formel 1)',      price: 0, speed: 116, accel: 62, grip: 3.6, color: 0xcfd6dc, kind: 'super',  pack: 'formel1' },
+  { id: 'xpanettone', name: 'Panettone GT (Weihnachten)', price: 0, speed: 98, accel: 44, grip: 2.9, color: 0xc8102e, kind: 'super',  pack: 'xmas' },
+  { id: 'xrentier',   name: 'Rentier-Monster (Weihnachten)', price: 0, speed: 64, accel: 32, grip: 2.9, color: 0x7a4a2a, kind: 'suv', pack: 'xmas' }
 );
 IE.boats.push(
   { id: 'hoverboat',  name: 'Hover-Gleiter (Sci-Fi)',     price: 0, speed: 70, accel: 30, color: 0x18e0e0, accent: 0x8a3cf0, kind: 'speed', pack: 'scifi' },
   { id: 'ghostyacht', name: 'Geister-Yacht (Halloween)',  price: 0, speed: 34, accel: 9,  color: 0x1a1a1f, accent: 0x8a3cf0, kind: 'yacht', pack: 'halloween' },
   { id: 'partyyacht', name: 'Party-Yacht (Silvester)',    price: 0, speed: 36, accel: 10, color: 0x101018, accent: 0xf2c230, kind: 'yacht', pack: 'silvester' },
-  { id: 'sunyacht',   name: 'Sonnen-Yacht (Sommer)',      price: 0, speed: 34, accel: 9,  color: 0xf6f0e0, accent: 0x18c2d8, kind: 'yacht', pack: 'sommer' }
+  { id: 'sunyacht',   name: 'Sonnen-Yacht (Sommer)',      price: 0, speed: 34, accel: 9,  color: 0xf6f0e0, accent: 0x18c2d8, kind: 'yacht', pack: 'sommer' },
+  { id: 'xyachtlux',  name: 'Weihnachts-Luxusyacht',      price: 0, speed: 36, accel: 10, color: 0xb3001b, accent: 0xd6b04a, kind: 'yacht', pack: 'xmas' }
 );
 IE.planes.push(
   { id: 'ufojet',     name: 'UFO-Jet (Sci-Fi)',           price: 0, speed: 220, minSpeed: 30, turn: 1.8, color: 0x18e0e0, accent: 0x8a3cf0, kind: 'jet',     pack: 'scifi' },
   { id: 'batplane',   name: 'Fledermaus-Jet (Halloween)', price: 0, speed: 160, minSpeed: 40, turn: 1.5, color: 0x1a1a1f, accent: 0x8a3cf0, kind: 'fighter', pack: 'halloween' },
-  { id: 'fireworkjet',name: 'Feuerwerk-Jet (Silvester)',  price: 0, speed: 170, minSpeed: 42, turn: 1.6, color: 0xf2c230, accent: 0xc8101a, kind: 'fighter', pack: 'silvester' }
+  { id: 'fireworkjet',name: 'Feuerwerk-Jet (Silvester)',  price: 0, speed: 170, minSpeed: 42, turn: 1.6, color: 0xf2c230, accent: 0xc8101a, kind: 'fighter', pack: 'silvester' },
+  { id: 'xjet',       name: 'Weihnachts-Jet',             price: 0, speed: 160, minSpeed: 40, turn: 1.4, color: 0xc8102e, accent: 0xd6b04a, kind: 'fighter', pack: 'xmas' }
 );
 IE.weapons.push(
   { id: 'laserpulse',  name: 'Puls-Laser (Sci-Fi)',        price: 0, dmg: 70,  rate: 0.1,  range: 350, spread: 0,     ammoPrice: 0, clip: 400, pellets: 1, auto: true,  laser: true,  pack: 'scifi' },
@@ -643,8 +647,8 @@ IE.skinById = {}; IE.skins.forEach(s => IE.skinById[s.id] = s);
 IE.packs = [
   { id: 'sport',     name: 'Sportwagen', emoji: '🏎️', color: 0xc8101a, price: 75000000,  desc: 'Die schnellsten Supersportwagen Italiens.',
     cars: ['toro', 'rosso', 'fulmine', 'gt3'], skins: ['rennfahrer'] },
-  { id: 'xmas',      name: 'Weihnachten', emoji: '🎄', color: 0xc8102e, price: 90000000,  desc: 'Alle Weihnachtsautos, Rentierschlitten, Weihnachts-Yacht & Schneeball-MG.',
-    cars: ['xsanta', 'xeis', 'xflitzer', 'xtanne'], boats: ['xmasyacht'], planes: ['schlitten'], weapons: ['schneeball'], skins: ['santa'] },
+  { id: 'xmas',      name: 'Weihnachten', emoji: '🎄', color: 0xc8102e, price: 90000000,  desc: 'Eigene Weihnachtsfahrzeuge, Luxusyacht, Weihnachts-Jet & Schneeball-MG. (Adventskalender-Autos bleiben exklusiv im Kalender.)',
+    cars: ['xpanettone', 'xrentier'], boats: ['xyachtlux'], planes: ['xjet'], weapons: ['schneeball'], skins: ['santa'] },
   { id: 'herbst',    name: 'Herbst', emoji: '🍂', color: 0xc8641a, price: 35000000,  desc: 'Herbstlicher Flitzer, Oldtimer & Jäger-Outfit.',
     cars: ['herbstgt', 'classica'], skins: ['jaeger'] },
   { id: 'sommer',    name: 'Sommer', emoji: '☀️', color: 0x18c2d8, price: 45000000,  desc: 'Cabrio, Jetski, Sonnen-Yacht & Wasserwerfer.',
