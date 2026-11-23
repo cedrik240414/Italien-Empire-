@@ -239,6 +239,64 @@ function buildGas(scene) {
   }
 }
 
+// ================= BANKEN (überfallbar) =================
+const banks = []; IE.banks = banks;
+function buildBanks(scene) {
+  const cand = [];
+  for (const r of IE.roads) for (let i = 25; i < r.pts.length - 25; i += 40) cand.push({ r, i });
+  cand.sort(() => rnd() - 0.5);
+  const marble = new T.MeshStandardMaterial({ color: 0xe8e4d8, metalness: 0.1, roughness: 0.6 }), gold = IE.mat.gold || new T.MeshStandardMaterial({ color: 0xd6b04a, metalness: 0.9, roughness: 0.3 }), dark = new T.MeshLambertMaterial({ color: 0x2a2a30 });
+  const names = ['Banca di Roma', 'Banca Napoli', 'Banca Lombarda', 'Banca del Sud', 'Banca Veneta', 'Banca Toscana'];
+  for (const { r, i } of cand) {
+    if (banks.length >= 6) break;
+    const a = r.pts[i - 1], b = r.pts[i + 1], p = r.pts[i]; const dx = b.x - a.x, dz = b.z - a.z, l = Math.hypot(dx, dz) || 1, ux = dx / l, uz = dz / l;
+    const side = rnd() < 0.5 ? 1 : -1, cx = p.x + (-uz) * 26 * side, cz = p.z + ux * 26 * side;
+    if (!IE.isLand(cx, cz) || IE.nearRoad(cx, cz) || IE.blockedAt(cx, cz, 16)) continue;
+    let ok = true; const h0 = IE.groundH(cx, cz);
+    for (const q of [[-14, -14], [14, -14], [-14, 14], [14, 14]]) if (Math.abs(IE.groundH(cx + q[0], cz + q[1]) - h0) > 3) ok = false;
+    for (const gs of gas) if (Math.hypot(gs.x - cx, gs.z - cz) < 150) ok = false;
+    for (const bk of banks) if (Math.hypot(bk.x - cx, bk.z - cz) < 400) ok = false;
+    if (!ok) continue;
+    const yaw = Math.atan2(ux, uz), grp = new T.Group(); grp.position.set(cx, h0, cz); grp.rotation.y = yaw; scene.add(grp);
+    box(22, 10, 16, marble, 0, 5, 0, grp);
+    box(23, 1.2, 17, gold, 0, 10.4, 0, grp);
+    // Säulen vorne
+    for (const px of [-8, -4, 0, 4, 8]) box(1.2, 8, 1.2, marble, px, 4, side * 8.4, grp);
+    box(20, 2.2, 1.5, gold, 0, 9, side * 8.4, grp);
+    // Eingang / Tresortür
+    const door3 = box(4, 5, 0.6, dark, 0, 2.5, side * 8.7, grp);
+    box(2.4, 2.4, 0.3, gold, 0, 3.2, side * 8.9, grp);
+    const sg = new T.Mesh(new T.PlaneGeometry(14, 2.4), new T.MeshBasicMaterial({ map: textTex([{ t: (names[banks.length % names.length]).toUpperCase(), f: 'bold 44px Arial' }], 512, 90, '#1a2a4a', '#f2c230').t }));
+    sg.position.set(0, 7.2, side * 8.5); if (side < 0) sg.rotation.y = Math.PI; grp.add(sg);
+    // €-Symbol
+    const es = new T.Mesh(new T.PlaneGeometry(2.4, 2.4), new T.MeshBasicMaterial({ map: textTex([{ t: '€', f: 'bold 120px Arial' }], 128, 128, 'rgba(0,0,0,0)', '#f2c230').t, transparent: true }));
+    es.position.set(0, 9, side * 8.6); if (side < 0) es.rotation.y = Math.PI; grp.add(es);
+    grp.updateMatrixWorld(true);
+    const c1 = grp.localToWorld(new T.Vector3(-11, 0, -8)), c2 = grp.localToWorld(new T.Vector3(11, 0, 8));
+    IE.addBox(Math.min(c1.x, c2.x), Math.min(c1.z, c2.z), Math.max(c1.x, c2.x), Math.max(c1.z, c2.z), h0 + 10);
+    const door = grp.localToWorld(new T.Vector3(0, 0, side * 10.5));
+    banks.push({ x: cx, z: cz, door: { x: door.x, z: door.z }, name: names[banks.length % names.length], cool: 0 });
+  }
+}
+function nearBank(pos) { for (const s of banks) if (Math.hypot(pos.x - s.door.x, pos.z - s.door.z) < 7) return s; return null; }
+let bankRob = null;
+function updateBankRob(dt) {
+  if (!bankRob) return;
+  const g = G(), P = g.P, s = bankRob.s;
+  if (g.game.dead || P.veh || Math.hypot(P.pos.x - s.door.x, P.pos.z - s.door.z) > 14) { bankRob = null; g.toast('Banküberfall abgebrochen', 2); if (!g.mission.active) $('obj').hidden = true; return; }
+  bankRob.t += dt; const pc = Math.min(1, bankRob.t / 14);
+  // Fahndung steigt während des Überfalls bis 5
+  g.setWanted(Math.max(g.game.wanted, Math.min(5, 3 + pc * 2)));
+  if (!g.mission.active) { $('obj').hidden = false; $('obj').innerHTML = `<small>🏦 Banküberfall · ${s.name}</small>Tresor wird geknackt … ${Math.round(pc * 100)} %`; }
+  if (pc >= 1) {
+    const cash = 60000 + Math.round(rnd() * 140000);
+    g.addMoney(cash); g.setWanted(5); s.cool = g.game.time + 600;
+    g.banner('🏦 Banküberfall geschafft!', s.name, '+ ' + g.fmt(cash) + ' · 5 Sterne – entkomme der Armee!', 5); g.sfx('cash');
+    bankRob = null; if (!g.mission.active) $('obj').hidden = true;
+  }
+}
+IE.bankActive = () => !!bankRob;
+
 // ================= VILLEN =================
 function megaExtras(g, s, v, y, M) {
   for (const sx of [-1, 1]) { IE.addBox(v.x + sx * 13 * s - 3 * s, v.z - 8.5 * s, v.x + sx * 13 * s + 3 * s, v.z + 0.5 * s, y + 9.5); IE.addBox(v.x + sx * 15.5 * s - 3.3, v.z - 8 * s - 3.3, v.x + sx * 15.5 * s + 3.3, v.z - 8 * s + 3.3, y + 21); }
@@ -360,6 +418,7 @@ IE.buildExtras = function (scene) {
   try { buildVillas(scene); IE.villas.forEach((v, i) => buildRoom(v, i, scene)); } catch (e) { console.error('Villen', e); }
   try { buildIslands(scene); } catch (e) { console.error('Inseln', e); }
   try { buildGas(scene); } catch (e) { console.error('Tankstellen', e); }
+  try { buildBanks(scene); } catch (e) { console.error('Banken', e); }
 };
 
 
@@ -2008,7 +2067,16 @@ function deliver(kind, id, air) {
 function openGarage() {
   const g = G(), S = g.S, rows = [];
   const cars = IE.cars.filter(c => (S.cars || []).includes(c.id)), helis = IE.helis.filter(h => (S.helis || []).includes(h.id)), boats = IE.boats.filter(b => (S.boats || []).includes(b.id)), planes = IE.planes.filter(p => (S.planes || []).includes(p.id));
-  for (const c of cars) rows.push({ name: '🚗 ' + c.name, stat: 'Auto · ' + Math.round(c.speed * 3.6 * (1 + 0.07 * ((S.tune && S.tune[c.id] && S.tune[c.id].engine) || 0))) + ' km/h', btns: [{ label: 'Tuning', fn: () => openTuning(c.id) }, { label: 'Herholen', buy: true, fn: () => deliver('car', c.id) }] });
+  for (const c of cars) {
+    const sellable = !c.pack && c.price > 0, sell = Math.round(c.price * 0.6);
+    const btns = [{ label: 'Tuning', fn: () => openTuning(c.id) }, { label: 'Herholen', buy: true, fn: () => deliver('car', c.id) }];
+    if (sellable) btns.push({ label: 'Verkaufen · ' + g.fmt(sell), fn: () => {
+      xModal('garage', c.name + ' verkaufen?', [{ name: c.name + ' wirklich verkaufen?', stat: 'Du bekommst ' + g.fmt(sell) + ' (60 % vom Kaufpreis). Das Auto gehört dir danach nicht mehr.', btns: [
+        { label: 'Ja, verkaufen', buy: true, fn: () => { S.cars = (S.cars || []).filter(id => id !== c.id); S.money += sell; g.sfx('cash'); g.saveGame(); g.closeModals(); g.banner('Auto verkauft', c.name, '+ ' + g.fmt(sell), 4); } },
+        { label: 'Abbrechen', fn: () => openGarage() } ] }], 'Erweiterungs-/Pack-Autos und geschenkte Autos können nicht verkauft werden.');
+    } });
+    rows.push({ name: '🚗 ' + c.name + (c.pack ? ' · 🎁 Pack' : ''), stat: 'Auto · ' + Math.round(c.speed * 3.6 * (1 + 0.07 * ((S.tune && S.tune[c.id] && S.tune[c.id].engine) || 0))) + ' km/h', btns });
+  }
   for (const h of helis) rows.push({ name: '🚁 ' + h.name, stat: 'Helikopter', btns: [{ label: 'Herholen', buy: true, fn: () => deliver('heli', h.id) }] });
   for (const p of planes) rows.push({ name: '✈ ' + p.name, stat: 'Flugzeug', btns: [{ label: 'Am Boden', fn: () => deliver('plane', p.id, false) }, { label: 'In der Luft', buy: true, fn: () => deliver('plane', p.id, true) }] });
   for (const b of boats) rows.push({ name: '⛵ ' + b.name, stat: 'Boot · kommt ins nächste Wasser', btns: [{ label: 'Herholen', buy: true, fn: () => deliver('boat', b.id) }] });
@@ -2120,7 +2188,8 @@ IE.extraPrompt = function () {
   { const hv = hangarSaveTarget(); if (hv) return `<b>E</b> · ${hv.def.name} im Hangar speichern`; }
   if (R && R.state === 'lobby' && R.host) return '';
   if (!P.veh) {
-    if (rob) return '';
+    if (rob || bankRob) return '';
+    const bk = nearBank(P.pos); if (bk) { if (g.game.time < bk.cool) return 'Der Tresor ist noch leer – komm später wieder'; return g.S.cur && g.S.cur !== 'faust' ? '<b>E</b> · 🏦 Bank überfallen (5 Sterne!)' : 'Mit einer Waffe kannst du die Bank überfallen'; }
     const s = nearGas(P.pos); if (s) { if (g.game.time < s.cool) return 'Die Kasse ist noch leer – komm später wieder'; return g.S.cur && g.S.cur !== 'faust' ? '<b>E</b> · Tankstelle überfallen' : 'Mit einer Waffe kannst du die Tankstelle überfallen'; }
     const v = nearVilla(P.pos); if (v) { const o = ownedByOther(v); if (o) return v.name + ' gehört ' + o.nick; return (g.S.villas || []).includes(v.id) ? `<b>E</b> · Haus-Menü ${v.name}` : `<b>E</b> · ${v.name} kaufen · ${g.fmt(v.price)}`; }
   }
@@ -2141,6 +2210,8 @@ IE.extraAct = function () {
   }
   { const hv = hangarSaveTarget(); if (hv) { (hv.type === 'plane' ? g.S.planes : g.S.helis).push(hv.def.id); hv.owned = true; g.saveGame(); g.sfx('pass'); g.banner('Im Hangar gespeichert', hv.def.name, 'Ab jetzt kannst du ihn jederzeit spawnen – im Hangar oder über „Meine Fahrzeuge“', 4); return true; } }
   if (!P.veh) {
+    const bk = nearBank(P.pos);
+    if (bk) { if (g.game.time >= bk.cool && g.S.cur && g.S.cur !== 'faust' && !bankRob && !rob) { bankRob = { s: bk, t: 0 }; g.setWanted(Math.max(g.game.wanted, 3)); g.toast('🏦 Überfall auf die Bank! Knack den Tresor!', 3); g.sfx('shot', 0.7); } return true; }
     const s = nearGas(P.pos);
     if (s) { if (g.game.time >= s.cool && g.S.cur && g.S.cur !== 'faust' && !rob) { rob = { s, t: 0 }; g.setWanted(Math.max(g.game.wanted, 2)); g.toast('Hände hoch! Das ist ein Überfall!', 2.5); g.sfx('shot', 0.6); } return true; }
     const v = nearVilla(P.pos);
@@ -2166,7 +2237,7 @@ function bizTick(dt) {
 IE.extraUpdate = function (dt) {
   bizTick(dt); guardManager(dt); updateBombs(dt); updateMissiles(dt); updateTorpedoes(dt); updateXmas(dt); updateBoost(dt); updateChute(); updateDriftSmoke(dt); updateHouses(); petTick(dt); homePetsTick(dt); updateBackrooms(dt); updateMoon(dt); updateLaunch(dt);
   if (IE.raceBeam) IE.raceBeam.visible = !R;
-  updateRace(dt); updateRob(dt);
+  updateRace(dt); updateRob(dt); updateBankRob(dt);
 };
 IE.mapBase = function (g, s, x0, z0) {
   if (IE.trackPts) { g.strokeStyle = '#2b2d31'; g.lineWidth = 3; g.beginPath(); IE.trackPts.forEach((p, i) => { const x = (p.x - x0) * s, y = (p.z - z0) * s; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); g.stroke(); }

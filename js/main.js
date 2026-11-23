@@ -1170,7 +1170,7 @@ function spawner(dt) {
   if (sn > 0 && !P.interior && !IE.onMoon) {
     const count = f => IE.vehicles.filter(v => !v.dead && v.ai && f(v)).length;
     const landSpot = () => { for (let t = 0; t < 15; t++) { const a = Math.random() * 6.28, rr = 150 + Math.random() * 70, x = pp.x + Math.cos(a) * rr, z = pp.z + Math.sin(a) * rr; if (!IE.isLand(x, z)) continue; const tt = { x, z }; if (IE.pushOut(tt, 2.5, IE.groundH(x, z), 1.5)) continue; return tt; } return null; };
-    if (count(v => v.police && v.type === 'car') < [0, 1, 2, 3, 4, 4][sn]) { const q = landSpot(); if (q) { const v = IE.spawnCar(scene, 'berlina', q.x, q.z, Math.atan2(pp.x - q.x, pp.z - q.z), { police: true, color: 0x1b2d6b, ai: { pursue: true } }); v.driver = 'npc'; v.def = Object.assign({}, v.def, { speed: 52, accel: 22 }); } }
+    if (count(v => v.police && v.type === 'car') < [0, 1, 2, 3, 5, 7][sn]) { const q = landSpot(); if (q) { const v = IE.spawnCar(scene, 'berlina', q.x, q.z, Math.atan2(pp.x - q.x, pp.z - q.z), { police: true, color: 0x1b2d6b, ai: { pursue: true } }); v.driver = 'npc'; v.def = Object.assign({}, v.def, { speed: sn >= 5 ? 62 : sn >= 4 ? 56 : 52, accel: sn >= 5 ? 28 : 22 }); } }
     if (sn >= 4 && count(v => v.ai.heliPursue) < (sn >= 5 ? 2 : 1)) {
       const a = Math.random() * 6.28, x = pp.x + Math.cos(a) * 250, z = pp.z + Math.sin(a) * 250;
       const v = IE.spawnHeli(scene, 'aquila', x, Math.max(0, IE.groundH(x, z)) + 60, z, 0); v.police = true; v.ai = { heliPursue: true, phase: Math.random() * 6 }; v.driver = 'npc'; v.m.inner.children[0].material.color.set(0x1b2d6b);
@@ -1178,20 +1178,43 @@ function spawner(dt) {
     if (sn >= 5) {
       if (count(v => v.army && v.def.id === 'jeep') < 2) { const q = landSpot(); if (q) { const v = IE.spawnCar(scene, 'jeep', q.x, q.z, Math.atan2(pp.x - q.x, pp.z - q.z), { ai: { pursue: true } }); v.army = true; v.police = true; v.driver = 'npc'; v.def = Object.assign({}, v.def, { speed: 48 }); } }
       if (count(v => v.army && v.m.tank) < 1) { const q = landSpot(); if (q) { const v = IE.spawnCar(scene, 'panzer', q.x, q.z, Math.atan2(pp.x - q.x, pp.z - q.z), { ai: { pursue: true } }); v.army = true; v.police = true; v.driver = 'npc'; v.health = v.maxHealth = 5000; } }
+      // Militär-Kampfjets greifen aus der Luft an
+      if (count(v => v.ai.jetAttack) < 2) { const a = Math.random() * 6.28, x = pp.x + Math.cos(a) * 360, z = pp.z + Math.sin(a) * 360, jy = Math.max(0, IE.groundH(x, z)) + 95; const v = IE.spawnPlane(scene, 'caccia', x, z, Math.atan2(pp.x - x, pp.z - z), jy); v.police = true; v.army = true; v.driver = 'npc'; v.ai = { jetAttack: true, shootT: 2 + Math.random() * 2 }; v.onGround = false; v.speed = 90; }
     }
+  }
+}
+function jetAttackUpdate(v, dt) {
+  if (v.dead) { v.driver = null; if (v.type === 'plane') IE.updatePlane(v, { brake: true }, dt); return; }
+  const tgt = P.veh ? P.veh.pos : P.pos;
+  const dx = tgt.x - v.pos.x, dz = tgt.z - v.pos.z, dh = Math.hypot(dx, dz);
+  const gy = Math.max(IE.groundH(tgt.x, tgt.z), 0, tgt.y) + 85, spd = 92, desired = Math.atan2(dx, dz);
+  const dyaw = angDiff(v.yaw, desired); v.yaw += dyaw * Math.min(1, dt * 1.1);
+  const f = IE.fwd(v.yaw);
+  v.pos.x += f.x * spd * dt; v.pos.z += f.z * spd * dt; v.pos.y += (gy - v.pos.y) * Math.min(1, dt * 0.9);
+  v.roll = clamp(-dyaw * 1.6, -0.9, 0.9); v.pitch = 0;
+  v.group.position.copy(v.pos); v.group.rotation.order = 'YXZ'; v.group.rotation.set(0, v.yaw, v.roll);
+  v.ai.shootT = (v.ai.shootT || 3) - dt;
+  if (v.ai.shootT <= 0 && dh < 170 && !game.dead && !P.interior && !IE.onMoon) {
+    v.ai.shootT = 2.4 + Math.random() * 1.6;
+    const hit = Math.random() < 0.45;
+    const land = hit ? new T.Vector3(tgt.x, Math.max(0, IE.groundH(tgt.x, tgt.z)), tgt.z) : new T.Vector3(tgt.x + (Math.random() * 20 - 10), Math.max(0, IE.groundH(tgt.x, tgt.z)), tgt.z + (Math.random() * 20 - 10));
+    sfx('boom', 0.3); toast('🚀 Luftangriff – Militärjet!', 1);
+    setTimeout(() => { if (game.state !== 'play') return; explosion(land.clone(), 6); if (hit && !game.dead) hurtPlayer(32); }, 650);
   }
 }
 function policeUpdate(dt) {
   if (game.wanted <= 0) return;
   let near = false;
-  for (const v of IE.vehicles) if (v.police && !v.dead && v.pos.distanceTo(P.pos) < (v.ai && v.ai.heliPursue ? 140 : 75)) near = true;
+  for (const v of IE.vehicles) if (v.police && !v.dead && v.pos.distanceTo(P.pos) < (v.ai && v.ai.jetAttack ? 340 : v.ai && v.ai.heliPursue ? 140 : 75)) near = true;
   for (const n of IE.npcs) if ((n.kind === 'police' || (n.kind === 'soldier' && n.alert)) && !n.dead && n.pos.distanceTo(P.pos) < 75) near = true;
   if (P.interior) near = false;
   if (near) game.seenT = 0; else game.seenT += dt;
   $('stars').classList.toggle('flash', !near);
-  if (game.seenT > 9 + game.wanted * 2.5) {
+  // Bei 5 Sternen ist es richtig schwer zu entkommen (lange unentdeckt bleiben)
+  const loseT = game.wanted >= 5 ? 48 : game.wanted >= 4 ? 30 : 9 + game.wanted * 2.5;
+  if (game.seenT > loseT) {
     game.wanted = 0; game.seenT = 0; toast('Du hast die Polizei abgehängt');
-    for (const v of IE.vehicles) if (v.police && v.ai) v.removeMe = v.pos.distanceTo(P.pos) > 60 || !!v.ai.heliPursue;
+    for (const v of IE.vehicles) if (v.police && v.ai) v.removeMe = v.pos.distanceTo(P.pos) > 60 || !!v.ai.heliPursue || !!v.ai.jetAttack;
     for (const n of IE.npcs) if (n.kind === 'police') { n.alert = false; if (n.pos.distanceTo(P.pos) > 60) n.remove = true; }
   }
 }
@@ -1260,6 +1283,7 @@ function vehiclesUpdate(dt) {
       if (v.sunk) { v.pos.y -= dt * 0.8; v.group.position.y = v.pos.y; v.sinkT = (v.sinkT || 0) + dt; if (v.sinkT > 12) v.removeMe = true; }
       else if (v.dead) { /* Wrack */ }
       else if (v.raceAI) { }
+      else if (v.ai && v.ai.jetAttack) jetAttackUpdate(v, dt);
       else if (v.ai && v.ai.heliPursue) policeHeliUpdate(v, dt);
       else if (v.ai && v.ai.pursue) pursuerUpdate(v, dt);
       else if (v.traffic && v.ai) trafficUpdate(v, dt);
