@@ -1748,6 +1748,7 @@ function switchChar(id) {
 // ---------- Pause ----------
 function openPause() {
   $('cheatList').innerHTML = CHEATS.map(c => `<div class="cheat"><span class="seq">${c.seq.map(x => `<b>${x.replace('_LANG', ' (lang)')}</b>`).join('')}</span><span>${c.name}${c.toggle ? (game.ch[c.toggle] ? ' · <b style="color:var(--verde)">an</b>' : ' · aus') : ''}</span></div>`).join('');
+  { const ph = $('pPhone'); if (ph) ph.hidden = !S.phone; const tb = $('pTV'); if (tb) tb.hidden = !S.phone; }
   $('pAdmin').hidden = !(window.IEaccount && IEaccount.admin && !IEaccount.hidden);
   $('cheatBox').hidden = !(window.IEaccount && IEaccount.admin && !IEaccount.hidden);
   $('pauseModal').hidden = false; if (window.IEonline) IEonline.renderPause(); if (locked) document.exitPointerLock();
