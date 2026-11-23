@@ -813,6 +813,63 @@ function buildShops(scene) {
     shop.marker = marker(scene, hx, y, hz + 6, 0x3a9bff);
     IE.shops.push(shop);
   } catch (e) { }
+  try { buildFunpark(scene); } catch (e) { }
+}
+
+// ---------- Freizeitpark hinter den Bergen ----------
+function buildFunpark(scene) {
+  const PK = IE.funpark; if (!PK) return;
+  const y = PK.h, cx = PK.x, cz = PK.z;
+  IE.funrides = [];
+  const lam = c => new T.MeshLambertMaterial({ color: c });
+  // Zufahrtsstraße (dunkler Asphaltstreifen)
+  const rd = IE.parkRoad;
+  for (let i = 1; i < rd.length; i++) {
+    const a = rd[i - 1], b = rd[i], mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2;
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]), ang = Math.atan2(b[0] - a[0], b[1] - a[1]);
+    const seg = add(scene, new T.BoxGeometry(9, 0.3, len + 2), lam(0x2b2d33), mx, rawH(mx, mz) + 0.16, mz, ang);
+  }
+  // Boden-Plaza
+  const plaza = new T.Mesh(new T.CircleGeometry(PK.r, 40), lam(0x6a6f5a)); plaza.rotation.x = -Math.PI / 2; plaza.position.set(cx, y + 0.05, cz); plaza.receiveShadow = true; scene.add(plaza);
+  // Zaun rundherum
+  for (let a = 0; a < 40; a++) { const an = a / 40 * Math.PI * 2; const px = cx + Math.cos(an) * (PK.r - 2), pz = cz + Math.sin(an) * (PK.r - 2); add(scene, new T.BoxGeometry(0.2, 2.2, 0.2), lam(0xb0b4ba), px, y + 1.1, pz); }
+  // Eingangstor + Schild
+  add(scene, new T.BoxGeometry(2, 7, 2), lam(0xc8101a), cx - 14, y + 3.5, cz + PK.r - 4);
+  add(scene, new T.BoxGeometry(2, 7, 2), lam(0xc8101a), cx + 14, y + 3.5, cz + PK.r - 4);
+  add(scene, new T.BoxGeometry(32, 3, 1.2), lam(0xf2c230), cx, y + 8, cz + PK.r - 4);
+  const sign = new T.Mesh(new T.PlaneGeometry(28, 4), new T.MeshBasicMaterial({ map: signTex('LUNA PARK', '#7a0c14', '#f2c230') }));
+  sign.position.set(cx, y + 8, cz + PK.r - 4.7); sign.rotation.y = Math.PI; scene.add(sign);
+  // Riesenrad
+  const ferris = new T.Group(); ferris.position.set(cx - 45, y + 26, cz - 20); scene.add(ferris);
+  const ring1 = new T.Mesh(new T.TorusGeometry(24, 0.5, 8, 40), lam(0xe0e4ea)); ferris.add(ring1);
+  const ring2 = ring1.clone(); ring2.position.z = 2.4; ferris.add(ring2);
+  for (let a = 0; a < 12; a++) { const an = a / 12 * Math.PI * 2; const sp = new T.Mesh(new T.BoxGeometry(0.3, 48, 0.3), lam(0xb0b4ba)); sp.rotation.z = an; sp.position.z = 1.2; ferris.add(sp);
+    const cab = new T.Mesh(new T.BoxGeometry(3.4, 3, 3), lam([0xc8101a, 0x3a9bff, 0xf2c230, 0x48e07a][a % 4])); cab.position.set(Math.cos(an) * 24, Math.sin(an) * 24, 1.2); ferris.add(cab); }
+  for (const sx of [-1, 1]) { const leg = new T.Mesh(new T.BoxGeometry(1, 40, 1), lam(0x9aa0a8)); leg.position.set(sx * 14, -20, 1.2); leg.rotation.z = sx * 0.3; ferris.add(leg); }
+  IE.funrides.push({ o: ferris, axis: 'z', spd: 0.25 });
+  // Karussell
+  const mk = (geo, c, x, yy, z, parent) => { const m = new T.Mesh(geo, lam(c)); m.position.set(x, yy, z); parent.add(m); return m; };
+  const caro = new T.Group(); caro.position.set(cx + 42, y, cz - 18); scene.add(caro);
+  mk(new T.CylinderGeometry(12, 12, 0.5, 24), 0xc8101a, 0, 0.4, 0, caro);
+  const spin = new T.Group(); spin.position.y = 0.7; caro.add(spin);
+  const roof = new T.Mesh(new T.ConeGeometry(13, 5, 24), lam(0xf2c230)); roof.position.y = 7; spin.add(roof);
+  mk(new T.CylinderGeometry(0.4, 0.4, 7, 10), 0xe0e4ea, 0, 3.5, 0, spin);
+  for (let a = 0; a < 8; a++) { const an = a / 8 * Math.PI * 2, hx = Math.cos(an) * 9, hz = Math.sin(an) * 9;
+    mk(new T.CylinderGeometry(0.15, 0.15, 6, 8), 0xd6b04a, hx, 3, hz, spin);
+    mk(new T.BoxGeometry(1.4, 1, 0.5), 0xf4f4f0, hx, 1.2, hz, spin);
+    mk(new T.BoxGeometry(0.4, 0.8, 0.4), 0xf4f4f0, hx + 0.6, 1.8, hz, spin); }
+  IE.funrides.push({ o: spin, axis: 'y', spd: 0.6 });
+  // Achterbahn-Looping
+  const coaster = new T.Group(); coaster.position.set(cx - 5, y, cz - 55); scene.add(coaster);
+  const loop = new T.Mesh(new T.TorusGeometry(12, 0.4, 6, 30), lam(0x3a9bff)); loop.position.y = 14; loop.rotation.y = Math.PI / 2; coaster.add(loop);
+  for (const sx of [-1, 1]) mk(new T.BoxGeometry(0.4, 28, 0.4), 0x9aa0a8, sx * 12, 14, 0, coaster);
+  // Buden
+  for (let k = 0; k < 4; k++) { const bx = cx - 30 + k * 20, bz = cz + 30; add(scene, new T.BoxGeometry(6, 4, 5), lam([0x48e07a, 0xf2a61a, 0x8a3cf0, 0x18c2d8][k]), bx, y + 2, bz); add(scene, new T.BoxGeometry(6.6, 0.4, 5.6), lam(0xffffff), bx, y + 4.1, bz); }
+  // Haustier-Trainingsplatz (markiert)
+  const ring = new T.Mesh(new T.TorusGeometry(6, 0.4, 6, 24), new T.MeshBasicMaterial({ color: 0xff8a3c })); ring.rotation.x = -Math.PI / 2; ring.position.set(cx, y + 0.3, cz + 40); scene.add(ring);
+  IE.funTrain = { x: cx, z: cz + 40, y: y };
+  marker(scene, cx, y, cz + 40, 0xff8a3c);
+  IE.funAnim = function (dt) { for (const r of IE.funrides) r.o.rotation[r.axis] += dt * r.spd; };
 }
 
 // ---------- Hafen ----------

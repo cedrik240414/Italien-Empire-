@@ -1212,7 +1212,9 @@ function petTick(dt) {
   const g = G(), P = g.P, S = g.S, id = S.petActive && (S.pets || []).includes(S.petActive) ? S.petActive : null;
   if (myPet && myPet.id !== id) { g.scene.remove(myPet.g); myPet = null; }
   if (!id) return;
-  if (!myPet) { myPet = Object.assign(IE.makePet(id), { id, pos: P.pos.clone(), yaw: P.yaw }); g.scene.add(myPet.g); }
+  if (!myPet) { myPet = Object.assign(IE.makePet(id), { id, pos: P.pos.clone(), yaw: P.yaw }); g.scene.add(myPet.g); myPet._lvl = -1; }
+  // Stärke-Level skaliert das Tier (Freizeitpark-Training)
+  const lvl = IE.petLevel ? IE.petLevel(id) : 1; if (myPet._lvl !== lvl) { myPet._lvl = lvl; const s = 1 + (lvl - 1) * 0.09; myPet.g.scale.setScalar(s); }
   const hidden = !!P.veh || !!P.ride || g.game.dead || (launch && true);
   myPet.g.visible = !hidden; if (hidden) { myPet.pos.copy(P.pos); return; }
   const f = fwd(P.yaw), tx = P.pos.x - f.x * 2.2 + f.z * 1.2, tz = P.pos.z - f.z * 2.2 - f.x * 1.2;
@@ -1274,9 +1276,9 @@ function homePetsTick(dt) {
 function openPets() {
   const g = G(), S = g.S; S.pets = S.pets || []; const rows = [], hasVilla = (S.villas || []).length > 0;
   for (const [id, p] of Object.entries(PETS)) {
-    const own = S.pets.includes(id), act = S.petActive === id;
-    rows.push({ name: '🐾 ' + p.name, stat: own ? (act ? 'Läuft gerade mit dir mit' : hasVilla ? 'Bleibt zu Hause in deiner Villa' : 'Wartet zu Hause') : g.fmt(p.price),
-      btns: own ? [act ? { label: 'Zu Hause lassen', fn: () => { S.petActive = ''; g.saveGame(); openPets(); if (!hasVilla) g.toast('Tipp: Mit einer Villa kannst du deine Tiere zu Hause besuchen', 3); } } : { label: 'Mitnehmen', buy: true, fn: () => { S.petActive = id; g.saveGame(); openPets(); } }]
+    const own = S.pets.includes(id), act = S.petActive === id, lvl = IE.petLevel ? IE.petLevel(id) : 1;
+    rows.push({ name: '🐾 ' + p.name + (own ? ' · 💪 Stärke Lv ' + lvl : ''), stat: own ? (act ? 'Läuft gerade mit dir mit' : hasVilla ? 'Bleibt zu Hause in deiner Villa' : 'Wartet zu Hause') : g.fmt(p.price),
+      btns: own ? (act ? [{ label: 'Zu Hause lassen', fn: () => { S.petActive = ''; g.saveGame(); openPets(); if (!hasVilla) g.toast('Tipp: Mit einer Villa kannst du deine Tiere zu Hause besuchen', 3); } }, { label: lvl >= 10 ? 'Max. Stärke' : '🎡 Park-Training · ' + g.fmt(lvl * 15000), buy: lvl < 10, off: lvl >= 10, fn: () => { if (IE.petTrain && IE.petTrain()) openPets(); } }] : [{ label: 'Mitnehmen', buy: true, fn: () => { S.petActive = id; g.saveGame(); openPets(); } }])
         : [{ label: 'Kaufen · ' + g.fmt(p.price), buy: true, off: S.money < p.price, fn: () => { if (S.money < p.price) return; S.money -= p.price; S.pets.push(id); S.petActive = id; g.sfx('cash'); g.saveGame(); openPets(); g.toast(p.name + ' gehört jetzt dir und läuft mit dir mit!', 3); } }] });
   }
   xModal('pets', '🐾 Haustiere', rows, 'Immer nur ein Tier läuft mit dir mit – die anderen bleiben zu Hause in deiner Villa (dort kannst du sie besuchen). Online sehen alle Spieler dein Tier.');

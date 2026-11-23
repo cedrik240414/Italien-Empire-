@@ -299,12 +299,21 @@ function gunIcon(id) { return `<svg viewBox="0 0 80 40" width="64" height="32" f
 function openWheel() {
   if (P.veh) { toast('Im Fahrzeug nicht möglich'); return; }
   const ring = $('wheelRing'); ring.innerHTML = '';
-  const list = IE.weapons.filter(w => S.weapons[w.id] !== undefined), n = list.length;
+  const list = IE.weapons.filter(w => S.weapons[w.id] !== undefined);
+  const items = list.map(w => ({ w })); if (S.phone) items.push({ phone: true });
+  const n = items.length;
   ring.style.setProperty('--wr', n > 9 ? 'min(40vmin, 290px)' : '');
-  list.forEach((w, i) => {
-    const own = S.weapons[w.id] !== undefined, a = -Math.PI / 2 + i / n * Math.PI * 2;
-    const b = document.createElement('button'); b.className = 'wslot' + (S.cur === w.id ? ' cur' : '') + (own ? '' : ' locked');
-    b.style.left = `calc(50% + ${Math.cos(a)} * var(--wr))`; b.style.top = `calc(50% + ${Math.sin(a)} * var(--wr))`;
+  items.forEach((it, i) => {
+    const a = -Math.PI / 2 + i / n * Math.PI * 2;
+    const b = document.createElement('button'); b.style.left = `calc(50% + ${Math.cos(a)} * var(--wr))`; b.style.top = `calc(50% + ${Math.sin(a)} * var(--wr))`;
+    if (it.phone) {
+      b.className = 'wslot'; b.innerHTML = `<span style="font-size:26px">📱</span><span class="wn">Handy</span><span class="wa">öffnen</span>`;
+      b.addEventListener('pointerenter', () => { $('wheelInfo').innerHTML = `<b>📱 Handy</b><br>Streamen, Videos, CatHub, Abos & mehr`; });
+      b.addEventListener('click', e => { e.stopPropagation(); closeModals(); if (IE.openPhone) IE.openPhone(); });
+      ring.appendChild(b); return;
+    }
+    const w = it.w, own = S.weapons[w.id] !== undefined;
+    b.className = 'wslot' + (S.cur === w.id ? ' cur' : '') + (own ? '' : ' locked');
     b.innerHTML = `${gunIcon(w.id)}<span class="wn">${w.name}</span><span class="wa">${own ? (w.id === 'faust' ? '∞' : S.weapons[w.id]) : 'Armeria · ' + fmt(w.price)}</span>`;
     b.disabled = !own;
     b.addEventListener('pointerenter', () => { $('wheelInfo').innerHTML = `<b>${w.name}</b><br>${own ? 'Schaden ' + w.dmg + ' · Reichweite ' + w.range + ' m' : 'Nicht im Besitz'}`; });
@@ -1994,6 +2003,8 @@ function frameBody() {
   // Wegpunkt
   if (waypoint) { setBeam(wpBeam, waypoint.x, waypoint.z); if (Math.hypot(P.pos.x - waypoint.x, P.pos.z - waypoint.z) < 15) { waypoint = null; wpBeam.visible = false; } } else wpBeam.visible = false;
   IE.markers.forEach(m => m.rotation.y += dt);
+  if (IE.funAnim) IE.funAnim(dt);
+  if (IE.updateAddons) IE.updateAddons(dt);
   IE.waterN.offset.x += dt * 0.004; IE.waterN.offset.y += dt * 0.002;
   updateCamera(dt);
   // Sonne folgt dem Spieler (Schatten)

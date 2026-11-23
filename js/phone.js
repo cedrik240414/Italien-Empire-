@@ -141,6 +141,7 @@
       { i: '💰', n: 'Mein Kanal', f: channelApp },
       { i: '📺', n: 'Fernsehen', f: () => { $('phoneModal').hidden = true; openTV(); } }
     ];
+    if ((g.S.packs || []).includes('adminpack')) apps.push({ i: '👑', n: 'Admin-Tools', f: adminTools });
     const grid = document.createElement('div'); grid.className = 'appGrid';
     for (const a of apps) { const b = document.createElement('button'); b.className = 'app'; b.innerHTML = '<span class="ai">' + a.i + '</span>' + a.n; b.onclick = a.f; grid.appendChild(b); }
     s.appendChild(grid);
@@ -290,6 +291,30 @@
     pay.onclick = () => { const amt = Math.floor(ch.cash); if (amt < 1) return; g.addMoney(amt, true); ch.cash = 0; g.sfx('cash'); g.banner('💸 Auszahlung', '▶️', g.fmt(amt) + ' von deinem Kanal!', 3); g.saveGame(); channelApp(); refreshCash(); };
     s.appendChild(pay);
     const tip = document.createElement('p'); tip.style.cssText = 'font-size:12px;opacity:0.7;margin-top:14px;text-align:center'; tip.textContent = 'Lade Videos hoch und streame (🔴) – mehr Abonnenten = mehr Ingame-Geld. Mit dem Pro-Kamera-Upgrade verdienst du mehr.'; s.appendChild(tip);
+  }
+
+  function adminTools() {
+    const g = G(), S = g.S; setTitle('👑 Admin-Tools'); const s = scr(); s.innerHTML = ''; s.appendChild(backBtn(home));
+    const info = document.createElement('p'); info.style.cssText = 'font-size:13px;opacity:0.85'; info.innerHTML = 'Kein Admin-Panel, aber deine Extras:<br>• Teleport zu anderen Spielern (online)<br>• Kassierer holen Geld aus deinen Shops<br>• Deine eigenen Geschäfte sind golden markiert.'; s.appendChild(info);
+    // Kassierer-Toggle
+    const hired = !!S.hiredCollector;
+    const hb = document.createElement('button'); hb.className = 'app'; hb.style.cssText = 'width:100%;flex-direction:row;justify-content:center;gap:8px;font-size:15px;padding:12px;margin-bottom:12px;background:' + (hired ? '#1d7a3a' : 'rgba(255,255,255,0.08)');
+    hb.innerHTML = hired ? '💼 Kassierer aktiv – Geld wird automatisch abgeholt (zum Deaktivieren tippen)' : '💼 Kassierer anheuern (holen Shop-Geld ab, 15 % Gebühr)';
+    hb.onclick = () => { S.hiredCollector = !S.hiredCollector; g.sfx('cash'); g.toast(S.hiredCollector ? 'Kassierer angeheuert!' : 'Kassierer entlassen', 2); g.saveGame(); adminTools(); };
+    s.appendChild(hb);
+    // Teleport-Liste
+    const t = document.createElement('div'); t.style.cssText = 'font-weight:700;margin:6px 0'; t.textContent = '🧭 Teleport zu Spielern'; s.appendChild(t);
+    const onl = window.IEonline && window.IEonline.active;
+    if (!onl) { const p = document.createElement('p'); p.style.cssText = 'opacity:0.7;font-size:13px'; p.textContent = 'Nur im Online-Modus (tritt einer Lobby bei).'; s.appendChild(p); return; }
+    const chans = window.IEonline.channels ? window.IEonline.channels() : [];
+    if (!chans.length) { const p = document.createElement('p'); p.style.cssText = 'opacity:0.7;font-size:13px'; p.textContent = 'Gerade ist niemand sonst in deiner Lobby.'; s.appendChild(p); return; }
+    for (const c of chans) {
+      const card = document.createElement('div'); card.className = 'vidCard'; card.style.cursor = 'default';
+      card.innerHTML = '<div style="font-size:26px;width:46px;text-align:center">🧑</div><div style="flex:1"><div class="vt">' + c.name + '</div><div class="vm">' + (c.live ? '🔴 LIVE' : 'online') + '</div></div>';
+      const b = document.createElement('button'); b.className = 'pBack'; b.style.cssText = 'margin:0;background:#8a3cf0'; b.textContent = '🧭 Teleport';
+      b.onclick = () => { if (IE.teleportToPeer) IE.teleportToPeer(c.r); };
+      card.appendChild(b); s.appendChild(card);
+    }
   }
 
   // ---------- Fernseher ----------

@@ -707,3 +707,67 @@ IE.shops.push(
   { type: 'phone', city: 'mailand', dx: 30,   dz: 90 },
   { type: 'phone', city: 'venedig', dx: 70,   dz: -40 }
 );
+
+// ===================== STAR WARS, JAMES BOND, FOOD, ATOM & ADMIN PACKS + FREIZEITPARK =====================
+IE.cars.push(
+  { id: 'speeder',    name: 'Landgleiter (Star Wars)',  price: 0, speed: 100, accel: 50, grip: 2.8, color: 0xdfe6ea, kind: 'cabrio', pack: 'starwars' },
+  { id: 'podracer',   name: 'Podracer (Star Wars)',     price: 0, speed: 120, accel: 60, grip: 3.0, color: 0xe8761a, kind: 'super',  pack: 'starwars' },
+  { id: 'spion',      name: 'Agenten-Sportwagen (007)', price: 0, speed: 96,  accel: 44, grip: 3.0, color: 0xcfd6dc, kind: 'sport',  pack: 'bond' },
+  { id: 'spionsuv',   name: 'Agenten-SUV (007)',        price: 0, speed: 70,  accel: 32, grip: 2.6, color: 0x101014, kind: 'suv',    pack: 'bond' },
+  { id: 'burgerauto', name: 'Burger-Mobil (Food)',      price: 0, speed: 60,  accel: 28, grip: 2.4, color: 0xd9a441, kind: 'suv',    pack: 'food' },
+  { id: 'pizzaauto',  name: 'Pizza-Flitzer (Food)',     price: 0, speed: 58,  accel: 24, grip: 2.3, color: 0xc8101a, kind: 'retro',  pack: 'food' },
+  { id: 'hotdogauto', name: 'Hotdog-Van (Food)',        price: 0, speed: 55,  accel: 20, grip: 2.1, color: 0xd83a2a, kind: 'van',    pack: 'food' },
+  { id: 'reaktor',    name: 'Reaktor GT (Atom)',        price: 0, speed: 110, accel: 54, grip: 3.0, color: 0x3fff6a, kind: 'super',  pack: 'atom' },
+  { id: 'atommonster',name: 'Atom-Monster (Atom)',      price: 0, speed: 66,  accel: 34, grip: 2.8, color: 0x6aff2a, kind: 'suv',    pack: 'atom' }
+);
+IE.boats.push(
+  { id: 'spionyacht', name: 'Agenten-Yacht (007)',      price: 0, speed: 40, accel: 10, color: 0x101018, accent: 0xcfd6dc, kind: 'yacht', pack: 'bond' },
+  { id: 'sushiyacht', name: 'Sushi-Yacht (Food)',       price: 0, speed: 36, accel: 10, color: 0xf6f0e0, accent: 0xe8761a, kind: 'yacht', pack: 'food' }
+);
+IE.planes.push(
+  { id: 'xwing',      name: 'Sternjäger X (Star Wars)', price: 0, speed: 200, minSpeed: 40, turn: 1.8, color: 0xcfd6dc, accent: 0xc8101a, kind: 'fighter', pack: 'starwars' },
+  { id: 'tiefighter', name: 'TIE-Jäger (Star Wars)',    price: 0, speed: 190, minSpeed: 42, turn: 1.7, color: 0x2a2a2e, accent: 0x6a6a72, kind: 'fighter', pack: 'starwars' },
+  { id: 'spionjet',   name: 'Agenten-Jet (007)',        price: 0, speed: 200, minSpeed: 45, turn: 1.0, color: 0xdfe6ea, accent: 0x1b3d6e, kind: 'jet',     pack: 'bond' },
+  { id: 'pizzajet',   name: 'Pizza-Jet (Food)',         price: 0, speed: 150, minSpeed: 40, turn: 1.4, color: 0xc8101a, accent: 0xf2c230, kind: 'fighter', pack: 'food' },
+  { id: 'atomjet',    name: 'Atom-Jet (Atom)',          price: 0, speed: 200, minSpeed: 42, turn: 1.5, color: 0x3fff6a, accent: 0xf2f230, kind: 'fighter', pack: 'atom' }
+);
+IE.weapons.push(
+  { id: 'blaster',      name: 'Laser-Blaster (Star Wars)',      price: 0, dmg: 55,  rate: 0.14, range: 220, spread: 0.005, ammoPrice: 0, clip: 200,  pellets: 1, auto: true,  laser: true, pack: 'starwars' },
+  { id: 'laserschwert', name: 'Laserschwert (Star Wars)',       price: 0, dmg: 220, rate: 0.25, range: 6,   spread: 0,     ammoPrice: 0, clip: 9999, pellets: 1, auto: true,  laser: true, pack: 'starwars' },
+  { id: 'goldwaffe',    name: 'Goldene Pistole (007)',          price: 0, dmg: 500, rate: 0.5,  range: 200, spread: 0,     ammoPrice: 0, clip: 50,   pellets: 1, auto: false, pack: 'bond' },
+  { id: 'schallpistole',name: 'Schallgedämpfte Pistole (007)',  price: 0, dmg: 80,  rate: 0.25, range: 160, spread: 0.004, ammoPrice: 0, clip: 60,   pellets: 1, auto: false, pack: 'bond' },
+  { id: 'atombombe',    name: 'Atombomben-Werfer (Atom)',       price: 0, dmg: 500, rate: 2.5,  range: 320, spread: 0.01,  ammoPrice: 0, clip: 5,    pellets: 1, auto: false, explode: 16, pack: 'atom' },
+  { id: 'strahlung',    name: 'Strahlenkanone (Atom)',          price: 0, dmg: 45,  rate: 0.1,  range: 300, spread: 0,     ammoPrice: 0, clip: 400,  pellets: 1, auto: true,  laser: true, pack: 'atom' },
+  { id: 'ketchup',      name: 'Ketchup-Werfer (Food)',          price: 0, dmg: 9,   rate: 0.06, range: 60,  spread: 0.05,  ammoPrice: 0, clip: 300,  pellets: 1, auto: true,  pack: 'food' }
+);
+IE.skins.push(
+  { id: 'jedi',    name: 'Jedi',             cat: 'Pack', price: 0, fromPack: 'starwars', look: { pants: 0x6a5436, jacket: 0x7a6342, shirt: 0x8a7352, skin: SK.light, hair: 0x6b5a48, beard: 0x6b5a48 } },
+  { id: 'sith',    name: 'Sith',             cat: 'Pack', price: 0, fromPack: 'starwars', look: { pants: 0x0b0b0d, jacket: 0x0b0b0d, shirt: 0x0b0b0d, skin: SK.pale, hair: 0x0b0b0d, glasses: 'sun', hands: 0x0b0b0d } },
+  { id: 'agent007',name: 'Geheimagent 007',  cat: 'Pack', price: 0, fromPack: 'bond',     look: { pants: 0x0d0d0f, jacket: 0x0d0d0f, shirt: 0xffffff, bow: 0x0d0d0f, skin: SK.mid, hair: 0x1a1a1a, glasses: 'sun', shoes: 0x050505 } },
+  { id: 'foodie',  name: 'Fast-Food-Fan',    cat: 'Pack', price: 0, fromPack: 'food',     look: { pants: 0xc8641a, jacket: 0xf2c230, shirt: 0xc8101a, skin: SK.tan, hair: 0x2a1a10, hat: 'chef' } },
+  { id: 'hazmat',  name: 'Atom-Schutzanzug', cat: 'Pack', price: 0, fromPack: 'atom',     look: { pants: 0xf2c230, jacket: 0xf2c230, shirt: 0xf2c230, skin: SK.light, hair: 0x111111, hat: 'space', hands: 0xf2c230, shoes: 0xf2c230 } }
+);
+IE.carById = {}; IE.cars.forEach(c => IE.carById[c.id] = c);
+IE.boatById = {}; IE.boats.forEach(b => IE.boatById[b.id] = b);
+IE.planeById = {}; IE.planes.forEach(p => IE.planeById[p.id] = p);
+IE.weaponById = {}; IE.weapons.forEach(w => IE.weaponById[w.id] = w);
+IE.skinById = {}; IE.skins.forEach(s => IE.skinById[s.id] = s);
+IE.packs.push(
+  { id: 'starwars', name: 'Star Wars', emoji: '⚔️', color: 0x3a9bff, price: 200000000, desc: 'Landgleiter, Podracer, Sternjäger X & TIE-Jäger, Laser-Blaster, Laserschwert sowie Jedi-, Sith- & Sturmtruppen-Outfit.',
+    cars: ['speeder', 'podracer'], planes: ['xwing', 'tiefighter'], weapons: ['blaster', 'laserschwert'], skins: ['jedi', 'sith', 'trooper'] },
+  { id: 'bond', name: 'James Bond', emoji: '🕵️', color: 0x111111, price: 150000000, desc: 'Agenten-Sportwagen & -SUV, Agenten-Jet & -Yacht, Goldene Pistole, schallgedämpfte Pistole, Agenten-Outfit & Smoking.',
+    cars: ['spion', 'spionsuv'], planes: ['spionjet'], boats: ['spionyacht'], weapons: ['goldwaffe', 'schallpistole'], skins: ['agent007', 'smoking'] },
+  { id: 'food', name: 'Food', emoji: '🍔', color: 0xf2c230, price: 80000000, desc: 'Autos, Jet & Yacht, die wie Essen aussehen: Burger-Mobil, Pizza-Flitzer, Hotdog-Van, Pizza-Jet, Burger-Jet, Sushi-Yacht & Ketchup-Werfer.',
+    cars: ['burgerauto', 'pizzaauto', 'hotdogauto'], planes: ['pizzajet', 'burger'], boats: ['sushiyacht'], weapons: ['ketchup'], skins: ['foodie', 'koch'] },
+  { id: 'atom', name: 'Atom', emoji: '☢️', color: 0x6aff2a, price: 250000000, desc: 'Reaktor GT, Atom-Monster, Atom-Jet, Atombomben-Werfer & Strahlenkanone sowie Atom-Schutzanzug.',
+    cars: ['reaktor', 'atommonster'], planes: ['atomjet'], weapons: ['atombombe', 'strahlung'], skins: ['hazmat'] },
+  { id: 'adminpack', name: 'Admin', emoji: '👑', color: 0xd6b04a, price: 1000000000, special: true, desc: 'Kein Admin-Panel, aber mächtige Extras: Teleport zu anderen Spielern, Kassierer anheuern (holen Geld aus deinen Shops), deine eigenen Shops besonders markiert – plus König- & Gold-Outfit.',
+    skins: ['koenig', 'gold'] }
+);
+IE.packById = {}; IE.packs.forEach(p => IE.packById[p.id] = p);
+
+// Freizeitpark hinter den großen Bergen (nördlich der Alpen bei Como) + Zufahrtsstraße
+IE.funpark = { x: -600, z: -2180, r: 120, h: 30 };
+IE.flatZones.push({ x: IE.funpark.x, z: IE.funpark.z, hw: 150, hd: 120, h: IE.funpark.h, f: 70 });
+IE.parkRoad = [[-852, -1770], [-810, -1870], [-740, -1970], [-680, -2060], [-640, -2130], [-600, -2175]];
+for (let i = 1; i < IE.parkRoad.length; i++) { const a = IE.parkRoad[i - 1], b = IE.parkRoad[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 11, hd: Math.abs(b[1] - a[1]) / 2 + 11, h: IE.funpark.h, f: 24, small: true }); }
