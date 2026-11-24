@@ -346,6 +346,7 @@ $('adUndercover').addEventListener('click', async () => {
 $('adMoon').addEventListener('click', async () => { const open = !IEgame.IE.moonUnlocked; await A.unlockMoon(open); $('adMoon').textContent = IEgame.IE.moonUnlocked ? 'Mond: offen für alle' : 'Mond: gesperrt'; });
 if ($('adLock')) $('adLock').addEventListener('click', async () => { const on = !IEgame.IE.serverLocked; await A.serverLock(on); $('adLock').textContent = IEgame.IE.serverLocked ? '🔒 Server: GESPERRT' : '🔓 Server: offen'; });
 if ($('adCut')) $('adCut').addEventListener('click', () => { if (!A.admin) return; IEgame.closeModals(); if (IEgame.IE.startCutscene) IEgame.IE.startCutscene(); });
+if ($('adTrailer')) $('adTrailer').addEventListener('click', () => { if (!A.admin) return; IEgame.closeModals(); if (IEgame.IE.startTrailer) IEgame.IE.startTrailer(); });
 $('adGod').addEventListener('click', () => { const g = IEgame; g.game.ch = g.game.ch || {}; g.game.ch.god = !g.game.ch.god; if (g.game.ch.god) g.hurtPlayer(0); $('adGod').textContent = g.game.ch.god ? 'Unsterblich: An' : 'Unsterblich: Aus'; g.toast(g.game.ch.god ? '★ Unsterblich' : 'Unsterblich aus', 2); });
 $('adSpeed').addEventListener('input', () => { const v = +$('adSpeed').value; $('adSpeedV').textContent = Math.round(v * 3.6) + ' km/h'; IEgame.P.flySpeed = v; });
 $('adYacht').addEventListener('click', () => { if (IEgame.game.state !== 'play') { IEgame.toast('Starte zuerst ein Spiel', 2); return; } IEgame.spawnAirship(); IEgame.closeModals(); });
