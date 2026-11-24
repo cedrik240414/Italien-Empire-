@@ -326,7 +326,7 @@ IE.planes = [
   { id: 'burger',   name: 'Burger-Jet (Raketen)',    price: 2800000,       speed: 150, minSpeed: 42, turn: 1.3, color: 0xd9a441, accent: 0x7a4a1e, kind: 'burger', armed: true },
   { id: 'caccia',   name: 'Caccia (Kampfjet)',       price: 3500000,       speed: 190, minSpeed: 45, turn: 1.4, color: 0x7b8590, accent: 0x4a5236, kind: 'fighter', armed: true, military: true },
   { id: 'cargo',    name: 'Atlante Cargo (Frachtflugzeug)', price: 4200000, speed: 118, minSpeed: 40, turn: 0.55, color: 0x8b9298, accent: 0x6b7279, kind: 'cargo', carrier: true, pax: 6 },
-  { id: 'blackbird', name: 'Merlo Nero SR-71 (Überschall-Spionagejet)', price: 7500000, speed: 305, minSpeed: 60, turn: 1.15, color: 0x15161b, accent: 0x15161b, kind: 'spyjet', armed: true }
+  { id: 'blackbird', name: 'Merlo Nero SR-71 (Überschall-Spionagejet)', price: 7500000, speed: 305, minSpeed: 60, turn: 1.4, color: 0x15161b, accent: 0x15161b, kind: 'spyjet', armed: true }
 ];
 IE.planeById = {}; IE.planes.forEach(p => IE.planeById[p.id] = p);
 
