@@ -77,7 +77,12 @@ IE.makeHuman = function (o) {
   box(0.13, 0.6, 0.15, sleeve, armL, 0, -0.3, 0); box(0.13, 0.6, 0.15, sleeve, armR, 0, -0.3, 0);
   box(0.11, 0.11, 0.11, hands, armL, 0, -0.64, 0); box(0.11, 0.11, 0.11, hands, armR, 0, -0.64, 0);
   const gun = new T.Group(); gun.position.set(0, -0.66, 0.08); armR.add(gun);
-  const gunMesh = box(0.06, 0.1, 0.3, 0x111111, gun, 0, 0, 0.1); gun.visible = false;
+  const gunMesh = box(0.055, 0.07, 0.3, 0x1c1c22, gun, 0, 0.02, 0.1);     // Lauf (wird je Waffe skaliert)
+  box(0.085, 0.12, 0.18, 0x2c2c33, gun, 0, 0, 0);                         // Gehäuse
+  box(0.03, 0.055, 0.06, 0x101014, gun, 0, 0.105, 0.04);                  // Visier/Kimme
+  box(0.07, 0.17, 0.08, 0x18181d, gun, 0, -0.11, -0.03).rotation.x = 0.42; // Griff
+  box(0.055, 0.15, 0.07, 0x23232c, gun, 0, -0.1, 0.085);                  // Magazin
+  gun.visible = false;
   return { group: g, legL, legR, armL, armR, head, gun, gunMesh, torso };
 };
 IE.animHuman = function (h, phase, amp, aiming, dead) {

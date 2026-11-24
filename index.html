@@ -304,11 +304,17 @@ body.touch.playing #touch { display: block; }
 #csSub { position: absolute; bottom: calc(11% + 18px); left: 24px; right: 24px; color: #f4f4f0; font: 600 24px 'Barlow Condensed', Arial; text-shadow: 0 2px 8px #000; }
 #csSkip { position: absolute; bottom: calc(11% + 14px); right: 20px; pointer-events: auto; background: rgba(0,0,0,0.55); color: #fff; border: 1px solid rgba(255,255,255,0.45); padding: 8px 14px; border-radius: 8px; font: 600 15px Arial; cursor: pointer; }
 body.cutsceneOn .hud, body.cutsceneOn .tb, body.cutsceneOn #joyBase, body.cutsceneOn #joyKnob, body.cutsceneOn #chatBtn, body.cutsceneOn #chatLog { display: none !important; }
-#csLogo { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; opacity: 0; transition: opacity .7s ease; }
+#csLogo { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; opacity: 0; }
 #csLogo.show { opacity: 1; }
 #csLogo span { font: 800 clamp(38px, 8.5vw, 104px) 'Barlow Condensed', Arial; letter-spacing: 8px; color: #f4f4f0; text-shadow: 0 4px 26px #000, 0 0 50px rgba(0,0,0,.7); line-height: .95; }
-#csLogo em { font: 800 clamp(42px, 9.5vw, 118px) 'Barlow Condensed', Arial; font-style: normal; letter-spacing: 10px; color: #f2c230; text-shadow: 0 4px 26px #000, 0 0 50px rgba(0,0,0,.7); line-height: .95; }
-#csLogo i { width: clamp(150px, 34vw, 420px); height: 7px; margin-top: 14px; background: linear-gradient(90deg, #2e9e4f 0 33%, #f4f4f0 33% 66%, #c8372d 66% 100%); border-radius: 3px; box-shadow: 0 2px 14px rgba(0,0,0,.6); }
+#csLogo em { font: 800 clamp(42px, 9.5vw, 118px) 'Barlow Condensed', Arial; font-style: normal; letter-spacing: 10px; color: #f2c230; text-shadow: 0 4px 26px #000, 0 0 46px rgba(242,194,48,.55); line-height: .95; }
+#csLogo i { width: clamp(150px, 34vw, 420px); height: 7px; margin-top: 14px; background: linear-gradient(90deg, #2e9e4f 0 33%, #f4f4f0 33% 66%, #c8372d 66% 100%); border-radius: 3px; box-shadow: 0 2px 14px rgba(0,0,0,.6); transform-origin: center; }
+#csLogo.show span { animation: csLogoIn .85s cubic-bezier(.18,.9,.2,1.05) both; }
+#csLogo.show em { animation: csLogoIn .85s .12s cubic-bezier(.18,.9,.2,1.05) both, csGlow 2.2s 1s ease-in-out infinite; }
+#csLogo.show i { animation: csBar .7s .32s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes csLogoIn { from { opacity: 0; transform: translateY(26px) scale(1.35); filter: blur(10px); } 60% { opacity: 1; } to { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes csBar { from { opacity: 0; transform: scaleX(0); } to { opacity: 1; transform: scaleX(1); } }
+@keyframes csGlow { 0%, 100% { text-shadow: 0 4px 26px #000, 0 0 40px rgba(242,194,48,.45); } 50% { text-shadow: 0 4px 26px #000, 0 0 70px rgba(242,194,48,.9); } }
 </style>
 
 <canvas id="c"></canvas>
@@ -365,7 +371,7 @@ body.cutsceneOn .hud, body.cutsceneOn .tb, body.cutsceneOn #joyBase, body.cutsce
       <div><b>FEUER</b> Schießen (mit Zielhilfe)</div><div><b>EIN/AUS</b> Fahrzeug</div>
       <div><b>E</b> Shop / Mission</div><div><b>HOCH / RUNTER</b> Springen · Heli</div><div><b>TAUCHEN / AUF</b> Unter Wasser schwimmen</div><div><b>SICHT</b> Ego-Sicht umschalten</div><div><b>Kreis links</b> Waffenrad</div><div><b>Flugzeug</b> GAS +/− für Schub, Joystick hoch = Nase hoch</div>
     </div>
-    <div class="ver">Version 101</div>
+    <div class="ver">Version 102</div>
   </div>
 </div>
 
@@ -500,19 +506,19 @@ body.cutsceneOn .hud, body.cutsceneOn .tb, body.cutsceneOn #joyBase, body.cutsce
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/data.js?v=101"></script>
-<script src="js/world.js?v=101"></script>
-<script src="js/entities.js?v=101"></script>
-<script src="js/extra.js?v=101"></script>
-<script src="js/main.js?v=101"></script>
-<script src="js/server-config.js?v=101"></script>
-<script src="js/cfnet.js?v=101"></script>
-<script src="js/online.js?v=101"></script>
-<script src="js/account.js?v=101"></script>
-<script src="js/launcher.js?v=101"></script>
-<script src="js/packs.js?v=101"></script>
-<script src="js/phone.js?v=101"></script>
-<script src="js/addons.js?v=101"></script>
+<script src="js/data.js?v=102"></script>
+<script src="js/world.js?v=102"></script>
+<script src="js/entities.js?v=102"></script>
+<script src="js/extra.js?v=102"></script>
+<script src="js/main.js?v=102"></script>
+<script src="js/server-config.js?v=102"></script>
+<script src="js/cfnet.js?v=102"></script>
+<script src="js/online.js?v=102"></script>
+<script src="js/account.js?v=102"></script>
+<script src="js/launcher.js?v=102"></script>
+<script src="js/packs.js?v=102"></script>
+<script src="js/phone.js?v=102"></script>
+<script src="js/addons.js?v=102"></script>
 <script>
 // Auto-Update: prüft regelmäßig, ob eine neue Version veröffentlicht wurde, und lädt dann automatisch neu.
 (function () {

@@ -2512,57 +2512,68 @@ IE.extraUpdate = function (dt) {
     if (cs.t >= cs.dur) IE.endCutscene();
   }
 
-  // --- Cutscene 2: Spiel-Trailer ---
+  // --- Cutscene 2: Spiel-Trailer (Edit-Stil) ---
   const skinLook = id => { const s = (IE.skins || []).find(k => k.id === id); return s && s.look; };
-  const waterNear = (cx, cz) => { for (let r = 260; r <= 1100; r += 110) for (let a = 0; a < 6.283; a += 0.5) { const x = cx + Math.cos(a) * r, z = cz + Math.sin(a) * r; if (IE.groundH(x, z) < -4) return { x, z }; } return { x: cx + 600, z: cz }; };
+  const spinWheels = (cs, car, dt, rate, steer) => { cs.wheelRot = (cs.wheelRot || 0) + rate * dt; (car.wheels || []).forEach((w, wi) => { if (w.children[0]) w.children[0].rotation.z = -cs.wheelRot; if (w.children[1]) w.children[1].rotation.z = -cs.wheelRot; w.rotation.y = wi >= 2 ? (steer || 0) : 0; }); };
   IE.startTrailer = function () {
     if (IE.cutscene) return;
-    const g = G(), scene = g.scene, NP = IE.cityById.neapel, B = IE.base;
-    const gy = IE.groundH(B.x, B.z);
+    const g = G(), scene = g.scene, NP = IE.cityById.neapel, B = IE.base, ROM = IE.cityById.rom;
+    const gyB = IE.groundH(B.x, B.z), gyR = IE.groundH(ROM.x, ROM.z);
     const objs = [];
-    // Charaktere in einer Reihe auf der Basis-Landebahn
+    // Crew (winken / Militärbasis stürmen)
     const looks = [IE.chars.jack, IE.chars.marco, IE.chars.sofia, skinLook('anzug'), skinLook('smoking'), skinLook('fib')].filter(Boolean);
     const actors = [];
-    looks.forEach((lk, i) => { const h = IE.makeHuman(lk); h.group.position.set(B.x + (i - (looks.length - 1) / 2) * 1.8, gy, B.z); h.group.rotation.y = Math.PI; scene.add(h.group); objs.push(h.group); actors.push({ h, ph: i * 1.3 }); });
+    looks.forEach((lk, i) => { const h = IE.makeHuman(lk); const bx = B.x + (i - (looks.length - 1) / 2) * 1.8; h.group.position.set(bx, gyB, B.z); h.group.rotation.y = Math.PI; scene.add(h.group); objs.push(h.group); actors.push({ h, ph: i * 1.3, bx }); });
     const rowX0 = B.x - (looks.length - 1) / 2 * 1.8, rowX1 = B.x + (looks.length - 1) / 2 * 1.8;
+    // Passanten in Rom (laufen & feiern)
+    const pLooks = [skinLook('anzug'), skinLook('banker'), IE.chars.marco, skinLook('smoking'), IE.chars.sofia, skinLook('fib'), IE.chars.jack].filter(Boolean);
+    const peds = [];
+    pLooks.forEach((lk, i) => { const h = IE.makeHuman(lk); const an = i / pLooks.length * 6.283, px = ROM.x + Math.cos(an) * 9, pz = ROM.z + Math.sin(an) * 9; h.group.position.set(px, gyR, pz); scene.add(h.group); objs.push(h.group); peds.push({ h, x: px, z: pz, rot: an + 1.57, dance: i % 3 === 0, ph: i * 1.7, ph2: i }); });
     // Fahrzeuge
     const carDef = IE.carById.rosso || IE.carById.toro || IE.cars.find(c => !c.pack && (c.kind === 'sport' || c.kind === 'super')) || IE.cars[0];
-    const car = IE.makeCar(carDef.kind, carDef.color); scene.add(car.group); objs.push(car.group);
-    const tank = IE.makeCar('tank', 0x55603a); tank.group.position.set(B.x + 14, gy, B.z + 10); tank.group.rotation.y = 0.6; scene.add(tank.group); objs.push(tank.group);
-    const jeep = IE.makeCar('suv', 0x4f5a34); jeep.group.position.set(B.x - 14, gy, B.z + 9); jeep.group.rotation.y = -0.5; scene.add(jeep.group); objs.push(jeep.group);
-    const jetM = IE.makePlane(IE.planeById.blackbird); jetM.group.rotation.order = 'YXZ'; scene.add(jetM.group); objs.push(jetM.group);
-    const W = waterNear(NP.x, NP.z);
-    const yacht = IE.makeBoat(IE.boatById.yacht); yacht.group.position.set(W.x, 0, W.z); yacht.group.rotation.y = 0.8; scene.add(yacht.group); objs.push(yacht.group);
-    // Villen-Mittelpunkt
+    const car = IE.makeCar(carDef.kind, carDef.color); car.group.visible = false; scene.add(car.group); objs.push(car.group);
+    const tank = IE.makeCar('tank', 0x55603a); tank.group.position.set(B.x + 16, gyB, B.z + 12); tank.group.rotation.y = 0.5; scene.add(tank.group); objs.push(tank.group);
+    const jeep = IE.makeCar('suv', 0x4f5a34); jeep.group.position.set(B.x - 16, gyB, B.z + 11); jeep.group.rotation.y = -0.4; scene.add(jeep.group); objs.push(jeep.group);
+    const jetM = IE.makePlane(IE.planeById.blackbird); jetM.group.rotation.order = 'YXZ'; jetM.group.visible = false; scene.add(jetM.group); objs.push(jetM.group);
     const villaY = IE.groundH(550, 150);
     setTitle('★ ITALIEN EMPIRE · TRAILER');
     const cs = {
-      t: 0, dur: 28.8, NP, B, gy, actors, car, tank, jeep, jet: jetM, yacht, W, rowX0, rowX1, villaY,
-      scenes: [[0, 3.5], [3.5, 7], [7, 9.6], [9.6, 13], [13, 16], [16, 19], [19, 22], [22, 25.2], [25.2, 28.8]],
+      t: 0, dur: 24.0, NP, B, ROM, gyB, gyR, actors, peds, car, tank, jeep, jet: jetM, rowX0, rowX1, villaY,
+      scenes: [[0, 2.4], [2.4, 4.6], [4.6, 6.2], [6.2, 9.0], [9.0, 11.2], [11.2, 13.6], [13.6, 15.6], [15.6, 18.2], [18.2, 20.4], [20.4, 24.0]],
       destroy() { for (const o of objs) try { scene.remove(o); } catch (e) { } }
     };
     cs.tick = dt => trailerTick(cs, dt);
     IE.cutscene = cs; uiOn(); try { g.sfx && g.sfx('beep'); } catch (e) { }
   };
   function trailerTick(cs, dt) {
-    const g = G(), cam = g.camera; cs.t += dt; const t = cs.t, B = cs.B, gy = cs.gy, NP = cs.NP;
+    const g = G(), cam = g.camera; cs.t += dt; const t = cs.t, B = cs.B, ROM = cs.ROM, gyB = cs.gyB, gyR = cs.gyR, NP = cs.NP;
     if (IE.sky) IE.sky.position.copy(cam.position);
     if (g.scene.fog) { g.scene.fog.near = 600; g.scene.fog.far = 9000; }
-    // Winken
-    for (const a of cs.actors) { a.h.armR.rotation.z = -2.15 + Math.sin(t * 7 + a.ph) * 0.45; a.h.armR.rotation.x = -0.12; a.h.armL.rotation.x = Math.sin(t * 2 + a.ph) * 0.06; }
     let i = cs.scenes.findIndex(s => t >= s[0] && t < s[1]); if (i < 0) { IE.endCutscene(); return; }
-    const s = cs.scenes[i], lt = (t - s[0]) / (s[1] - s[0]);
-    cs.car.group.visible = (i === 3); cs.jet.group.visible = (i === 4); cs.yacht.group.visible = (i === 5);
-    setLogo(i === 0 || i === 8);
-    if (i === 0) { const an = 0.4 + lt * 0.5; cp.set(NP.x + Math.cos(an) * 430, 150, NP.z + Math.sin(an) * 430); cl.set(NP.x + 40, 20, NP.z); applyCam(cam, 60); setSub(''); }
-    else if (i === 1) { const cx = cs.rowX0 - 1.2 + (cs.rowX1 - cs.rowX0 + 2.4) * lt; cp.set(cx, gy + 1.7, B.z - 5.5); cl.set(cx, gy + 1.45, B.z); applyCam(cam, 42); setSub('Deine Crew. Deine Stadt.'); }
-    else if (i === 2) { const a0 = cs.actors[0].h.group.position; cp.set(a0.x + 0.25, gy + 1.72, B.z - 2.3); cl.set(a0.x, gy + 1.6, B.z); applyCam(cam, 34); setSub('Jack, Marco, Sofia – und viele mehr.'); }
-    else if (i === 3) { const cx = B.x - 95 + 190 * lt; cs.car.group.position.set(cx, gy, B.z - 16); cs.car.group.rotation.y = Math.PI / 2; cs.car.wheels && cs.car.wheels.forEach(w => w.rotation.x -= dt * 22); cp.set(cx - 8, gy + 2.2, B.z - 16 - 6.5); cl.set(cx + 7, gy + 1.1, B.z - 16); applyCam(cam, 44); setSub('Fahr durch ganz Italien.'); }
-    else if (i === 4) { const jx = B.x + 90 - 220 * lt, jy = gy + 34; cs.jet.group.position.set(jx, jy, B.z + 16); cs.jet.group.rotation.y = -Math.PI / 2; cs.jet.group.rotation.z = 0.25; cp.set(B.x - 5, gy + 2.5, B.z - 9); cl.set(jx, jy, B.z + 16); applyCam(cam, 56); setSub('Flieg, wohin du willst.'); }
-    else if (i === 5) { const W = cs.W; cs.yacht.group.position.set(W.x - lt * 6, Math.sin(t * 1.4) * 0.3, W.z); cs.yacht.group.rotation.y = 0.8 + Math.sin(t * 0.5) * 0.05; cp.set(W.x - 34, 6.5, W.z - 30); cl.set(W.x - 4, 3.2, W.z); applyCam(cam, 46); setSub('Aufs offene Meer.'); }
-    else if (i === 6) { cp.set(B.x - 80, gy + 48, B.z - 100); cl.set(B.x, gy + 6, B.z); applyCam(cam, 56); setSub('Stürme die Militärbasis.'); }
-    else if (i === 7) { const vx = 400 + 320 * lt; cp.set(vx, cs.villaY + 52, 150 - 115); cl.set(vx + 20, cs.villaY + 6, 150); applyCam(cam, 52); setSub('Luxus-Villen für die Bosse.'); }
-    else { const an = 1.0 + lt * 0.45; cp.set(NP.x + Math.cos(an) * 370, 135, NP.z + Math.sin(an) * 370); cl.set(NP.x, 20, NP.z); applyCam(cam, 56); setSub('ITALIEN EMPIRE – jetzt spielen.'); }
+    const s = cs.scenes[i], lt = (t - s[0]) / (s[1] - s[0]), e = lt < 0.5 ? 2 * lt * lt : 1 - Math.pow(-2 * lt + 2, 2) / 2;
+    // Crew-Animation: winken (Szene 0-2) oder Basis stürmen (Szene 7)
+    const raid = (i === 7);
+    for (const a of cs.actors) {
+      if (raid) { IE.setGunLen(a.h, 0.78); IE.animHuman(a.h, t * 9 + a.ph, 0.95, true, false); a.h.group.rotation.y = 0; a.h.group.position.set(a.bx, gyB, B.z + 4 + e * 15); }
+      else { IE.setGunLen(a.h, 0); a.h.legL.rotation.x = 0; a.h.legR.rotation.x = 0; a.h.group.rotation.y = Math.PI; a.h.group.position.set(a.bx, gyB, B.z); a.h.armR.rotation.set(0, 0, 2.0 + Math.sin(t * 7 + a.ph) * 0.35); a.h.armL.rotation.set(Math.sin(t * 2 + a.ph) * 0.06, 0, 0); }
+    }
+    // Passanten in Rom
+    for (const p of cs.peds) {
+      if (p.dance) { p.h.legL.rotation.x = 0; p.h.legR.rotation.x = 0; p.h.armL.rotation.set(0, 0, 0.7 + Math.sin(t * 6 + p.ph) * 0.6); p.h.armR.rotation.set(0, 0, -0.7 - Math.sin(t * 6 + p.ph) * 0.6); p.h.group.position.set(p.x, gyR + Math.abs(Math.sin(t * 6 + p.ph)) * 0.14, p.z); p.h.group.rotation.y = p.rot + Math.sin(t * 3 + p.ph) * 0.4; }
+      else { p.ph2 += dt * 6.5; IE.animHuman(p.h, p.ph2, 0.6, false, false); p.x += Math.sin(p.rot) * 2.3 * dt; p.z += Math.cos(p.rot) * 2.3 * dt; if (Math.hypot(p.x - ROM.x, p.z - ROM.z) > 15) p.rot += Math.PI; p.h.group.position.set(p.x, gyR, p.z); p.h.group.rotation.y = p.rot; }
+    }
+    cs.car.group.visible = (i === 3 || i === 4); cs.jet.group.visible = (i === 6);
+    setLogo(i === 0 || i === 9);
+    if (i === 0) { const an = 0.3 + e * 0.3; cp.set(NP.x + Math.cos(an) * (440 - e * 130), 150 - e * 18, NP.z + Math.sin(an) * (440 - e * 130)); cl.set(NP.x + 30, 22, NP.z); applyCam(cam, 62 - e * 8); setSub(''); }
+    else if (i === 1) { const cx = cs.rowX0 - 1.4 + (cs.rowX1 - cs.rowX0 + 2.8) * lt; cp.set(cx, gyB + 1.7, B.z - 6.5 + e * 1.8); cl.set(cx, gyB + 1.45, B.z); applyCam(cam, 44 - e * 4); setSub('Deine Crew.'); }
+    else if (i === 2) { const a0 = cs.actors[0].h.group.position; cp.set(a0.x + 0.25, gyB + 1.72, B.z - 3 + e * 0.8); cl.set(a0.x, gyB + 1.6, B.z); applyCam(cam, 36 - e * 4); setSub('Jack. Marco. Sofia.'); }
+    else if (i === 3) { const cx = ROM.x - 75 + 160 * e; cs.car.group.position.set(cx, gyR, ROM.z); cs.car.group.rotation.y = Math.PI / 2; spinWheels(cs, cs.car, dt, 46, 0); cp.set(cx - 11, gyR + 3, ROM.z - 9 + e * 3); cl.set(cx + 6, gyR + 1.3, ROM.z); applyCam(cam, 48 - e * 4); setSub('Fahr durch Rom.'); }
+    else if (i === 4) { const cx = ROM.x - 15 + 34 * e; cs.car.group.position.set(cx, gyR, ROM.z + 7); cs.car.group.rotation.y = Math.PI / 2 + 0.7 + Math.sin(t * 3) * 0.08; spinWheels(cs, cs.car, dt, 60, 0.45); cp.set(cx - 7, gyR + 1.7, ROM.z + 7 - 7.5); cl.set(cx + 3, gyR + 1.3, ROM.z + 7); applyCam(cam, 52); setSub('Drifte durch die Gassen.'); }
+    else if (i === 5) { cp.set(ROM.x - 15 + e * 6, gyR + 3.6, ROM.z - 15 + e * 4); cl.set(ROM.x, gyR + 1.4, ROM.z); applyCam(cam, 52 - e * 6); setSub('Die Stadt lebt.'); }
+    else if (i === 6) { const jx = B.x + 95 - 230 * lt, jy = gyB + 32; cs.jet.group.position.set(jx, jy, B.z + 14); cs.jet.group.rotation.y = -Math.PI / 2; cs.jet.group.rotation.z = 0.25; cp.set(B.x - 4, gyB + 2.6, B.z - 8); cl.set(jx, jy, B.z + 14); applyCam(cam, 56); setSub('Heb ab.'); }
+    else if (i === 7) { cp.set(B.x - 20 + e * 6, gyB + 3.8, B.z + 6 + e * 4); cl.set(B.x, gyB + 1.6, B.z + 14); applyCam(cam, 48); setSub('Stürme die Militärbasis.'); }
+    else if (i === 8) { const vx = 400 + 320 * e; cp.set(vx, cs.villaY + 50, 150 - 112); cl.set(vx + 25, cs.villaY + 6, 150); applyCam(cam, 52); setSub('Luxus-Villen für die Bosse.'); }
+    else { const an = 1.0 + e * 0.4; cp.set(NP.x + Math.cos(an) * (400 - e * 90), 140 - e * 20, NP.z + Math.sin(an) * (400 - e * 90)); cl.set(NP.x, 20, NP.z); applyCam(cam, 58 - e * 6); setSub('ITALIEN EMPIRE'); }
     if (cs.t >= cs.dur) IE.endCutscene();
   }
 })();
