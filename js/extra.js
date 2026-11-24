@@ -1999,9 +1999,46 @@ function bailOut() {
 }
 // ----- Gleiter (kaufbar; funktioniert als Fallschirm, schneller beim Nach-unten-Schauen) -----
 const GLIDERS = {
-  schirm:   { name: 'Gleitschirm',  price: 120000, speed: 15, dive: 26, color: 0x3a9bff, delta: false },
-  delta:    { name: 'Deltaflieger', price: 280000, speed: 22, dive: 44, color: 0xf2c230, delta: true },
-  wingsuit: { name: 'Wingsuit',     price: 600000, speed: 16, dive: 64, color: 0xc8101a, delta: true, suit: true }
+  // ---- Standard ----
+  schirm:    { name: 'Gleitschirm',       price: 120000,  speed: 15, dive: 26, color: 0x3a9bff, cat: 'Standard' },
+  delta:     { name: 'Deltaflieger',      price: 280000,  speed: 22, dive: 44, color: 0xf2c230, delta: true, cat: 'Standard' },
+  wingsuit:  { name: 'Wingsuit',          price: 600000,  speed: 16, dive: 64, color: 0xc8101a, delta: true, suit: true, cat: 'Standard' },
+  // ---- Farben ----
+  gschwarz:  { name: 'Nachtschirm',       price: 150000,  speed: 15, dive: 28, color: 0x1a1a1f, cat: 'Farben' },
+  ggold:     { name: 'Gold-Gleiter',      price: 2500000, speed: 24, dive: 48, color: 0xd6b04a, delta: true, cat: 'Farben' },
+  gregenbogen:{ name: 'Regenbogen-Gleiter',price: 1500000, speed: 20, dive: 42, color: 0xff5fd2, delta: true, cat: 'Farben' },
+  gneon:     { name: 'Neon-Gleiter',      price: 800000,  speed: 18, dive: 36, color: 0x48e07a, cat: 'Farben' },
+  // ---- Jahreszeiten ----
+  gsommer:   { name: 'Sommer-Gleiter',    price: 400000,  speed: 17, dive: 32, color: 0x18c2d8, cat: 'Jahreszeiten' },
+  gherbst:   { name: 'Herbst-Gleiter',    price: 400000,  speed: 17, dive: 32, color: 0xc8641a, cat: 'Jahreszeiten' },
+  gwinter:   { name: 'Winter-Gleiter',    price: 400000,  speed: 16, dive: 30, color: 0xcfe8ff, cat: 'Jahreszeiten' },
+  gxmas:     { name: 'Weihnachts-Gleiter',price: 500000,  speed: 18, dive: 34, color: 0xc8102e, delta: true, cat: 'Jahreszeiten' },
+  // ---- Pack-Themen ----
+  gscifi:    { name: 'Sci-Fi-Gleiter',    price: 1500000, speed: 24, dive: 56, color: 0x18e0e0, delta: true, suit: true, cat: 'Pack-Themen' },
+  gmilitaer: { name: 'Militär-Gleiter',   price: 1200000, speed: 22, dive: 46, color: 0x59613d, delta: true, cat: 'Pack-Themen' },
+  gitalien:  { name: 'Italien-Gleiter',   price: 600000,  speed: 20, dive: 40, color: 0x2e8b57, delta: true, cat: 'Pack-Themen' },
+  gsilvester:{ name: 'Silvester-Gleiter', price: 900000,  speed: 20, dive: 42, color: 0xf2c230, cat: 'Pack-Themen' },
+  ghalloween:{ name: 'Halloween-Gleiter', price: 1000000, speed: 20, dive: 44, color: 0xe8761a, delta: true, cat: 'Pack-Themen' },
+  gformel1:  { name: 'Formel-1-Gleiter',  price: 1800000, speed: 26, dive: 52, color: 0xc8101a, delta: true, suit: true, cat: 'Pack-Themen' },
+  gluxus:    { name: 'Luxus-Gleiter',     price: 3500000, speed: 24, dive: 50, color: 0xd6b04a, delta: true, suit: true, cat: 'Pack-Themen' },
+  gengel:    { name: 'Engel-Gleiter',     price: 1200000, speed: 18, dive: 38, color: 0xfbf8ef, cat: 'Pack-Themen' },
+  gteufel:   { name: 'Teufel-Gleiter',    price: 1200000, speed: 22, dive: 58, color: 0x7a0c14, delta: true, suit: true, cat: 'Pack-Themen' },
+  gpinguin:  { name: 'Pinguin-Gleiter',   price: 700000,  speed: 16, dive: 30, color: 0x1a1a1a, cat: 'Pack-Themen' },
+  gscholl:   { name: 'Scholl-SMP-Gleiter',price: 1000000, speed: 20, dive: 42, color: 0x1aa0a0, delta: true, cat: 'Pack-Themen' },
+  gavocado:  { name: 'Avocado-Gleiter',   price: 700000,  speed: 18, dive: 34, color: 0x6a9a3a, cat: 'Pack-Themen' },
+  gstarwars: { name: 'Sternjäger-Gleiter',price: 1500000, speed: 24, dive: 54, color: 0xcfd6dc, delta: true, suit: true, cat: 'Pack-Themen' },
+  gsith:     { name: 'Sith-Gleiter',      price: 1500000, speed: 24, dive: 60, color: 0x0b0b0d, delta: true, suit: true, cat: 'Pack-Themen' },
+  gbond:     { name: 'Agenten-Gleiter',   price: 1300000, speed: 22, dive: 50, color: 0xcfd6dc, delta: true, suit: true, cat: 'Pack-Themen' },
+  gjonathan: { name: 'Gauner-Gleiter',    price: 600000,  speed: 20, dive: 40, color: 0x1a1a1f, delta: true, cat: 'Pack-Themen' },
+  gatom:     { name: 'Atom-Gleiter',      price: 1600000, speed: 22, dive: 52, color: 0x6aff2a, delta: true, suit: true, cat: 'Pack-Themen' },
+  gfood:     { name: 'Burger-Gleiter',    price: 500000,  speed: 16, dive: 30, color: 0xd9a441, cat: 'Pack-Themen' },
+  // ---- Spezial ----
+  gfeuer:    { name: 'Feuer-Gleiter',     price: 2000000, speed: 24, dive: 62, color: 0xff6a20, delta: true, suit: true, cat: 'Spezial' },
+  geis:      { name: 'Eis-Gleiter',       price: 2000000, speed: 22, dive: 54, color: 0x9fd8f2, delta: true, suit: true, cat: 'Spezial' },
+  ggalaxie:  { name: 'Galaxie-Gleiter',   price: 3000000, speed: 26, dive: 66, color: 0x8a3cf0, delta: true, suit: true, cat: 'Spezial' },
+  gdrache:   { name: 'Drachen-Gleiter',   price: 2500000, speed: 24, dive: 58, color: 0x2e8b3a, delta: true, cat: 'Spezial' },
+  gphoenix:  { name: 'Phönix-Gleiter',    price: 3000000, speed: 26, dive: 64, color: 0xf24a1a, delta: true, suit: true, cat: 'Spezial' },
+  gblitz:    { name: 'Blitz-Gleiter',     price: 2200000, speed: 28, dive: 70, color: 0xf2f230, delta: true, suit: true, cat: 'Spezial' }
 };
 IE.gliders = GLIDERS;
 IE.gliderDef = id => GLIDERS[id];
@@ -2043,14 +2080,19 @@ function updateChute() {
 }
 function openGliders() {
   const g = G(), S = g.S; S.gliders = S.gliders || []; const rows = [];
-  rows.push({ name: 'Gleiter öffnen sich wie ein Fallschirm (in der Luft SPRUNG/Leertaste). Mit einem Gleiter fliegst du schneller, wenn du nach vorne-unten schaust (Kamera senken).', stat: '' });
+  rows.push({ name: 'Gleiter öffnen sich wie ein Fallschirm (in der Luft SPRUNG/Leertaste). Mit einem Gleiter fliegst du schneller, wenn du nach vorne-unten schaust (Kamera senken). ' + (S.gliders.length) + ' von ' + Object.keys(GLIDERS).length + ' Gleitern freigeschaltet.', stat: '' });
   if (S.glider && !S.gliders.includes(S.glider)) S.glider = '';
-  rows.push({ name: '🪂 Normaler Fallschirm', stat: S.glider === '' ? 'Aktiv' : 'Standard · gratis', btns: S.glider === '' ? [] : [{ label: 'Benutzen', buy: true, fn: () => { S.glider = ''; g.saveGame(); openGliders(); } }] });
-  for (const [id, gd] of Object.entries(GLIDERS)) {
-    const own = S.gliders.includes(id), act = S.glider === id;
-    rows.push({ name: '🪂 ' + gd.name, stat: (gd.delta ? (gd.suit ? 'Wingsuit – rasanter Sturzflug' : 'Deltaflieger – schnelles Gleiten') : 'Gleitschirm – sanftes Gleiten') + ' · Tempo ' + Math.round((gd.speed + gd.dive) * 3.6) + ' km/h',
-      btns: own ? (act ? [{ label: '✓ Aktiv' }] : [{ label: 'Benutzen', buy: true, fn: () => { S.glider = id; g.saveGame(); openGliders(); } }])
-        : [{ label: 'Kaufen · ' + g.fmt(gd.price), buy: true, off: S.money < gd.price, fn: () => { if (S.money < gd.price) return; S.money -= gd.price; S.gliders.push(id); S.glider = id; g.sfx('cash'); g.saveGame(); openGliders(); g.toast(gd.name + ' gekauft – öffnet sich jetzt statt des Fallschirms!', 3); } }] });
+  rows.push({ name: '🪂 Normaler Fallschirm', stat: S.glider === '' ? '✓ Aktiv' : 'Standard · gratis', btns: S.glider === '' ? [] : [{ label: 'Benutzen', buy: true, fn: () => { S.glider = ''; g.saveGame(); openGliders(); } }] });
+  const cats = {};
+  for (const [id, gd] of Object.entries(GLIDERS)) { const c = gd.cat || 'Gleiter'; (cats[c] = cats[c] || []).push([id, gd]); }
+  for (const cat of Object.keys(cats)) {
+    rows.push({ name: '— ' + cat + ' —', stat: '' });
+    for (const [id, gd] of cats[cat]) {
+      const own = S.gliders.includes(id), act = S.glider === id;
+      rows.push({ name: '🪂 ' + gd.name, stat: (gd.suit ? 'Wingsuit – rasanter Sturzflug' : gd.delta ? 'Deltaflieger – schnelles Gleiten' : 'Gleitschirm – sanftes Gleiten') + ' · Tempo bis ' + Math.round((gd.speed + gd.dive) * 3.6) + ' km/h',
+        btns: own ? (act ? [{ label: '✓ Aktiv' }] : [{ label: 'Benutzen', buy: true, fn: () => { S.glider = id; g.saveGame(); openGliders(); } }])
+          : [{ label: 'Kaufen · ' + g.fmt(gd.price), buy: true, off: S.money < gd.price, fn: () => { if (S.money < gd.price) return; S.money -= gd.price; S.gliders.push(id); S.glider = id; g.sfx('cash'); g.saveGame(); openGliders(); g.toast(gd.name + ' gekauft – öffnet sich jetzt statt des Fallschirms!', 3); } }] });
+    }
   }
   xModal('gliders', '🪂 Gleiter', rows, '');
 }
