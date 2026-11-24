@@ -2067,19 +2067,21 @@ function deliver(kind, id, air) {
 function openGarage() {
   const g = G(), S = g.S, rows = [];
   const cars = IE.cars.filter(c => (S.cars || []).includes(c.id)), helis = IE.helis.filter(h => (S.helis || []).includes(h.id)), boats = IE.boats.filter(b => (S.boats || []).includes(b.id)), planes = IE.planes.filter(p => (S.planes || []).includes(p.id));
-  for (const c of cars) {
-    const sellable = !c.pack && c.price > 0, sell = Math.round(c.price * 0.6);
-    const btns = [{ label: 'Tuning', fn: () => openTuning(c.id) }, { label: 'Herholen', buy: true, fn: () => deliver('car', c.id) }];
-    if (sellable) btns.push({ label: 'Verkaufen · ' + g.fmt(sell), fn: () => {
-      xModal('garage', c.name + ' verkaufen?', [{ name: c.name + ' wirklich verkaufen?', stat: 'Du bekommst ' + g.fmt(sell) + ' (60 % vom Kaufpreis). Das Auto gehört dir danach nicht mehr.', btns: [
-        { label: 'Ja, verkaufen', buy: true, fn: () => { S.cars = (S.cars || []).filter(id => id !== c.id); S.money += sell; g.sfx('cash'); g.saveGame(); g.closeModals(); g.banner('Auto verkauft', c.name, '+ ' + g.fmt(sell), 4); } },
-        { label: 'Abbrechen', fn: () => openGarage() } ] }], 'Erweiterungs-/Pack-Autos und geschenkte Autos können nicht verkauft werden.');
-    } });
-    rows.push({ name: '🚗 ' + c.name + (c.pack ? ' · 🎁 Pack' : ''), stat: 'Auto · ' + Math.round(c.speed * 3.6 * (1 + 0.07 * ((S.tune && S.tune[c.id] && S.tune[c.id].engine) || 0))) + ' km/h', btns });
-  }
-  for (const h of helis) rows.push({ name: '🚁 ' + h.name, stat: 'Helikopter', btns: [{ label: 'Herholen', buy: true, fn: () => deliver('heli', h.id) }] });
-  for (const p of planes) rows.push({ name: '✈ ' + p.name, stat: 'Flugzeug', btns: [{ label: 'Am Boden', fn: () => deliver('plane', p.id, false) }, { label: 'In der Luft', buy: true, fn: () => deliver('plane', p.id, true) }] });
-  for (const b of boats) rows.push({ name: '⛵ ' + b.name, stat: 'Boot · kommt ins nächste Wasser', btns: [{ label: 'Herholen', buy: true, fn: () => deliver('boat', b.id) }] });
+  // Verkaufen-Button für jedes Fahrzeug – außer Pack-/Erweiterungs- und geschenkte Gratis-Fahrzeuge
+  const sellBtn = (def, listKey, nm) => {
+    if (def.pack || !(def.price > 0)) return null;
+    const sell = Math.round(def.price * 0.6);
+    return { label: 'Verkaufen · ' + g.fmt(sell), fn: () => {
+      xModal('garage', nm + ' verkaufen?', [{ name: 'Willst du ' + nm + ' wirklich verkaufen?', stat: 'Du bekommst ' + g.fmt(sell) + ' (60 % vom Kaufpreis). Das Fahrzeug gehört dir danach nicht mehr.', btns: [
+        { label: 'Ja, verkaufen', buy: true, fn: () => { S[listKey] = (S[listKey] || []).filter(id => id !== def.id); S.money += sell; g.sfx('cash'); g.saveGame(); g.closeModals(); g.banner('Verkauft', nm, '+ ' + g.fmt(sell), 4); } },
+        { label: 'Nein, abbrechen', fn: () => openGarage() } ] }], 'Erweiterungs-/Pack-Fahrzeuge und geschenkte Fahrzeuge können nicht verkauft werden.');
+    } };
+  };
+  const withSell = (btns, def, listKey, nm) => { const s = sellBtn(def, listKey, nm); if (s) btns.push(s); return btns; };
+  for (const c of cars) rows.push({ name: '🚗 ' + c.name + (c.pack ? ' · 🎁 Pack' : ''), stat: 'Auto · ' + Math.round(c.speed * 3.6 * (1 + 0.07 * ((S.tune && S.tune[c.id] && S.tune[c.id].engine) || 0))) + ' km/h', btns: withSell([{ label: 'Tuning', fn: () => openTuning(c.id) }, { label: 'Herholen', buy: true, fn: () => deliver('car', c.id) }], c, 'cars', c.name) });
+  for (const h of helis) rows.push({ name: '🚁 ' + h.name + (h.pack ? ' · 🎁 Pack' : ''), stat: 'Helikopter', btns: withSell([{ label: 'Herholen', buy: true, fn: () => deliver('heli', h.id) }], h, 'helis', h.name) });
+  for (const p of planes) rows.push({ name: '✈ ' + p.name + (p.pack ? ' · 🎁 Pack' : ''), stat: 'Flugzeug', btns: withSell([{ label: 'Am Boden', fn: () => deliver('plane', p.id, false) }, { label: 'In der Luft', buy: true, fn: () => deliver('plane', p.id, true) }], p, 'planes', p.name) });
+  for (const b of boats) rows.push({ name: '⛵ ' + b.name + (b.pack ? ' · 🎁 Pack' : ''), stat: 'Boot · kommt ins nächste Wasser', btns: withSell([{ label: 'Herholen', buy: true, fn: () => deliver('boat', b.id) }], b, 'boats', b.name) });
   if (!rows.length) rows.push({ name: 'Noch keine Fahrzeuge', stat: 'Kauf dir Autos, Helikopter, Boote oder Flugzeuge in den Läden – dann kannst du sie hier überall herholen.' });
   rows.push({ name: '🏁 Schnellreise zur Rennstrecke', stat: 'Autodromo dell\'Adriatico · € 2.000', btns: [{ label: 'Hinreisen', off: S.money < 2000, fn: () => { if (R && R.state !== 'lobby') return; S.money -= 2000; g.closeModals(); const sp = IE.raceStart; g.teleportTo(sp.x + 18, IE.groundH(sp.x, sp.z), sp.z + 18); } }] });
   for (const v of IE.villas.filter(v => (S.villas || []).includes(v.id))) rows.push({ name: '⌂ Nach Hause: ' + v.name, stat: 'kostenlos', btns: [{ label: 'Hinreisen', fn: () => { g.closeModals(); g.teleportTo(v.gate.x, v.y, v.gate.z); } }] });
