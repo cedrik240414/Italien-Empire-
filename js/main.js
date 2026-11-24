@@ -1496,7 +1496,7 @@ function respawn() {
   P.interior = null;
   game.dead = false; P.health = maxHP(); game.wanted = 0;
   const { c } = cityOf(P.pos.x, P.pos.z);
-  const lost = Math.min(S.money, Math.round(S.money * 0.05)); S.money -= lost;
+  const lost = Math.min(S.money, Math.min(10000, Math.round(S.money * 0.01))); S.money -= lost;
   const home = IE.villaHome && IE.villaHome(P.pos);
   if (home) placePlayer(home.gate.x, home.gate.z + 3); else placePlayer(c.cx + 30, c.cz + 55); P.h.group.rotation.set(0, 0, 0);
   for (const v of IE.vehicles) if (v.police) v.removeMe = true;
