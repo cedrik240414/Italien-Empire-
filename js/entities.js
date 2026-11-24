@@ -250,6 +250,46 @@ IE.makeMoto = function (color) {
   return { group: outer, wheels: [rear, rear, front, front], L: 2.9, W: 0.9, bodyMat, siren: null, inner: g, lean, topY: 1.3, bottom: 0, moto: true };
 };
 
+// Custom-Aufsätze für Pack-Flugzeuge
+IE.decoratePlane = function (m, def) {
+  if (!m || !m.inner || !def) return;
+  const g = m.inner, L = c => new T.MeshLambertMaterial({ color: c }), E = c => new T.MeshBasicMaterial({ color: c });
+  const bx = (w, h, d, c, x, y, z, ry, rz) => { const o = new T.Mesh(new T.BoxGeometry(w, h, d), typeof c === 'number' ? L(c) : c); o.position.set(x, y, z); if (ry) o.rotation.y = ry; if (rz) o.rotation.z = rz; g.add(o); return o; };
+  const sp = (r, c, x, y, z) => { const o = new T.Mesh(new T.SphereGeometry(r, 14, 10), typeof c === 'number' ? L(c) : c); o.position.set(x, y, z); g.add(o); return o; };
+  const cy = (r0, r1, h, c, x, y, z, axis) => { const o = new T.Mesh(new T.CylinderGeometry(r0, r1, h, 20), typeof c === 'number' ? L(c) : c); if (axis === 'x') o.rotation.z = Math.PI / 2; if (axis === 'z') o.rotation.x = Math.PI / 2; o.position.set(x, y, z); g.add(o); return o; };
+  const cen = (m.gearH || 1.3) + 1.2;
+  switch (def.id) {
+    case 'ufojet': { const disc = cy(6, 6, 0.5, E(0x18e0e0), 0, cen, 0, 'y'); disc.scale.y = 0.4; const dome = sp(2.2, new T.MeshStandardMaterial({ color: 0x9fe8ff, metalness: 0.4, roughness: 0.1, transparent: true, opacity: 0.6 }), 0, cen + 0.8, 0); dome.scale.y = 0.7; const ring = new T.Mesh(new T.TorusGeometry(6, 0.3, 8, 28), E(0x8a3cf0)); ring.position.set(0, cen, 0); ring.rotation.x = Math.PI / 2; g.add(ring); for (let i = 0; i < 8; i++) { const a = i * 0.78; sp(0.3, E(0xff5fd2), Math.cos(a) * 5.5, cen - 0.3, Math.sin(a) * 5.5); } break; }
+    case 'batplane': { for (const sz of [-1, 1]) { for (let k = 0; k < 3; k++) { const t = new T.Mesh(new T.ConeGeometry(0.9 - k * 0.22, 2.2, 3), L(0x1a1a1f)); t.rotation.x = Math.PI / 2; t.rotation.z = -Math.PI / 2; t.position.set(-1, cen - 0.2, sz * (3 + k * 1.6)); g.add(t); } } sp(0.3, E(0xff2020), 5.5, cen + 0.3, 0.6); sp(0.3, E(0xff2020), 5.5, cen + 0.3, -0.6); break; }
+    case 'fireworkjet': { for (const sz of [-1, 1]) for (const o of [-1, 1]) { cy(0.3, 0.3, 2.5, 0xf2c230, -2, cen - 0.8, sz * (3 + o * 0.6), 'x'); const tip = new T.Mesh(new T.ConeGeometry(0.3, 0.7, 10), L(0xc8101a)); tip.rotation.z = -Math.PI / 2; tip.position.set(-0.6, cen - 0.8, sz * (3 + o * 0.6)); g.add(tip); } break; }
+    case 'engelflug': { for (const sz of [-1, 1]) bx(0.2, 3, 5, 0xffffff, -1, cen + 1, sz * 3, sz * 0.3, 0); const halo = new T.Mesh(new T.TorusGeometry(1.4, 0.2, 8, 24), E(0xffe77a)); halo.position.set(5, cen + 2.2, 0); halo.rotation.x = Math.PI / 2; g.add(halo); break; }
+    case 'teufelflug': { for (const sz of [-1, 1]) { const h = new T.Mesh(new T.ConeGeometry(0.4, 1.5, 8), L(0xc8101a)); h.position.set(5.5, cen + 1, sz * 0.6); h.rotation.z = 0.3 * sz; g.add(h); } for (const sz of [-1, 1]) bx(0.2, 2.5, 4, 0x1a0a0a, -1, cen + 0.8, sz * 3, sz * 0.2, 0); break; }
+    case 'pizzajet': { cy(2.6, 2.6, 0.2, 0xe8b45a, 0, cen + 1.6, 0, 'y'); cy(2.3, 2.3, 0.22, 0xc83a1a, 0, cen + 1.7, 0, 'y'); for (let i = 0; i < 8; i++) { const a = i * 0.78; sp(0.25, 0xa01010, Math.cos(a) * 1.4, cen + 1.85, Math.sin(a) * 1.4); } break; }
+    case 'xwing': { for (const sz of [-1, 1]) for (const o of [-1, 1]) { bx(3.5, 0.15, 0.9, 0xcfd6dc, -2, cen + o * 0.9, sz * 3.5, sz * 0.3, 0); cy(0.12, 0.12, 3, 0x1a1a1f, -3.5, cen + o * 0.9, sz * 5.2, 'x'); } break; }
+    case 'tiefighter': { for (const sz of [-1, 1]) { const panel = new T.Mesh(new T.CylinderGeometry(3, 3, 0.25, 6), L(0x2a2a2e)); panel.rotation.x = Math.PI / 2; panel.rotation.z = Math.PI / 2; panel.position.set(-1, cen, sz * 3.2); g.add(panel); } sp(1.3, new T.MeshStandardMaterial({ color: 0x111214, metalness: 0.5, roughness: 0.3 }), 2, cen, 0); break; }
+    case 'atomjet': { sp(0.9, E(0x7dff4a), -1, cen + 1.3, 0); const ring = new T.Mesh(new T.TorusGeometry(1.6, 0.2, 8, 20), E(0x3fdd2a)); ring.position.set(-1, cen + 1.3, 0); ring.rotation.x = Math.PI / 2.3; g.add(ring); break; }
+    case 'spionjet': { for (const sz of [-1, 1]) bx(0.15, 1.2, 2.5, 0xd6b04a, -5, cen + 1.5, sz * 0.3, 0, 0.2); break; }
+  }
+};
+// Custom-Aufsätze für Pack-Yachten/-Boote
+IE.decorateBoat = function (m, def) {
+  if (!m || !m.inner || !def) return;
+  const g = m.inner, dt = (m.deckTop || 1.5), L2 = m.L, W2 = m.W;
+  const Lm = c => new T.MeshLambertMaterial({ color: c }), E = c => new T.MeshBasicMaterial({ color: c });
+  const bx = (w, h, d, c, x, y, z, ry) => { const o = new T.Mesh(new T.BoxGeometry(w, h, d), typeof c === 'number' ? Lm(c) : c); o.position.set(x, y, z); if (ry) o.rotation.y = ry; g.add(o); return o; };
+  const sp = (r, c, x, y, z) => { const o = new T.Mesh(new T.SphereGeometry(r, 14, 10), typeof c === 'number' ? Lm(c) : c); o.position.set(x, y, z); g.add(o); return o; };
+  const cy = (r0, r1, h, c, x, y, z, axis) => { const o = new T.Mesh(new T.CylinderGeometry(r0, r1, h, 16), typeof c === 'number' ? Lm(c) : c); if (axis === 'x') o.rotation.z = Math.PI / 2; if (axis === 'z') o.rotation.x = Math.PI / 2; o.position.set(x, y, z); g.add(o); return o; };
+  switch (def.id) {
+    case 'ghostyacht': { const ghost = sp(2.0, new T.MeshStandardMaterial({ color: 0xf2f2f2, transparent: true, opacity: 0.7 }), -L2 * 0.1, dt + 5, 0); ghost.scale.y = 1.3; for (const sz of [-1, 1]) sp(0.3, 0x111111, -L2 * 0.1 + 0.6, dt + 5.6, sz * 0.6); const glow = cy(W2 * 0.5, W2 * 0.5, 0.3, E(0x8a3cf0), 0, dt, 0, 'y'); glow.material.transparent = true; glow.material.opacity = 0.4; break; }
+    case 'partyyacht': { sp(1.0, new T.MeshStandardMaterial({ color: 0xcfd6dc, metalness: 0.9, roughness: 0.1 }), -L2 * 0.1, dt + 5, 0); for (const sz of [-1, 1]) for (let i = 0; i < 5; i++) sp(0.2, E([0xff2020, 0xf2c230, 0x18c2d8, 0x48e07a, 0xff5fd2][i]), -L2 * 0.4 + i * L2 * 0.2, dt + 2 + Math.sin(i) * 0.5, sz * W2 * 0.45); break; }
+    case 'sunyacht': { cy(0.12, 0.12, 3, 0xdddddd, L2 * 0.15, dt + 2, 0, 'y'); const umb = new T.Mesh(new T.ConeGeometry(2.5, 1.2, 16), Lm(0xf2a61a)); umb.position.set(L2 * 0.15, dt + 3.6, 0); g.add(umb); cy(0.2, 0.2, 2.5, 0x7a4a26, -L2 * 0.2, dt + 2, 1, 'y'); for (let i = 0; i < 5; i++) { const a = i * 1.25; bx(1.8, 0.1, 0.5, 0x2e8b3a, -L2 * 0.2 + Math.cos(a) * 0.9, dt + 3.3, 1 + Math.sin(a) * 0.9, a); } break; }
+    case 'eisboot': { bx(1.5, 0.1, 2.5, 0xffffff, -L2 * 0.1, dt + 0.6, 0); const be = new T.Mesh(new T.ConeGeometry(0.25, 0.7, 8), Lm(0xf2a020)); be.rotation.z = -Math.PI / 2; be.position.set(L2 * 0.15, dt + 0.8, 0); g.add(be); sp(0.8, 0x1a1a1a, -L2 * 0.05, dt + 1.2, 0); for (const sz of [-1, 1]) sp(0.12, 0xffffff, L2 * 0.05, dt + 1.4, sz * 0.3); break; }
+    case 'hoverboat': { const glow = cy(W2 * 0.6, W2 * 0.6, 0.3, E(0x18e0e0), 0, 0.1, 0, 'y'); glow.material.transparent = true; glow.material.opacity = 0.5; const dome = sp(1.2, new T.MeshStandardMaterial({ color: 0x9fe8ff, transparent: true, opacity: 0.6 }), 0, dt + 1, 0); dome.scale.y = 0.6; break; }
+    case 'sushiyacht': { cy(1.2, 1.2, 0.8, 0xf2f0e8, -L2 * 0.1, dt + 1, 0, 'y'); cy(1.0, 1.0, 0.4, 0xf27a4a, -L2 * 0.1, dt + 1.6, 0, 'y'); bx(2.0, 0.15, 1.0, 0x1a3a2a, -L2 * 0.1, dt + 1.85, 0); break; }
+    case 'spionyacht': { cy(0.06, 0.06, 2.5, 0x111111, -L2 * 0.2, dt + 2, 0, 'y'); const dish = new T.Mesh(new T.SphereGeometry(0.6, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), Lm(0xcfd6dc)); dish.position.set(-L2 * 0.2, dt + 3.2, 0); g.add(dish); break; }
+  }
+};
+
 // ---------- Boote ----------
 IE.makeBoat = function (def) {
   const outer = new T.Group(), g = new T.Group(); outer.add(g); g.rotation.y = -Math.PI / 2;
@@ -299,10 +339,11 @@ IE.makeBoat = function (def) {
     const seat = new T.Mesh(new T.BoxGeometry(1.4, 0.35, 0.5), lam(0x222222)); seat.position.set(-0.3, top + 0.25, 0); g.add(seat);
     const bar = new T.Mesh(new T.BoxGeometry(0.2, 0.5, 0.8), am); bar.position.set(0.6, top + 0.4, 0); g.add(bar);
   }
-  return { group: outer, L, W, H, bodyMat: hm };
+  return { group: outer, L, W, H, bodyMat: hm, inner: g, deckTop: top };
 };
 IE.spawnBoat = function (scene, defId, x, z, yaw) {
   const def = IE.boatById[defId], m = IE.makeBoat(def);
+  if (def.pack) try { IE.decorateBoat(m, def); } catch (e) { }
   const v = { type: 'boat', def, m, group: m.group, pos: new T.Vector3(x, 0, z), yaw: yaw || 0, speed: 0, steer: 0, pitch: 0, roll: 0,
     health: def.kind === 'yacht' ? 3000 : def.kind === 'sub' ? 2000 : 900, maxHealth: def.kind === 'yacht' ? 3000 : def.kind === 'sub' ? 2000 : 900, driver: null, dead: false, burn: 0, t: Math.random() * 10, depth: 0, pitch: 0, roll: 0 };
   m.group.position.copy(v.pos); scene.add(m.group); IE.vehicles.push(v); return v;
@@ -439,7 +480,7 @@ IE.makePlane = function (def) {
     for (const sz of [-1, 1]) { mesh(new T.CylinderGeometry(0.22, 0.22, 2.0, 10).rotateZ(Math.PI / 2), lam(0xe8e8e2), 0.2, yb + 0.1, sz * 3.6); const tip = new T.ConeGeometry(0.22, 0.6, 10); tip.rotateZ(-Math.PI / 2); mesh(tip, lam(0xc8372d), 1.3, yb + 0.1, sz * 3.6); }
     // Fahrwerk
     for (const [gx, gz] of [[2.6, 0], [-1.6, 2.0], [-1.6, -2.0]]) { mesh(new T.CylinderGeometry(0.4, 0.4, 0.3, 10).rotateX(Math.PI / 2), dk, gx, 0.4, gz); mesh(new T.BoxGeometry(0.16, 1.0, 0.16), dk, gx, 0.9, gz); }
-    return { group: outer, L, W, H: gearH + 4, bodyMat: bm, prop: null, gearH };
+    return { group: outer, L, W, H: gearH + 4, bodyMat: bm, prop: null, gearH, inner: g };
   } else {
     L = 15; W = 10; gearH = 1.3;
     mesh(fus(11, 1.0, 0.8), bm, -1, gearH + 1.0, 0);
@@ -451,11 +492,12 @@ IE.makePlane = function (def) {
     mesh(new T.CylinderGeometry(0.7, 0.8, 0.8, 12).rotateZ(Math.PI / 2), dk, -6.9, gearH + 1.0, 0);
     for (const [gx, gz] of [[3.5, 0], [-1.5, 1.5], [-1.5, -1.5]]) { mesh(new T.CylinderGeometry(0.35, 0.35, 0.25, 10).rotateX(Math.PI / 2), dk, gx, 0.35, gz); mesh(new T.BoxGeometry(0.12, 1.1, 0.12), dk, gx, 0.9, gz); }
   }
-  return { group: outer, L, W, H: gearH + 2, bodyMat: bm, prop, gearH };
+  return { group: outer, L, W, H: gearH + 2, bodyMat: bm, prop, gearH, inner: g };
 };
 IE.spawnPlane = function (scene, defId, x, z, yaw, y) {
   const def = IE.planeById[defId], m = IE.makePlane(def);
   if (def.glider && IE.gliderPaint && IE.gliderPaint[defId] !== undefined && m.bodyMat) m.bodyMat.color.setHex(IE.gliderPaint[defId]);
+  if (def.pack) try { IE.decoratePlane(m, def); } catch (e) { }
   const v = { type: 'plane', def, m, group: m.group, pos: new T.Vector3(x, y !== undefined ? y : IE.supportH(x, z, 999), z), yaw: yaw || 0, pitch: 0, roll: 0, speed: 0, throttle: 0, vy: 0,
     health: def.kind === 'jet' ? 2500 : 1500, maxHealth: def.kind === 'jet' ? 2500 : 1500, driver: null, dead: false, burn: 0, onGround: true };
   m.group.position.copy(v.pos); m.group.rotation.y = v.yaw; scene.add(m.group); IE.vehicles.push(v); return v;
