@@ -904,15 +904,24 @@ function updatePlayer(dt) {
     if (swimMove || P.under) { P.h.armL.rotation.x = -P.phase; P.h.armR.rotation.x = -P.phase + Math.PI; P.h.legL.rotation.x = Math.sin(P.phase * 2) * 0.35; P.h.legR.rotation.x = -Math.sin(P.phase * 2) * 0.35; }
     else { P.h.armL.rotation.x = -1.4 + Math.sin(P.phase) * 0.4; P.h.armR.rotation.x = -1.4 - Math.sin(P.phase) * 0.4; P.h.armL.rotation.z = -0.5; P.h.armR.rotation.z = 0.5; P.h.legL.rotation.x = Math.sin(P.phase) * 0.3; P.h.legR.rotation.x = -Math.sin(P.phase) * 0.3; }
     if (swimMove || P.under) { P.h.armL.rotation.z = 0; P.h.armR.rotation.z = 0; }
-  } else { P.h.armL.rotation.z = 0; P.h.armR.rotation.z = 0; }
+  } else { P.h.armL.rotation.z = 0; P.h.armR.rotation.z = 0; P.h.legL.rotation.z = 0; P.h.legR.rotation.z = 0; }
   // Skydiving-Pose beim Fall aus großer Höhe (bäuchlings, Arme & Beine gespreizt – wie beim Fallschirmspringen)
   const skydive = !P.onGround && !P.swim && !P.chute && !P.veh && !P.onShip && !P.ride && (P.pos.y - g) > 18 && P.vy < -6;
+  const skydiveFwd = skydive && ml > 0.05;
   if (skydive) {
-    const sw = Math.sin(game.time * 1.6) * 0.14, sw2 = Math.cos(game.time * 1.3) * 0.1;
-    P.h.armL.rotation.set(-0.25 + sw, 0, -1.3); P.h.armR.rotation.set(-0.25 - sw, 0, 1.3);
-    P.h.legL.rotation.set(0.35, 0, -0.4 + sw2); P.h.legR.rotation.set(0.35, 0, 0.4 - sw2);
+    if (skydiveFwd) {
+      // Sturzflug nach vorne: Arme & Beine zusammenziehen, Kopf voran, etwas Vortrieb
+      const sw = Math.sin(game.time * 2.2) * 0.06;
+      P.h.armL.rotation.set(0.5 + sw, 0, -0.08); P.h.armR.rotation.set(0.5 - sw, 0, 0.08);
+      P.h.legL.rotation.set(0.04, 0, -0.04); P.h.legR.rotation.set(0.04, 0, 0.04);
+      P.pos.x += dx * 7 * dt; P.pos.z += dz * 7 * dt;
+    } else {
+      const sw = Math.sin(game.time * 1.6) * 0.14, sw2 = Math.cos(game.time * 1.3) * 0.1;
+      P.h.armL.rotation.set(-0.25 + sw, 0, -1.3); P.h.armR.rotation.set(-0.25 - sw, 0, 1.3);
+      P.h.legL.rotation.set(0.35, 0, -0.4 + sw2); P.h.legR.rotation.set(0.35, 0, 0.4 - sw2);
+    }
   }
-  P.h.group.rotation.set(skydive ? 1.5 : P.under ? 1.35 : swimMove ? 1.2 : P.swim ? 0.25 : 0, P.yaw, 0);
+  P.h.group.rotation.set(skydiveFwd ? 1.85 : skydive ? 1.5 : P.under ? 1.35 : swimMove ? 1.2 : P.swim ? 0.25 : 0, P.yaw, 0);
   if (skydive) P.h.group.position.y += 0.9;
   if (swimMove && !P.under) P.h.group.position.y += 0.85;
   if (P.under) { P.h.group.position.y += 0.9; P.o2 -= dt / 45; if (P.o2 <= 0) { P.o2 = 0; hurtPlayer(dt * 10); } }
