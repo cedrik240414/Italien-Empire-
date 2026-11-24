@@ -168,6 +168,35 @@ IE.makeCar = function (kind, color, police) {
   return { group: outer, wheels, L: P.L, W: P.W, bodyMat, siren, inner: g, topY: Math.max.apply(null, P.body.map(q => q[1])), bottom };
 };
 
+// Custom-Aufsätze für Pack-Fahrzeuge (damit die Erweiterungen cool/thematisch aussehen)
+IE.decorateCar = function (m, def) {
+  if (!m || !m.inner || !def) return;
+  const g = m.inner, ty = (m.topY || 1.2), fx = (m.L / 2);
+  const L = c => new T.MeshLambertMaterial({ color: c });
+  const E = c => new T.MeshBasicMaterial({ color: c }); // „leuchtend"
+  const bx = (w, h, d, c, x, y, z, rx, ry, rz) => { const o = new T.Mesh(new T.BoxGeometry(w, h, d), typeof c === 'number' ? L(c) : c); o.position.set(x, y, z); if (rx) o.rotation.x = rx; if (ry) o.rotation.y = ry; if (rz) o.rotation.z = rz; g.add(o); return o; };
+  const sp = (r, c, x, y, z) => { const o = new T.Mesh(new T.SphereGeometry(r, 14, 10), typeof c === 'number' ? L(c) : c); o.position.set(x, y, z); g.add(o); return o; };
+  const cy = (r0, r1, h, c, x, y, z, axis) => { const o = new T.Mesh(new T.CylinderGeometry(r0, r1, h, 18), typeof c === 'number' ? L(c) : c); if (axis === 'x') o.rotation.z = Math.PI / 2; if (axis === 'z') o.rotation.x = Math.PI / 2; o.position.set(x, y, z); g.add(o); return o; };
+  const id = def.id, roofY = ty + 0.1;
+  switch (id) {
+    case 'burgerauto': { const yb = roofY; cy(1.0, 0.95, 0.3, 0xd9a441, 0, yb + 0.15, 0, 'y'); cy(1.05, 1.05, 0.22, 0x5a3418, 0, yb + 0.4, 0, 'y'); bx(1.5, 0.08, 1.5, 0xf2a93b, 0, yb + 0.56, 0, 0, Math.PI / 4, 0); cy(1.1, 1.1, 0.14, 0x5fae3a, 0, yb + 0.66, 0, 'y'); const top = sp(1.0, 0xd9a441, 0, yb + 0.72, 0); top.scale.y = 0.6; for (let i = 0; i < 8; i++) { const a = i * 0.8; sp(0.06, 0xf5ecd0, Math.cos(a) * 0.5, yb + 0.95, Math.sin(a) * 0.5); } break; }
+    case 'pizzaauto': { const d = cy(1.3, 1.3, 0.12, 0xe8b45a, 0, roofY + 0.2, 0, 'y'); cy(1.15, 1.15, 0.14, 0xc83a1a, 0, roofY + 0.28, 0, 'y'); for (let i = 0; i < 6; i++) { const a = i * 1.05; sp(0.12, 0xa01010, Math.cos(a) * 0.7, roofY + 0.38, Math.sin(a) * 0.7); } break; }
+    case 'hotdogauto': { cy(0.45, 0.45, 2.4, 0xd9a441, 0, roofY + 0.3, 0, 'x'); cy(0.3, 0.3, 2.2, 0xcf6a2a, 0, roofY + 0.5, 0, 'x'); for (let i = -4; i <= 4; i++) bx(0.12, 0.05, 0.6, 0xf2c230, i * 0.22, roofY + 0.78, 0, 0, 0, -0.5); break; }
+    case 'avocadoauto': { const o = sp(1.1, 0x4f7a2a, 0, roofY + 0.4, 0); o.scale.set(1, 0.8, 1.3); sp(0.95, 0x8fbf5a, 0, roofY + 0.5, 0.2).scale.set(0.9, 0.7, 1.1); sp(0.4, 0x7a4a20, 0, roofY + 0.55, -0.3); break; }
+    case 'pinguinauto': { bx(1.2, 0.05, 2.2, 0xffffff, fx * 0.3, roofY + 0.02, 0); const be = new T.Mesh(new T.ConeGeometry(0.18, 0.5, 8), L(0xf2a020)); be.rotation.z = -Math.PI / 2; be.position.set(fx + 0.25, roofY - 0.2, 0); g.add(be); sp(0.12, 0x111111, fx - 0.2, roofY + 0.2, 0.35); sp(0.12, 0x111111, fx - 0.2, roofY + 0.2, -0.35); break; }
+    case 'reaktor': case 'atommonster': { const core = sp(0.55, E(0x7dff4a), 0, roofY + 0.5, 0); const ring = new T.Mesh(new T.TorusGeometry(0.9, 0.12, 8, 20), E(0x3fdd2a)); ring.position.set(0, roofY + 0.5, 0); ring.rotation.x = Math.PI / 2.3; g.add(ring); for (let i = 0; i < 3; i++) { const b = bx(0.5, 0.16, 0.16, 0xf2f230, 0, roofY + 0.5, 0, 0, i * 2.09, 0); } break; }
+    case 'ufo': case 'hover': { const dome = sp(0.8, new T.MeshStandardMaterial({ color: 0x9fe8ff, metalness: 0.4, roughness: 0.1, transparent: true, opacity: 0.6 }), 0, roofY + 0.2, 0); dome.scale.y = 0.7; const disc = cy(1.9, 1.9, 0.22, E(0x18e0e0), 0, m.bottom + 0.1, 0, 'y'); disc.material.transparent = true; disc.material.opacity = 0.5; for (let i = 0; i < 6; i++) { const a = i * 1.05; sp(0.14, E(0xff5fd2), Math.cos(a) * 1.7, m.bottom + 0.1, Math.sin(a) * 1.7); } break; }
+    case 'pumpkin': { const p = sp(1.0, 0xe8761a, 0, roofY + 0.5, 0); p.scale.y = 0.85; bx(0.2, 0.5, 0.2, 0x3a6a2a, 0, roofY + 1.25, 0); bx(0.5, 0.18, 0.08, E(0xffd060), 0, roofY + 0.6, 0.95); bx(0.5, 0.18, 0.08, E(0xffd060), 0, roofY + 0.6, -0.95); break; }
+    case 'hearse': { bx(2.2, 0.5, 0.9, 0x0b0b0d, -0.3, roofY + 0.3, 0); bx(1.4, 0.3, 0.6, 0xd6b04a, -0.3, roofY + 0.56, 0); bx(0.06, 0.5, 0.06, 0xd6b04a, -0.3, roofY + 0.85, 0); bx(0.3, 0.06, 0.06, 0xd6b04a, -0.3, roofY + 0.78, 0); break; }
+    case 'firework': { for (const sz of [-1, 1]) { cy(0.14, 0.14, 1.0, 0xf2c230, -fx * 0.6, roofY + 0.2, sz * 0.5, 'y'); const tip = new T.Mesh(new T.ConeGeometry(0.14, 0.3, 8), L(0xc8101a)); tip.position.set(-fx * 0.6, roofY + 0.85, sz * 0.5); g.add(tip); } break; }
+    case 'engel': { for (const sz of [-1, 1]) { const w = bx(0.1, 1.4, 1.8, 0xffffff, -0.2, roofY + 0.5, sz * 1.0, 0, sz * 0.4, 0); } const halo = new T.Mesh(new T.TorusGeometry(0.5, 0.08, 8, 20), E(0xffe77a)); halo.position.set(fx * 0.3, roofY + 1.1, 0); halo.rotation.x = Math.PI / 2; g.add(halo); break; }
+    case 'teufel': { for (const sz of [-1, 1]) { const h = new T.Mesh(new T.ConeGeometry(0.16, 0.6, 8), L(0xc8101a)); h.position.set(fx * 0.3, roofY + 0.4, sz * 0.4); h.rotation.z = sz * 0.3; g.add(h); } const tail = cy(0.1, 0.05, 1.4, 0x7a0c14, -fx - 0.4, roofY - 0.4, 0, 'x'); const tt = new T.Mesh(new T.ConeGeometry(0.2, 0.4, 6), L(0xc8101a)); tt.rotation.z = Math.PI / 2; tt.position.set(-fx - 1.1, roofY - 0.2, 0); g.add(tt); break; }
+    case 'minecart': { for (const sx of [-1, 1]) for (const sz of [-1, 1]) bx(0.18, 0.7, 0.18, 0x8a8f96, sx * (fx - 0.5), roofY + 0.35, sz * 0.7); bx(fx * 1.6, 0.14, 1.5, 0x6a6f76, 0, roofY + 0.6, 0); break; }
+    case 'podracer': { for (const sz of [-1, 1]) { cy(0.5, 0.35, 2.2, 0xe8761a, fx + 0.2, roofY, sz * 1.3, 'x'); const fl = new T.Mesh(new T.ConeGeometry(0.4, 1.0, 10), E(0xff8a20)); fl.rotation.z = Math.PI / 2; fl.position.set(-fx - 0.5, roofY, sz * 1.3); g.add(fl); } break; }
+    case 'f1rosso': case 'f1argento': { bx(0.2, 0.5, 2.0, def.color, -fx - 0.3, roofY + 0.1, 0); bx(1.0, 0.5, 0.12, def.color, fx + 0.3, m.bottom + 0.5, 0); break; }
+  }
+};
+
 // ---------- Panzer ----------
 IE.makeTank = function (color) {
   const outer = new T.Group(), g = new T.Group(); outer.add(g); g.rotation.y = -Math.PI / 2;
@@ -564,6 +593,7 @@ IE.spawnCar = function (scene, defId, x, z, yaw, opts) {
   opts = opts || {};
   const def = opts.def || IE.carById[defId];
   const m = IE.makeCar(def.kind, opts.color !== undefined ? opts.color : def.color, opts.police);
+  if (def.pack || def.id === 'burgerauto') try { IE.decorateCar(m, def); } catch (e) { }
   const v = { type: 'car', def, m, group: m.group, pos: new T.Vector3(x, IE.groundH(x, z) + 0.05, z), yaw: yaw || 0, speed: 0, vy: 0, steer: 0,
     pitch: 0, roll: 0, health: 1000, maxHealth: 1000, driver: null, police: !!opts.police, hostile: !!opts.hostile, traffic: !!opts.traffic,
     owned: !!opts.owned, ai: opts.ai || null, wheelRot: 0, dead: false, burn: 0 };
