@@ -314,7 +314,7 @@ function openWheel() {
     }
     const w = it.w, own = S.weapons[w.id] !== undefined;
     b.className = 'wslot' + (S.cur === w.id ? ' cur' : '') + (own ? '' : ' locked');
-    b.innerHTML = `${gunIcon(w.id)}<span class="wn">${w.name}</span><span class="wa">${own ? (w.id === 'faust' ? '∞' : S.weapons[w.id]) : 'Armeria · ' + fmt(w.price)}</span>`;
+    b.innerHTML = `${gunIcon(w.id)}<span class="wn">${w.name}</span><span class="wa">${own ? (w.id === 'faust' || w.melee ? '∞' : S.weapons[w.id]) : 'Armeria · ' + fmt(w.price)}</span>`;
     b.disabled = !own;
     b.addEventListener('pointerenter', () => { $('wheelInfo').innerHTML = `<b>${w.name}</b><br>${own ? 'Schaden ' + w.dmg + ' · Reichweite ' + w.range + ' m' : 'Nicht im Besitz'}`; });
     b.addEventListener('click', e => { e.stopPropagation(); S.cur = w.id; updateGunModel(); closeModals(); sfx('beep', 0.5); });
@@ -326,7 +326,7 @@ function openWheel() {
 function updateWheelBtn() {
   const w = curWeapon(); const k = w.id + ':' + (S.weapons[w.id] || 0);
   if (game.wbk === k) return; game.wbk = k;
-  $('wheelBtn').innerHTML = `${gunIcon(w.id)}<span>${w.id === 'faust' ? 'Fäuste' : S.weapons[w.id]}</span>`;
+  $('wheelBtn').innerHTML = `${gunIcon(w.id)}<span>${w.id === 'faust' ? 'Fäuste' : w.melee ? '∞' : S.weapons[w.id]}</span>`;
 }
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModals));
 document.querySelectorAll('.modal').forEach(m => m.addEventListener('pointerdown', e => { if (e.target === m) closeModals(); }));
@@ -339,7 +339,22 @@ function buildPlayerModel() {
   updateGunModel();
 }
 const GUN_LEN = { pistola: 0.28, revolver: 0.32, deagle: 0.36, mitra: 0.45, uzi: 0.38, cecchino: 1.1, heavysniper: 1.35, minigun: 1.0, rpg: 1.2, granat: 0.7, laser: 0.9, lmg: 1.0 };
-function updateGunModel() { const w = IE.weaponById[S.cur]; IE.setGunLen(P.h, !w || w.id === 'faust' ? 0 : GUN_LEN[w.id] || 0.8, w && (w.id === 'minigun' || w.id === 'rpg') ? 2.6 : w && w.id === 'granat' ? 2 : 1); }
+function updateGunModel() { const w = IE.weaponById[S.cur]; IE.setGunLen(P.h, !w || w.id === 'faust' || w.melee ? 0 : GUN_LEN[w.id] || 0.8, w && (w.id === 'minigun' || w.id === 'rpg') ? 2.6 : w && w.id === 'granat' ? 2 : 1); }
+// Feuer (Molotowcocktail): Flammen + Schaden über einige Sekunden
+IE.spawnFire = function (pos, r) {
+  const flames = [];
+  for (let i = 0; i < 12; i++) { const m = new T.Mesh(new T.SphereGeometry(0.5 + Math.random() * 0.6, 6, 5), new T.MeshBasicMaterial({ color: Math.random() < 0.5 ? 0xff6a20 : 0xffc030, transparent: true, opacity: 0.85, depthWrite: false })); m.position.set(pos.x + (Math.random() * 2 - 1) * r * 0.6, pos.y + 0.3 + Math.random(), pos.z + (Math.random() * 2 - 1) * r * 0.6); scene.add(m); flames.push(m); }
+  sfx('boom', 0.4); let t = 0;
+  const iv = setInterval(() => {
+    t += 0.12;
+    if (game.state !== 'play') { clearInterval(iv); flames.forEach(m => scene.remove(m)); return; }
+    flames.forEach(m => { m.position.y += 0.05; m.rotation.y += 0.2; m.material.opacity = Math.max(0, 0.85 - t * 0.12); m.scale.setScalar(1 + t * 0.25); });
+    for (const n of IE.npcs) if (!n.dead && n.pos.distanceTo(pos) < r) { damageNPC(n, 7, true); if (n.kind === 'ped') { n.state = 'flee'; n.timer = 8; } }
+    for (const v of IE.vehicles) if (!v.dead && v !== P.veh && v.pos.distanceTo(pos) < r) { v.health -= 20; v.shotT = game.time; }
+    if (!game.dead && P.pos.distanceTo(pos) < r && !P.veh) hurtPlayer(5);
+    if (t > 5) { clearInterval(iv); flames.forEach(m => { scene.remove(m); m.geometry.dispose(); m.material.dispose(); }); }
+  }, 120);
+};
 function placePlayer(x, z) {
   const p = { x, z };
   for (let i = 0; i < 4; i++) IE.pushOut(p, 0.5, IE.groundH(p.x, p.z), 1.8);
@@ -553,12 +568,12 @@ function playerShoot(dt) {
   if (P.veh && P.veh.def.torpedo) { if (!inp.fire || P.fireT > 0) return; P.fireT = 1.4; IE.fireTorpedo(P.veh); return; }
   if (P.veh && (P.veh.type === 'heli' || P.veh.type === 'plane')) { if (!P.veh.def.armed) return; w = HELI_GUN; }
   else {
-    if (P.veh && w.id === 'faust') return;
-    if (w.id !== 'faust' && S.weapons[w.id] <= 0) { if (P.fireT < -0.4) { toast('Keine Munition – kauf welche in einer Armeria'); P.fireT = 0.6; } return; }
+    if (P.veh && (w.id === 'faust' || w.melee)) return;
+    if (w.id !== 'faust' && !w.melee && S.weapons[w.id] <= 0) { if (P.fireT < -0.4) { toast('Keine Munition – kauf welche in einer Armeria'); P.fireT = 0.6; } return; }
   }
   P.fireT = w.rate;
   if (!w.auto && !isTouch) inp.fire = false;
-  if (w.id !== 'faust' && w.id !== 'heligun' && !game.ch.ammo) S.weapons[w.id]--;
+  if (w.id !== 'faust' && !w.melee && w.id !== 'heligun' && !game.ch.ammo) S.weapons[w.id]--;
   P.aimT = 1.2;
   // Strahl aus der Kamera
   camera.getWorldDirection(ray.d); ray.o.copy(camera.position);
@@ -599,16 +614,24 @@ function playerShoot(dt) {
     }
     let hitR = null;
     if (ONL()) { const rh = IEonline.rayHit(ray.o, d, skip, bestT); if (rh) { bestT = rh.t; hitR = rh.peer; hitN = null; hitV = null; } }
-    if (w.id === 'faust') {
+    if (w.id === 'faust' || w.melee) {
       if (ONL()) IEonline.melee(P.pos, P.yaw, w.dmg);
-      // Nahkampf: nächster NPC vor dem Spieler
-      const f = IE.fwd(P.yaw);
-      for (const n of IE.npcs) if (!n.dead && Math.hypot(n.pos.x - (P.pos.x + f.x), n.pos.z - (P.pos.z + f.z)) < 1.3) { damageNPC(n, w.dmg * dmgMult(), true); sfx('hit'); flashHit(); if (n.kind === 'ped') { n.state = 'flee'; n.timer = 8; } }
+      // Nahkampf: NPCs vor dem Spieler (Reichweite nach Waffe)
+      const f = IE.fwd(P.yaw), reach = w.range || 1.3;
+      for (const n of IE.npcs) if (!n.dead && Math.hypot(n.pos.x - (P.pos.x + f.x * (reach - 0.6)), n.pos.z - (P.pos.z + f.z * (reach - 0.6))) < reach) {
+        damageNPC(n, w.dmg * dmgMult(), true); sfx('hit'); flashHit();
+        if (w.knock) { n.pos.x += f.x * 3; n.pos.z += f.z * 3; n.vy = (n.vy || 0) + 6; } // Minecraft-Mace: Rückstoß
+        if (n.kind === 'ped') { n.state = 'flee'; n.timer = 8; }
+      }
+      // Nahkampf gegen Fahrzeuge
+      for (const v of IE.vehicles) if (!v.dead && v !== P.veh && Math.hypot(v.pos.x - (P.pos.x + f.x * reach), v.pos.z - (P.pos.z + f.z * reach)) < reach + 1.5) { v.health -= w.dmg * 1.5; v.shotT = game.time; }
+      sfx(w.knock ? 'boom' : 'hit', w.knock ? 0.5 : 1);
       return;
     }
     const end = ray.o.clone().addScaledVector(d, Math.min(bestT, w.range + skip));
     if (k === 0 || w.pellets > 1) tracer(muzzle, end, w.laser ? 0x5ff3ff : w.explode ? 0xffa040 : undefined, w.laser || w.explode ? 0.15 : undefined);
     if (w.explode && k === 0) { explosion(end.clone(), w.explode); if (ONL()) IEonline.blast(end, w.explode * 1.4, w.dmg); }
+    if (w.fire && k === 0 && IE.spawnFire) IE.spawnFire(end.clone(), 7);
     if (!hitN && !hitV && !hitR && bestT < w.range + skip && IE.addBulletHole) IE.addBulletHole(end, d);
     if (hitR) { IEonline.sendHit(hitR, w.dmg); flashHit(); }
     if (hitN) { damageNPC(hitN, w.dmg * (head ? 2.5 : 1) * dmgMult(), true); flashHit(); }
@@ -2124,6 +2147,28 @@ function boot() {
 $('bNew').addEventListener('click', () => startGame(false));
 $('bCont').addEventListener('click', () => startGame(true));
 function setAccount(slug, nick) { ACC = '_' + slug; SAVE_KEY = saveKeyFor(MODE); $('bCont').hidden = !store.get(); cloudPull(); }
+// ---------- Chat ----------
+function escHtml(s) { return String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])); }
+let chatTimer = null;
+IE.addChat = function (name, text, self) {
+  const log = $('chatLog'); if (!log) return;
+  const line = document.createElement('div'); line.className = 'chatLine';
+  line.innerHTML = '<b style="color:' + (self ? '#f2c230' : '#7fd0ff') + '">' + escHtml(name) + ':</b> ' + escHtml(text);
+  log.appendChild(line); while (log.children.length > 8) log.removeChild(log.firstChild);
+  log.style.opacity = '1'; clearTimeout(chatTimer); chatTimer = setTimeout(() => { log.style.opacity = '0.3'; }, 8000);
+};
+function myChatName() { return (window.IEaccount && IEaccount.nick) || (S.char && IE.chars[S.char] && IE.chars[S.char].name) || 'Du'; }
+function openChat() { const inp = $('chatInput'); if (!inp) return; inp.style.display = 'block'; inp.value = ''; if (locked) { try { document.exitPointerLock(); } catch (e) { } } setTimeout(() => inp.focus(), 0); }
+function closeChatInput() { const inp = $('chatInput'); if (inp) { inp.style.display = 'none'; inp.blur(); } }
+(function () {
+  const inp = $('chatInput'); if (inp) inp.addEventListener('keydown', e => { e.stopPropagation();
+    if (e.code === 'Enter') { const t = inp.value.trim(); if (t) { IE.addChat(myChatName(), t, true); if (ONL() && IEonline.sendChat) IEonline.sendChat(t); } closeChatInput(); }
+    else if (e.code === 'Escape') closeChatInput();
+  });
+  const cb = $('chatBtn'); if (cb) cb.addEventListener('click', () => { if (game.state === 'play') openChat(); });
+  addEventListener('keydown', e => { if (e.code === 'KeyT' && !e.repeat && game.state === 'play' && !uiOpen() && $('chatInput') && $('chatInput').style.display !== 'block' && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) { e.preventDefault(); openChat(); } });
+})();
+
 // ---------- Zuschauen (Spectate) ----------
 function startSpectate(r) {
   if (!r || !r.pos) { toast('Dieser Spieler ist gerade nicht erreichbar', 2); return; }

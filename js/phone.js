@@ -128,8 +128,35 @@
 
   function backBtn(fn) { const b = document.createElement('button'); b.className = 'pBack'; b.textContent = '‹ Zurück'; b.onclick = fn; return b; }
 
+  // ---------- Stream-Chat ----------
+  const CHAT_USERS = ['Leo', 'Giulia', 'MarcoTV', 'pixelninja', 'Sofia_99', 'Luca', 'BossGamer', 'Nina', 'il_capo', 'Enzo', 'Chiara', 'SpeedyFan', 'xXDarkXx', 'Mia', 'Dino', 'ragazzo'];
+  const CHAT_MSGS = ['Hallo!', 'lass gas 🔥', 'wie teuer war das Auto?', 'cooler Stream', 'wo bist du?', 'LOL', 'gg', 'mach mal ne Bank 🏦', 'erster!!', 'nice 😎', 'zeig die Villa', '🚀🚀🚀', 'krass', 'mehr davon', 'wie viel Geld hast du?', 'fahr schneller!', 'hahaha', '👑', 'POG', 'Italien Empire ist das beste', 'wie heißt das Pack?', 'W Stream'];
+  let streamChatIv = null;
+  function stopStreamChat() { if (streamChatIv) { clearInterval(streamChatIv); streamChatIv = null; } }
+  IE._stopStreamChat = stopStreamChat;
+  function buildStreamChat(host) {
+    stopStreamChat();
+    const g = G(), box = document.createElement('div'); box.className = 'streamChat';
+    const msgs = document.createElement('div'); msgs.className = 'scMsgs'; box.appendChild(msgs);
+    const inWrap = document.createElement('div'); inWrap.className = 'scIn';
+    const inp = document.createElement('input'); inp.maxLength = 120; inp.placeholder = 'Mitschreiben …';
+    const snd = document.createElement('button'); snd.textContent = '➤'; inWrap.appendChild(inp); inWrap.appendChild(snd); box.appendChild(inWrap); host.appendChild(box);
+    const esc = t => String(t).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+    const add = (nm, tx, self) => { const m = document.createElement('div'); m.className = 'scMsg'; m.innerHTML = '<b style="color:' + (self ? '#f2c230' : '#7fd0ff') + '">' + esc(nm) + '</b> ' + esc(tx); msgs.appendChild(m); while (msgs.children.length > 40) msgs.removeChild(msgs.firstChild); msgs.scrollTop = msgs.scrollHeight; };
+    const send = () => { const t = inp.value.trim(); if (!t) return; add((window.IEaccount && IEaccount.nick) || 'Du', t, true); inp.value = ''; if (g.S.channel) g.S.channel.subs = (g.S.channel.subs || 0) + (Math.random() < 0.3 ? 1 : 0); };
+    snd.onclick = send; inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.code === 'Enter') send(); });
+    for (let i = 0; i < 4; i++) add(CHAT_USERS[(Math.random() * CHAT_USERS.length) | 0], CHAT_MSGS[(Math.random() * CHAT_MSGS.length) | 0]);
+    streamChatIv = setInterval(() => { if ($('phoneModal').hidden && $('tvModal').hidden) { stopStreamChat(); return; } add(CHAT_USERS[(Math.random() * CHAT_USERS.length) | 0], CHAT_MSGS[(Math.random() * CHAT_MSGS.length) | 0]); }, 1300 + Math.random() * 1400);
+  }
+  IE._buildStreamChat = buildStreamChat;
+  function streamChatView() {
+    setTitle('💬 Stream-Chat'); const s = scr(); s.innerHTML = ''; s.appendChild(backBtn(() => { stopStreamChat(); home(); }));
+    const note = document.createElement('p'); note.style.cssText = 'font-size:13px;opacity:0.8'; note.textContent = streaming ? 'Dein Live-Chat – deine Zuschauer schreiben mit:' : 'Chat eines Live-Streams (starte selbst mit 🔴 Streamen oder schau in TubeHub zu):'; s.appendChild(note);
+    buildStreamChat(s);
+  }
+
   function home() {
-    const g = G(); setTitle('📱 Handy'); refreshCash();
+    const g = G(); stopStreamChat(); setTitle('📱 Handy'); refreshCash();
     const s = scr(); s.innerHTML = '';
     const apps = [
       { i: '🔴', n: streaming ? 'Live beenden' : 'Streamen', f: toggleStream },
@@ -138,6 +165,7 @@
       { i: '🐱', n: 'CatHub', f: () => catHub('phone') },
       { i: '📁', n: 'Meine Videos', f: myVideos },
       { i: '👥', n: 'Abos', f: subsApp },
+      { i: '💬', n: 'Stream-Chat', f: streamChatView },
       { i: '💰', n: 'Mein Kanal', f: channelApp },
       { i: '📺', n: 'Fernsehen', f: () => { $('phoneModal').hidden = true; openTV(); } }
     ];
@@ -214,7 +242,7 @@
 
   function playVideo(v, ch, back, host) {
     const g = G(); const parent = $('tvModal').hidden ? scr() : $('tvBody');
-    parent.innerHTML = ''; parent.appendChild(backBtn(back));
+    stopStreamChat(); parent.innerHTML = ''; parent.appendChild(backBtn(back));
     const wrap = document.createElement('div');
     const isMine = (ch && ch.mine) || (v && v.uploaded !== undefined && v.id && v.id[0] === 'v');
     let views = v.views || 0;
@@ -234,6 +262,7 @@
       btns.appendChild(sub);
     }
     parent.appendChild(btns);
+    if (v && v.live) buildStreamChat(parent); // Live-Stream: Chat anzeigen
     // Aufrufe zählen hoch während man guckt
     if (viewTimer) clearInterval(viewTimer);
     viewTimer = setInterval(() => { views += 1 + ((Math.random() * 8) | 0); const el = $('vViews'); if (el) el.textContent = fmtN(views); else { clearInterval(viewTimer); viewTimer = null; } if (v && v.uploaded) v.views = views; }, 1200);
@@ -363,5 +392,5 @@
     const tv = $('pTV'); if (tv && !tv._w) { tv._w = 1; tv.addEventListener('click', () => { const g = G(); if (g && g.game.state === 'play') openTV(); }); }
   }
   document.addEventListener('DOMContentLoaded', wire); wire();
-  IE.onCloseModals = function () { if (viewTimer) { clearInterval(viewTimer); viewTimer = null; } };
+  IE.onCloseModals = function () { if (viewTimer) { clearInterval(viewTimer); viewTimer = null; } if (IE._stopStreamChat) IE._stopStreamChat(); };
 })();

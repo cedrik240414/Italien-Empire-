@@ -771,3 +771,26 @@ IE.funpark = { x: -600, z: -2180, r: 120, h: 30 };
 IE.flatZones.push({ x: IE.funpark.x, z: IE.funpark.z, hw: 150, hd: 120, h: IE.funpark.h, f: 70 });
 IE.parkRoad = [[-852, -1770], [-810, -1870], [-740, -1970], [-680, -2060], [-640, -2130], [-600, -2175]];
 for (let i = 1; i < IE.parkRoad.length; i++) { const a = IE.parkRoad[i - 1], b = IE.parkRoad[i]; IE.flatZones.push({ x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, hw: Math.abs(b[0] - a[0]) / 2 + 11, hd: Math.abs(b[1] - a[1]) / 2 + 11, h: IE.funpark.h, f: 24, small: true }); }
+
+// ===================== MOLOTOWCOCKTAIL + JONATHAN-PACK =====================
+IE.weapons.push(
+  { id: 'molotov', name: 'Molotowcocktail', price: 8000, dmg: 12, rate: 0.9, range: 90, spread: 0.02, ammoPrice: 200, clip: 10, pellets: 1, auto: false, explode: 3, fire: true }
+);
+IE.cars.push(
+  { id: 'jonathanmobil', name: 'Jonathan Gauner-Mobil', price: 0, speed: 92, accel: 46, grip: 2.8, color: 0x1a1a1f, kind: 'sport', pack: 'jonathan' }
+);
+IE.weapons.push(
+  { id: 'stuhl', name: 'Stuhl', price: 0, dmg: 70, rate: 0.5, range: 2.8, spread: 0, ammoPrice: 0, clip: 9999, pellets: 1, auto: false, melee: true, pack: 'jonathan' },
+  { id: 'mace', name: 'Minecraft-Mace', price: 0, dmg: 200, rate: 0.9, range: 3.4, spread: 0, ammoPrice: 0, clip: 9999, pellets: 1, auto: false, melee: true, knock: true, pack: 'jonathan' }
+);
+IE.skins.push(
+  { id: 'jonathan', name: 'Jonathan der Gauner', cat: 'Pack', price: 0, fromPack: 'jonathan', look: { pants: 0x1b1b1b, jacket: 0x2a2a2e, shirt: 0x1a1a1a, skin: SK.mid, hair: 0x111111, mask: 'ski', maskColor: 0x1a1a1a, hands: 0x111111, chain: true } }
+);
+IE.carById = {}; IE.cars.forEach(c => IE.carById[c.id] = c);
+IE.weaponById = {}; IE.weapons.forEach(w => IE.weaponById[w.id] = w);
+IE.skinById = {}; IE.skins.forEach(s => IE.skinById[s.id] = s);
+IE.packs.push(
+  { id: 'jonathan', name: 'Jonathan', emoji: '🧢', color: 0x1a1a1f, price: 30000000, desc: 'Das Jonathan Gauner-Mobil, ein Stuhl und eine Minecraft-Mace als Nahkampfwaffen, Molotowcocktails und das Gauner-Outfit.',
+    cars: ['jonathanmobil'], weapons: ['stuhl', 'mace', 'molotov'], skins: ['jonathan'] }
+);
+IE.packById = {}; IE.packs.forEach(p => IE.packById[p.id] = p);

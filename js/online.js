@@ -37,7 +37,7 @@ O.join = async function (isPublic, code, title) {
   O.room = room; O.active = true;
   room.onPeers(onPeers, e => G().toast('Online-Verbindung beendet (' + e.code + ')', 4));
   room.on('hit', onHit); room.on('kill', onKill); room.on('job', onJob); room.on('jobstep', onJobStep); room.on('jobkill', onJobKill);
-  room.on('free', onFree);
+  room.on('free', onFree); room.on('chat', onChat);
   room.onConnection(c => { O.connected = c; updateBadge(); });
   room.on('admin', msg => { const d = msg.data || {}; if (msg.adm && d.moon !== undefined && window.IEaccount && IEaccount.setMoon) IEaccount.setMoon(d.moon !== 0); if (msg.adm && window.IEaccount && d.kick && d.kick === IEaccount.slug && IEaccount.onBanned) IEaccount.onBanned(); });
   await loadStats(); dirty = true; flushStats();
@@ -50,6 +50,8 @@ O.nearCarPeer = function (pos) {
   return best;
 };
 function onFree(msg) { if (msg && msg.to === O.mePeer && G().P.jailed && IE.releaseJailRemote) IE.releaseJailRemote(); }
+function onChat(msg) { const d = msg.data || {}; if (!d.t || msg.peer === O.mePeer) return; if (IE.addChat) IE.addChat((d.nm || 'Spieler').slice(0, 16), String(d.t).slice(0, 120)); }
+O.sendChat = function (text) { if (room && text) room.emit('chat', { t: String(text).slice(0, 120), nm: (window.IEaccount && IEaccount.nick) || 'Spieler' }).catch(() => { }); };
 O.freeNearbyJailed = function () {
   const P = G().P; if (P.jailed) return false;
   const pp = P.veh ? P.veh.pos : P.pos; let best = null, bd = 5;
