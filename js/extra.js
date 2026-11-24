@@ -2000,48 +2000,68 @@ function bailOut() {
 // ----- Gleiter (kaufbar; funktioniert als Fallschirm, schneller beim Nach-unten-Schauen) -----
 const GLIDERS = {
   // ---- Standard ----
-  schirm:    { name: 'Gleitschirm',       price: 120000,  speed: 15, dive: 26, color: 0x3a9bff, cat: 'Standard' },
-  delta:     { name: 'Deltaflieger',      price: 280000,  speed: 22, dive: 44, color: 0xf2c230, delta: true, cat: 'Standard' },
-  wingsuit:  { name: 'Wingsuit',          price: 600000,  speed: 16, dive: 64, color: 0xc8101a, delta: true, suit: true, cat: 'Standard' },
+  schirm:    { name: 'Gleitschirm',        price: 120000,  speed: 15, dive: 26, color: 0x3a9bff, type: 'para', cat: 'Standard' },
+  delta:     { name: 'Deltaflieger',       price: 280000,  speed: 22, dive: 44, color: 0xf2c230, color2: 0xe08020, type: 'delta', cat: 'Standard' },
+  wingsuit:  { name: 'Wingsuit',           price: 600000,  speed: 16, dive: 64, color: 0xc8101a, type: 'wingsuit', cat: 'Standard' },
+  hoverboard:{ name: 'Hoverboard',         price: 500000,  speed: 18, dive: 40, color: 0x2a2f3a, color2: 0x18e0e0, type: 'board', cat: 'Standard' },
+  // ---- Zum Draufstehen ----
+  surfbrett: { name: 'Flug-Surfbrett',     price: 450000,  speed: 17, dive: 38, color: 0x18c2d8, color2: 0xffffff, type: 'surf', cat: 'Zum Draufstehen' },
+  teppich:   { name: 'Fliegender Teppich', price: 800000,  speed: 18, dive: 40, color: 0x7a2a8a, color2: 0xd6b04a, type: 'carpet', cat: 'Zum Draufstehen' },
+  scheibe:   { name: 'Schwebe-Scheibe',    price: 900000,  speed: 20, dive: 44, color: 0x2a2f3a, color2: 0x18e0e0, type: 'disc', cat: 'Zum Draufstehen' },
+  wolke:     { name: 'Wolken-Gleiter',     price: 700000,  speed: 16, dive: 34, color: 0xffffff, type: 'cloud', cat: 'Zum Draufstehen' },
+  besen:     { name: 'Hexenbesen',         price: 600000,  speed: 18, dive: 40, color: 0xd8a040, color2: 0x8a2aa8, type: 'broom', cat: 'Zum Draufstehen' },
+  neonboard: { name: 'Neon-Board',         price: 800000,  speed: 20, dive: 44, color: 0x1a1a1f, color2: 0x48e07a, type: 'board', cat: 'Zum Draufstehen' },
+  goldboard: { name: 'Gold-Board',         price: 2500000, speed: 22, dive: 48, color: 0xd6b04a, color2: 0xfff0a0, type: 'board', cat: 'Zum Draufstehen' },
+  lavaboard: { name: 'Lava-Board',         price: 1800000, speed: 22, dive: 50, color: 0x2a1410, color2: 0xff5a20, type: 'board', cat: 'Zum Draufstehen' },
+  jetpack:   { name: 'Jetpack-Gleiter',    price: 2500000, speed: 26, dive: 60, color: 0xcfd6dc, color2: 0x1b3d6e, type: 'jet', cat: 'Zum Draufstehen' },
   // ---- Farben ----
-  gschwarz:  { name: 'Nachtschirm',       price: 150000,  speed: 15, dive: 28, color: 0x1a1a1f, cat: 'Farben' },
-  ggold:     { name: 'Gold-Gleiter',      price: 2500000, speed: 24, dive: 48, color: 0xd6b04a, delta: true, cat: 'Farben' },
-  gregenbogen:{ name: 'Regenbogen-Gleiter',price: 1500000, speed: 20, dive: 42, color: 0xff5fd2, delta: true, cat: 'Farben' },
-  gneon:     { name: 'Neon-Gleiter',      price: 800000,  speed: 18, dive: 36, color: 0x48e07a, cat: 'Farben' },
+  gschwarz:  { name: 'Nachtschirm',        price: 150000,  speed: 15, dive: 28, color: 0x1a1a1f, type: 'para', cat: 'Farben' },
+  ggold:     { name: 'Gold-Schirm',        price: 2000000, speed: 18, dive: 40, color: 0xd6b04a, color2: 0xfff0a0, type: 'para', cat: 'Farben' },
+  gregenbogen:{ name: 'Regenbogen-Schirm', price: 1500000, speed: 18, dive: 38, color: 0xff5fd2, color2: 0x18e0e0, type: 'para', cat: 'Farben' },
+  gsilber:   { name: 'Silber-Delta',       price: 900000,  speed: 22, dive: 46, color: 0xcfd6dc, color2: 0x8a9098, type: 'delta', cat: 'Farben' },
+  gpink:     { name: 'Pink-Teppich',       price: 700000,  speed: 18, dive: 38, color: 0xff5fd2, color2: 0xffffff, type: 'carpet', cat: 'Farben' },
+  gchrom:    { name: 'Chrom-Scheibe',      price: 1200000, speed: 20, dive: 44, color: 0xcfd6dc, color2: 0x18e0e0, type: 'disc', cat: 'Farben' },
   // ---- Jahreszeiten ----
-  gsommer:   { name: 'Sommer-Gleiter',    price: 400000,  speed: 17, dive: 32, color: 0x18c2d8, cat: 'Jahreszeiten' },
-  gherbst:   { name: 'Herbst-Gleiter',    price: 400000,  speed: 17, dive: 32, color: 0xc8641a, cat: 'Jahreszeiten' },
-  gwinter:   { name: 'Winter-Gleiter',    price: 400000,  speed: 16, dive: 30, color: 0xcfe8ff, cat: 'Jahreszeiten' },
-  gxmas:     { name: 'Weihnachts-Gleiter',price: 500000,  speed: 18, dive: 34, color: 0xc8102e, delta: true, cat: 'Jahreszeiten' },
+  gsommer:   { name: 'Sommer-Surfer',      price: 400000,  speed: 17, dive: 36, color: 0x18c2d8, color2: 0xf2c230, type: 'surf', cat: 'Jahreszeiten' },
+  gherbst:   { name: 'Herbst-Schirm',      price: 400000,  speed: 16, dive: 32, color: 0xc8641a, color2: 0xe8a030, type: 'para', cat: 'Jahreszeiten' },
+  gwinter:   { name: 'Winter-Board',       price: 400000,  speed: 16, dive: 34, color: 0xcfe8ff, color2: 0xffffff, type: 'board', cat: 'Jahreszeiten' },
+  gxmas:     { name: 'Weihnachts-Delta',   price: 500000,  speed: 18, dive: 36, color: 0xc8102e, color2: 0xd6b04a, type: 'delta', cat: 'Jahreszeiten' },
+  gfruehling:{ name: 'Frühlings-Teppich',  price: 400000,  speed: 16, dive: 32, color: 0x48e07a, color2: 0xff9fd0, type: 'carpet', cat: 'Jahreszeiten' },
   // ---- Pack-Themen ----
-  gscifi:    { name: 'Sci-Fi-Gleiter',    price: 1500000, speed: 24, dive: 56, color: 0x18e0e0, delta: true, suit: true, cat: 'Pack-Themen' },
-  gmilitaer: { name: 'Militär-Gleiter',   price: 1200000, speed: 22, dive: 46, color: 0x59613d, delta: true, cat: 'Pack-Themen' },
-  gitalien:  { name: 'Italien-Gleiter',   price: 600000,  speed: 20, dive: 40, color: 0x2e8b57, delta: true, cat: 'Pack-Themen' },
-  gsilvester:{ name: 'Silvester-Gleiter', price: 900000,  speed: 20, dive: 42, color: 0xf2c230, cat: 'Pack-Themen' },
-  ghalloween:{ name: 'Halloween-Gleiter', price: 1000000, speed: 20, dive: 44, color: 0xe8761a, delta: true, cat: 'Pack-Themen' },
-  gformel1:  { name: 'Formel-1-Gleiter',  price: 1800000, speed: 26, dive: 52, color: 0xc8101a, delta: true, suit: true, cat: 'Pack-Themen' },
-  gluxus:    { name: 'Luxus-Gleiter',     price: 3500000, speed: 24, dive: 50, color: 0xd6b04a, delta: true, suit: true, cat: 'Pack-Themen' },
-  gengel:    { name: 'Engel-Gleiter',     price: 1200000, speed: 18, dive: 38, color: 0xfbf8ef, cat: 'Pack-Themen' },
-  gteufel:   { name: 'Teufel-Gleiter',    price: 1200000, speed: 22, dive: 58, color: 0x7a0c14, delta: true, suit: true, cat: 'Pack-Themen' },
-  gpinguin:  { name: 'Pinguin-Gleiter',   price: 700000,  speed: 16, dive: 30, color: 0x1a1a1a, cat: 'Pack-Themen' },
-  gscholl:   { name: 'Scholl-SMP-Gleiter',price: 1000000, speed: 20, dive: 42, color: 0x1aa0a0, delta: true, cat: 'Pack-Themen' },
-  gavocado:  { name: 'Avocado-Gleiter',   price: 700000,  speed: 18, dive: 34, color: 0x6a9a3a, cat: 'Pack-Themen' },
-  gstarwars: { name: 'Sternjäger-Gleiter',price: 1500000, speed: 24, dive: 54, color: 0xcfd6dc, delta: true, suit: true, cat: 'Pack-Themen' },
-  gsith:     { name: 'Sith-Gleiter',      price: 1500000, speed: 24, dive: 60, color: 0x0b0b0d, delta: true, suit: true, cat: 'Pack-Themen' },
-  gbond:     { name: 'Agenten-Gleiter',   price: 1300000, speed: 22, dive: 50, color: 0xcfd6dc, delta: true, suit: true, cat: 'Pack-Themen' },
-  gjonathan: { name: 'Gauner-Gleiter',    price: 600000,  speed: 20, dive: 40, color: 0x1a1a1f, delta: true, cat: 'Pack-Themen' },
-  gatom:     { name: 'Atom-Gleiter',      price: 1600000, speed: 22, dive: 52, color: 0x6aff2a, delta: true, suit: true, cat: 'Pack-Themen' },
-  gfood:     { name: 'Burger-Gleiter',    price: 500000,  speed: 16, dive: 30, color: 0xd9a441, cat: 'Pack-Themen' },
+  gscifi:    { name: 'Sci-Fi-Scheibe',     price: 1500000, speed: 24, dive: 56, color: 0x2a2f3a, color2: 0x18e0e0, type: 'disc', cat: 'Pack-Themen' },
+  gmilitaer: { name: 'Militär-Delta',      price: 1200000, speed: 22, dive: 46, color: 0x59613d, color2: 0x3e4429, type: 'delta', cat: 'Pack-Themen' },
+  gitalien:  { name: 'Italien-Schirm',     price: 600000,  speed: 20, dive: 40, color: 0x2e8b57, color2: 0xffffff, type: 'para', cat: 'Pack-Themen' },
+  gsilvester:{ name: 'Silvester-Scheibe',  price: 900000,  speed: 20, dive: 44, color: 0x101018, color2: 0xf2c230, type: 'disc', cat: 'Pack-Themen' },
+  ghalloween:{ name: 'Halloween-Besen',    price: 1000000, speed: 20, dive: 44, color: 0xe8761a, color2: 0x1a1a1f, type: 'broom', cat: 'Pack-Themen' },
+  gformel1:  { name: 'Formel-1-Board',     price: 1800000, speed: 26, dive: 54, color: 0xc8101a, color2: 0xffffff, type: 'board', cat: 'Pack-Themen' },
+  gluxus:    { name: 'Luxus-Teppich',      price: 3500000, speed: 24, dive: 50, color: 0xd6b04a, color2: 0x101010, type: 'carpet', cat: 'Pack-Themen' },
+  gengel:    { name: 'Engel-Schirm',       price: 1200000, speed: 18, dive: 38, color: 0xfbf8ef, color2: 0xffe77a, type: 'para', cat: 'Pack-Themen' },
+  gteufel:   { name: 'Teufel-Wingsuit',    price: 1200000, speed: 22, dive: 58, color: 0x7a0c14, type: 'wingsuit', cat: 'Pack-Themen' },
+  gpinguin:  { name: 'Pinguin-Board',      price: 700000,  speed: 16, dive: 30, color: 0x1a1a1a, color2: 0xffffff, type: 'board', cat: 'Pack-Themen' },
+  gscholl:   { name: 'Scholl-SMP-Board',   price: 1000000, speed: 20, dive: 42, color: 0x1aa0a0, color2: 0x8fd0d0, type: 'board', cat: 'Pack-Themen' },
+  gavocado:  { name: 'Avocado-Surfer',     price: 700000,  speed: 18, dive: 34, color: 0x6a9a3a, color2: 0xd8c84a, type: 'surf', cat: 'Pack-Themen' },
+  gstarwars: { name: 'Sternjäger-Delta',   price: 1500000, speed: 24, dive: 54, color: 0xcfd6dc, color2: 0xc8101a, type: 'delta', cat: 'Pack-Themen' },
+  gsith:     { name: 'Sith-Wingsuit',      price: 1500000, speed: 24, dive: 60, color: 0x0b0b0d, type: 'wingsuit', cat: 'Pack-Themen' },
+  gbond:     { name: 'Agenten-Board',      price: 1300000, speed: 22, dive: 50, color: 0xcfd6dc, color2: 0x101014, type: 'board', cat: 'Pack-Themen' },
+  gjonathan: { name: 'Gauner-Board',       price: 600000,  speed: 20, dive: 40, color: 0x1a1a1f, color2: 0xc8101a, type: 'board', cat: 'Pack-Themen' },
+  gatom:     { name: 'Atom-Scheibe',       price: 1600000, speed: 22, dive: 52, color: 0x1a2a10, color2: 0x6aff2a, type: 'disc', cat: 'Pack-Themen' },
+  gfood:     { name: 'Burger-Teppich',     price: 500000,  speed: 16, dive: 30, color: 0xd9a441, color2: 0x5a3418, type: 'carpet', cat: 'Pack-Themen' },
+  gdubai:    { name: 'Dubai-Teppich',      price: 2000000, speed: 22, dive: 46, color: 0xd6b04a, color2: 0xffffff, type: 'carpet', cat: 'Pack-Themen' },
+  gmond:     { name: 'Mond-Scheibe',       price: 2000000, speed: 22, dive: 50, color: 0x9aa0a8, color2: 0xffffff, type: 'disc', cat: 'Pack-Themen' },
   // ---- Spezial ----
-  gfeuer:    { name: 'Feuer-Gleiter',     price: 2000000, speed: 24, dive: 62, color: 0xff6a20, delta: true, suit: true, cat: 'Spezial' },
-  geis:      { name: 'Eis-Gleiter',       price: 2000000, speed: 22, dive: 54, color: 0x9fd8f2, delta: true, suit: true, cat: 'Spezial' },
-  ggalaxie:  { name: 'Galaxie-Gleiter',   price: 3000000, speed: 26, dive: 66, color: 0x8a3cf0, delta: true, suit: true, cat: 'Spezial' },
-  gdrache:   { name: 'Drachen-Gleiter',   price: 2500000, speed: 24, dive: 58, color: 0x2e8b3a, delta: true, cat: 'Spezial' },
-  gphoenix:  { name: 'Phönix-Gleiter',    price: 3000000, speed: 26, dive: 64, color: 0xf24a1a, delta: true, suit: true, cat: 'Spezial' },
-  gblitz:    { name: 'Blitz-Gleiter',     price: 2200000, speed: 28, dive: 70, color: 0xf2f230, delta: true, suit: true, cat: 'Spezial' }
+  gfeuer:    { name: 'Feuer-Wingsuit',     price: 2000000, speed: 24, dive: 62, color: 0xff6a20, type: 'wingsuit', cat: 'Spezial' },
+  geis:      { name: 'Eis-Board',          price: 2000000, speed: 22, dive: 54, color: 0x9fd8f2, color2: 0xffffff, type: 'board', cat: 'Spezial' },
+  ggalaxie:  { name: 'Galaxie-Scheibe',    price: 3000000, speed: 26, dive: 66, color: 0x1a0a2a, color2: 0x8a3cf0, type: 'disc', cat: 'Spezial' },
+  gdrache:   { name: 'Drachen-Delta',      price: 2500000, speed: 24, dive: 58, color: 0x2e8b3a, color2: 0xc8101a, type: 'delta', cat: 'Spezial' },
+  gphoenix:  { name: 'Phönix-Wingsuit',    price: 3000000, speed: 26, dive: 64, color: 0xf24a1a, type: 'wingsuit', cat: 'Spezial' },
+  gblitz:    { name: 'Blitz-Board',        price: 2200000, speed: 28, dive: 70, color: 0x1a1a1f, color2: 0xf2f230, type: 'board', cat: 'Spezial' },
+  gzauber:   { name: 'Zauber-Teppich',     price: 2800000, speed: 22, dive: 48, color: 0x6a2a8a, color2: 0xd6b04a, type: 'carpet', cat: 'Spezial' },
+  ggeister:  { name: 'Geister-Wolke',      price: 1500000, speed: 18, dive: 40, color: 0xe8e8f0, type: 'cloud', cat: 'Spezial' },
+  gufo:      { name: 'UFO-Scheibe',        price: 3500000, speed: 24, dive: 56, color: 0x2a2f3a, color2: 0x18e0e0, type: 'disc', cat: 'Spezial' }
 };
 IE.gliders = GLIDERS;
 IE.gliderDef = id => GLIDERS[id];
+IE.buildGliderMesh = id => buildChuteMesh('g:' + id);
 function buildChuteMesh(kind) {
   const m = new T.Group();
   if (kind === 'chute') {
@@ -2051,19 +2071,60 @@ function buildChuteMesh(kind) {
     for (let k = 0; k < 8; k++) { const a = k / 8 * 6.28; m.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(0, 1.6, 0), new T.Vector3(Math.cos(a) * 2.6, 5.4, Math.sin(a) * 2.6)]), lm)); }
     return m;
   }
-  const gd = GLIDERS[kind.slice(2)] || GLIDERS.schirm, col = gd.color;
-  if (gd.delta) {
-    // Deltaflieger / Wingsuit: Dreiecks-Tragfläche über dem Spieler
-    const sh = new T.Shape(); sh.moveTo(0, 0); sh.lineTo(-3.4, -2.4); sh.lineTo(0, -0.7); sh.lineTo(3.4, -2.4); sh.closePath();
-    const wing = new T.Mesh(new T.ShapeGeometry(sh), new T.MeshLambertMaterial({ color: col, side: T.DoubleSide })); wing.rotation.x = -Math.PI / 2; wing.position.set(0, 3.4, 0.4); m.add(wing);
-    const edge = new T.Mesh(new T.BoxGeometry(0.1, 0.1, 6.8), new T.MeshLambertMaterial({ color: 0x333333 })); edge.position.set(0, 3.4, -2.0); edge.rotation.y = Math.PI / 2; m.add(edge);
-    m.add(new T.Mesh(new T.BoxGeometry(0.1, 2.0, 0.1), new T.MeshLambertMaterial({ color: 0x444444 }))).position.set(0, 2.2, 0.4);
-    if (gd.suit) for (const sz of [-1, 1]) { const f = new T.Mesh(new T.BoxGeometry(0.1, 0.05, 1.6), new T.MeshLambertMaterial({ color: col, side: T.DoubleSide })); f.position.set(sz * 0.8, 1.4, 0); m.add(f); }
-  } else {
-    // Gleitschirm: breite, flache Kappe
-    const can = new T.Mesh(new T.SphereGeometry(3.4, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2.6), new T.MeshLambertMaterial({ color: col, side: T.DoubleSide })); can.scale.set(1.5, 0.42, 0.8); can.position.y = 5; m.add(can);
-    const lm = new T.LineBasicMaterial({ color: 0x333333 });
-    for (let k = 0; k < 8; k++) { const a = k / 8 * 6.28; m.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(0, 1.6, 0), new T.Vector3(Math.cos(a) * 3.2, 5.0, Math.sin(a) * 1.8)]), lm)); }
+  const gd = GLIDERS[kind.slice(2)] || GLIDERS.schirm, col = gd.color, col2 = gd.color2 !== undefined ? gd.color2 : 0xf4f4f0, type = gd.type || 'para';
+  const L2 = c => new T.MeshLambertMaterial({ color: c, side: T.DoubleSide });
+  const GL = c => new T.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.55, side: T.DoubleSide });
+  const bx = (w, h, d, c, x, y, z, rx, ry, rz) => { const o = new T.Mesh(new T.BoxGeometry(w, h, d), typeof c === 'number' ? L2(c) : c); o.position.set(x, y, z); if (rx) o.rotation.x = rx; if (ry) o.rotation.y = ry; if (rz) o.rotation.z = rz; m.add(o); return o; };
+  const sph = (r, c, x, y, z) => { const o = new T.Mesh(new T.SphereGeometry(r, 12, 9), typeof c === 'number' ? L2(c) : c); o.position.set(x, y, z); m.add(o); return o; };
+  const cyl = (r0, r1, h, c, x, y, z, axis) => { const o = new T.Mesh(new T.CylinderGeometry(r0, r1, h, 16), typeof c === 'number' ? L2(c) : c); if (axis === 'x') o.rotation.z = Math.PI / 2; if (axis === 'z') o.rotation.x = Math.PI / 2; o.position.set(x, y, z); m.add(o); return o; };
+  const lm = new T.LineBasicMaterial({ color: 0x333333 });
+  const lines = (yTop, rad) => { for (let k = 0; k < 6; k++) { const a = k / 6 * 6.28; m.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(Math.cos(a) * 0.5, 1.7, Math.sin(a) * 0.4), new T.Vector3(Math.cos(a) * rad, yTop, Math.sin(a) * rad * 0.6)]), lm)); } };
+  if (type === 'para') {
+    // Gleitschirm: gewölbte Kappe aus Segmenten
+    const seg = 7, span = 6.5, h = 3.6, arc = 1.0;
+    for (let i = 0; i < seg; i++) { const a = (i / (seg - 1) - 0.5) * arc; const p = bx(span / seg + 0.05, 0.14, 2.0, i % 2 ? col : col2, Math.sin(a) * 6, h + (Math.cos(a) - Math.cos(arc / 2)) * 6, 0, 0, 0, -a); }
+    lines(h - 0.3, 3.0);
+  } else if (type === 'delta') {
+    // Deltaflieger: Dreiecksflügel tiefer über dem Spieler, Steuerbügel
+    for (const sz of [-1, 1]) { const sh = new T.Shape(); sh.moveTo(0, 0.9); sh.lineTo(sz * 3.4, -1.4); sh.lineTo(0, -1.9); sh.closePath(); const w = new T.Mesh(new T.ShapeGeometry(sh), L2(sz < 0 ? col : col2)); w.rotation.x = -Math.PI / 2; w.position.set(0, 2.5, 0); m.add(w); }
+    bx(0.12, 0.12, 5.6, 0x333333, 0, 2.5, -0.5, Math.PI / 2, 0, 0);
+    bx(0.1, 1.6, 0.1, 0x444444, 0, 1.7, 0.3); bx(1.8, 0.1, 0.1, 0x444444, 0, 1.0, 0.3);
+  } else if (type === 'wingsuit') {
+    // Wingsuit: Membranen zwischen Armen und Beinen
+    for (const sz of [-1, 1]) { const w = bx(1.7, 0.05, 1.4, col, sz * 1.0, 1.35, 0, 0, 0, sz * 0.2); }
+    bx(1.6, 0.05, 1.2, col, 0, 0.55, -0.3, 0.3);
+  } else if (type === 'board') {
+    // Hoverboard: Brett unter den Füßen, Leucht-Unterseite (zum Draufstehen)
+    bx(1.0, 0.2, 3.2, col, 0, 0.08, 0); for (const sz of [-1, 1]) bx(1.0, 0.45, 0.4, col, 0, 0.22, sz * 1.5, sz * 0.5, 0, 0);
+    bx(0.8, 0.12, 3.0, GL(col2 !== 0xf4f4f0 ? col2 : 0x18e0e0), 0, -0.05, 0);
+    for (const sz of [-1, 1]) cyl(0.18, 0.18, 0.25, GL(col2 !== 0xf4f4f0 ? col2 : 0x18e0e0), 0, -0.12, sz * 1.0, 'y');
+  } else if (type === 'surf') {
+    // Flug-Surfbrett (Draufstehen)
+    const sh = new T.Shape(); sh.moveTo(0, -1.9); sh.quadraticCurveTo(0.55, -0.9, 0.5, 0); sh.quadraticCurveTo(0.55, 1.3, 0, 2.0); sh.quadraticCurveTo(-0.55, 1.3, -0.5, 0); sh.quadraticCurveTo(-0.55, -0.9, 0, -1.9);
+    const geo = new T.ExtrudeGeometry(sh, { depth: 0.16, bevelEnabled: false }); geo.rotateX(-Math.PI / 2); const b = new T.Mesh(geo, L2(col)); b.position.y = 0.1; m.add(b);
+    bx(0.12, 0.17, 3.6, col2, 0, 0.2, 0); const fin = bx(0.1, 0.5, 0.5, col2, 0, -0.2, -1.6, 0.4, 0, 0);
+  } else if (type === 'carpet') {
+    // Fliegender Teppich (Draufstehen)
+    bx(2.2, 0.12, 3.2, col, 0, 0.12, 0); bx(2.35, 0.1, 3.35, col2, 0, 0.06, 0);
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) bx(0.35, 0.14, 0.35, col2, i * 0.65, 0.19, j * 1.0);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) cyl(0.05, 0.02, 0.4, col2, sx * 1.1, 0.0, sz * 1.6, 'y');
+  } else if (type === 'disc') {
+    // Schwebe-Scheibe / UFO-Board (Draufstehen)
+    cyl(1.7, 1.7, 0.2, col, 0, 0.12, 0, 'y'); const ring = new T.Mesh(new T.TorusGeometry(1.7, 0.14, 8, 24), GL(col2 !== 0xf4f4f0 ? col2 : 0x18e0e0)); ring.rotation.x = Math.PI / 2; ring.position.y = 0.1; m.add(ring);
+    cyl(1.3, 0.9, 0.4, GL(col2 !== 0xf4f4f0 ? col2 : 0xff5fd2), 0, -0.15, 0, 'y');
+    for (let i = 0; i < 6; i++) { const a = i * 1.05; sph(0.1, GL(0xffffff), Math.cos(a) * 1.5, 0.12, Math.sin(a) * 1.5); }
+  } else if (type === 'cloud') {
+    // Wolke (Draufstehen)
+    const pts = [[0, 0, 0, 1.0], [0.9, 0, 0.6, 0.8], [-0.9, 0, 0.6, 0.8], [0.7, 0, -0.8, 0.75], [-0.7, 0, -0.8, 0.75], [0, 0.1, 1.1, 0.7]];
+    for (const [x, y, z, r] of pts) { const c = sph(r, col, x, 0.1 + y, z); c.scale.y = 0.55; }
+  } else if (type === 'broom') {
+    // Besen (Hexenbesen – draufsitzen/stehen)
+    cyl(0.08, 0.08, 3.6, 0x6a4422, 0, 0.5, 0, 'z'); const br = new T.Mesh(new T.ConeGeometry(0.5, 1.3, 10), L2(col)); br.rotation.x = Math.PI / 2; br.position.set(0, 0.5, -2.1); m.add(br);
+    cyl(0.02, 0.02, 1.2, col2, 0, 0.5, 1.6, 'z');
+  } else if (type === 'jet') {
+    // Jetpack-Gleiter: kleine Flügel + Schub
+    for (const sz of [-1, 1]) { bx(0.16, 1.3, 2.4, col, sz * 0.7, 1.5, -0.3, 0, 0, sz * 0.25); const flame = new T.Mesh(new T.ConeGeometry(0.22, 0.9, 8), new T.MeshBasicMaterial({ color: 0xff8a20 })); flame.position.set(sz * 0.45, 0.55, -0.5); flame.rotation.x = Math.PI; m.add(flame); }
+    bx(0.8, 1.0, 0.5, col2, 0, 1.4, -0.5);
   }
   return m;
 }
