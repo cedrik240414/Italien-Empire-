@@ -336,7 +336,7 @@ document.querySelectorAll('.modal').forEach(m => m.addEventListener('pointerdown
 function buildPlayerModel() {
   if (P.h) scene.remove(P.h.group);
   const sk = S.skin && IE.skinById[S.skin];
-  P.h = IE.makeHuman(sk ? sk.look : IE.chars[S.char]); scene.add(P.h.group);
+  P.h = IE.makeHuman(sk ? sk.look : IE.chars[S.char]); P.h.group.rotation.order = 'YXZ'; scene.add(P.h.group);
   updateGunModel();
 }
 const GUN_LEN = { pistola: 0.28, revolver: 0.32, deagle: 0.36, mitra: 0.45, uzi: 0.38, cecchino: 1.1, heavysniper: 1.35, minigun: 1.0, rpg: 1.2, granat: 0.7, laser: 0.9, lmg: 1.0 };
