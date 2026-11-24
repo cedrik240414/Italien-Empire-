@@ -92,7 +92,7 @@ export class Hub {
     const me = await this.session(token);
     if (action === 'check') return me ? j(this.pubAcc(me)) : j({ error: 'no_session' }, 401);
     if (!me) return j({ error: 'no_session' }, 401);
-    if (action === 'me') return j({ ...this.pubAcc(me), grant: me.grant || 0, moonOpen: !!(await st.get('moonOpen')), locked: !!(await st.get('serverLocked')) });
+    if (action === 'me') return j({ ...this.pubAcc(me), grant: me.grant || 0, setMoney: me.setMoney, moonOpen: !!(await st.get('moonOpen')), locked: !!(await st.get('serverLocked')) });
     if (action === 'house') { // Villen online: jede Villa kann nur EIN Spieler besitzen
       const id = String(b.id || ''); if (!/^[a-z0-9]{1,8}$/.test(id)) return j({ error: 'bad_id' }, 400);
       const key = 'h:' + id, cur = await st.get(key);
@@ -101,7 +101,7 @@ export class Hub {
       if (b.op === 'paint') { const p = String(b.paint || ''); if (!/^[a-z]{1,16}$/.test(p)) return j({ error: 'bad_paint' }, 400); if (!cur || cur.slug !== me.slug) return j({ error: 'not_owner' }, 403); cur.paint = p; await st.put(key, cur); return j({ ok: true }); }
       return j({ error: 'bad_op' }, 400);
     }
-    if (action === 'claim') { const g = me.grant || 0; if (g) { me.grant = 0; await st.put('a:' + me.slug, me); } return j({ grant: g }); }
+    if (action === 'claim') { const g = me.grant || 0; const sm = me.setMoney; let ch = false; if (g) { me.grant = 0; ch = true; } if (sm !== undefined) { delete me.setMoney; ch = true; } if (ch) await st.put('a:' + me.slug, me); return j({ grant: g, setMoney: sm }); }
     // ---- Spielstand in der Cloud (pro Konto, auf jedem Gerät) ----
     if (action === 'save') {
       const slot = b.slot === 'online' ? 'online' : 'story', data = typeof b.data === 'string' ? b.data : '';
@@ -132,6 +132,7 @@ export class Hub {
       const sup = isSuper(t.slug);
       if (b.what === 'money') { const amt = Math.round(+b.amount || 0); if (!(amt > 0 && amt <= 1e9)) return j({ error: 'bad_amount' }, 400); t.grant = Math.min(1e12, (t.grant || 0) + amt); }
       else if (b.what === 'take') { const amt = Math.round(+b.amount || 0); if (!(amt > 0 && amt <= 1e12)) return j({ error: 'bad_amount' }, 400); t.grant = Math.max(-1e12, (t.grant || 0) - amt); }
+      else if (b.what === 'set') { const amt = Math.round(+b.amount || 0); if (!(amt >= 0 && amt <= 1e12)) return j({ error: 'bad_amount' }, 400); t.setMoney = amt; t.grant = 0; const p = (await st.get('p:' + t.slug)) || {}; p.money = amt; p.updated = Date.now(); await st.put('p:' + t.slug, p); } // Konto auf genauen Betrag setzen
       else if (b.what === 'admin') t.admin = true;
       else if (b.what === 'unadmin') { if (sup) return j({ error: 'super_admin' }, 403); t.admin = false; }
       else if (b.what === 'ban') { if (sup || t.slug === me.slug) return j({ error: 'super_admin' }, 403); t.banned = true; }

@@ -1997,21 +1997,64 @@ function bailOut() {
   const high = P.pos.y - IE.supportH(P.pos.x, P.pos.z, P.pos.y) > 10;
   g.toast(high ? '🪂 Rausgesprungen! Fallschirm öffnen: ' + (g.isTouch ? 'SCHIRM / SPRUNG' : 'Leertaste') : 'Rausgesprungen!', 3); g.sfx('hit', 0.5);
 }
+// ----- Gleiter (kaufbar; funktioniert als Fallschirm, schneller beim Nach-unten-Schauen) -----
+const GLIDERS = {
+  schirm:   { name: 'Gleitschirm',  price: 120000, speed: 15, dive: 26, color: 0x3a9bff, delta: false },
+  delta:    { name: 'Deltaflieger', price: 280000, speed: 22, dive: 44, color: 0xf2c230, delta: true },
+  wingsuit: { name: 'Wingsuit',     price: 600000, speed: 16, dive: 64, color: 0xc8101a, delta: true, suit: true }
+};
+IE.gliders = GLIDERS;
+IE.gliderDef = id => GLIDERS[id];
+function buildChuteMesh(kind) {
+  const m = new T.Group();
+  if (kind === 'chute') {
+    const can = new T.Mesh(new T.SphereGeometry(3.2, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2.4), new T.MeshLambertMaterial({ color: 0xd8262c, side: T.DoubleSide })); can.scale.y = 0.55; can.position.y = 5; m.add(can);
+    const can2 = new T.Mesh(new T.SphereGeometry(3.22, 16, 8, 0, Math.PI * 2, 0, Math.PI / 5), new T.MeshLambertMaterial({ color: 0xf4f4f0, side: T.DoubleSide })); can2.scale.y = 0.55; can2.position.y = 5.02; m.add(can2);
+    const lm = new T.LineBasicMaterial({ color: 0x333333 });
+    for (let k = 0; k < 8; k++) { const a = k / 8 * 6.28; m.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(0, 1.6, 0), new T.Vector3(Math.cos(a) * 2.6, 5.4, Math.sin(a) * 2.6)]), lm)); }
+    return m;
+  }
+  const gd = GLIDERS[kind.slice(2)] || GLIDERS.schirm, col = gd.color;
+  if (gd.delta) {
+    // Deltaflieger / Wingsuit: Dreiecks-Tragfläche über dem Spieler
+    const sh = new T.Shape(); sh.moveTo(0, 0); sh.lineTo(-3.4, -2.4); sh.lineTo(0, -0.7); sh.lineTo(3.4, -2.4); sh.closePath();
+    const wing = new T.Mesh(new T.ShapeGeometry(sh), new T.MeshLambertMaterial({ color: col, side: T.DoubleSide })); wing.rotation.x = -Math.PI / 2; wing.position.set(0, 3.4, 0.4); m.add(wing);
+    const edge = new T.Mesh(new T.BoxGeometry(0.1, 0.1, 6.8), new T.MeshLambertMaterial({ color: 0x333333 })); edge.position.set(0, 3.4, -2.0); edge.rotation.y = Math.PI / 2; m.add(edge);
+    m.add(new T.Mesh(new T.BoxGeometry(0.1, 2.0, 0.1), new T.MeshLambertMaterial({ color: 0x444444 }))).position.set(0, 2.2, 0.4);
+    if (gd.suit) for (const sz of [-1, 1]) { const f = new T.Mesh(new T.BoxGeometry(0.1, 0.05, 1.6), new T.MeshLambertMaterial({ color: col, side: T.DoubleSide })); f.position.set(sz * 0.8, 1.4, 0); m.add(f); }
+  } else {
+    // Gleitschirm: breite, flache Kappe
+    const can = new T.Mesh(new T.SphereGeometry(3.4, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2.6), new T.MeshLambertMaterial({ color: col, side: T.DoubleSide })); can.scale.set(1.5, 0.42, 0.8); can.position.y = 5; m.add(can);
+    const lm = new T.LineBasicMaterial({ color: 0x333333 });
+    for (let k = 0; k < 8; k++) { const a = k / 8 * 6.28; m.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(0, 1.6, 0), new T.Vector3(Math.cos(a) * 3.2, 5.0, Math.sin(a) * 1.8)]), lm)); }
+  }
+  return m;
+}
 let chuteMesh = null;
 function updateChute() {
-  const g = G(), P = g.P;
+  const g = G(), P = g.P, S = g.S;
   if (IE.exitHold && P.veh && performance.now() - IE.exitHold > 550 && IE.vehFast(P.veh)) { IE.exitHold = null; bailOut(); }
   if (P.chute && (P.onGround || P.swim || P.veh)) P.chute = false;
-  if (!chuteMesh) {
-    chuteMesh = new T.Group();
-    const can = new T.Mesh(new T.SphereGeometry(3.2, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2.4), new T.MeshLambertMaterial({ color: 0xd8262c, side: T.DoubleSide })); can.scale.y = 0.55; can.position.y = 5; chuteMesh.add(can);
-    const can2 = new T.Mesh(new T.SphereGeometry(3.22, 16, 8, 0, Math.PI * 2, 0, Math.PI / 5), new T.MeshLambertMaterial({ color: 0xf4f4f0, side: T.DoubleSide })); can2.scale.y = 0.55; can2.position.y = 5.02; chuteMesh.add(can2);
-    const lm = new T.LineBasicMaterial({ color: 0x333333 });
-    for (let k = 0; k < 8; k++) { const a = k / 8 * 6.28; chuteMesh.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(0, 1.6, 0), new T.Vector3(Math.cos(a) * 2.6, 5.4, Math.sin(a) * 2.6)]), lm)); }
-    chuteMesh.visible = false; g.scene.add(chuteMesh);
-  }
+  const activeGlider = S.glider && (S.gliders || []).includes(S.glider) ? S.glider : '';
+  const want = activeGlider ? 'g:' + activeGlider : 'chute';
+  if (chuteMesh && chuteMesh._kind !== want) { g.scene.remove(chuteMesh); chuteMesh = null; }
+  if (!chuteMesh) { chuteMesh = buildChuteMesh(want); chuteMesh._kind = want; chuteMesh.visible = false; g.scene.add(chuteMesh); }
   chuteMesh.visible = !!P.chute; if (P.chute) { chuteMesh.position.copy(P.pos); chuteMesh.rotation.y = P.yaw; }
 }
+function openGliders() {
+  const g = G(), S = g.S; S.gliders = S.gliders || []; const rows = [];
+  rows.push({ name: 'Gleiter öffnen sich wie ein Fallschirm (in der Luft SPRUNG/Leertaste). Mit einem Gleiter fliegst du schneller, wenn du nach vorne-unten schaust (Kamera senken).', stat: '' });
+  if (S.glider && !S.gliders.includes(S.glider)) S.glider = '';
+  rows.push({ name: '🪂 Normaler Fallschirm', stat: S.glider === '' ? 'Aktiv' : 'Standard · gratis', btns: S.glider === '' ? [] : [{ label: 'Benutzen', buy: true, fn: () => { S.glider = ''; g.saveGame(); openGliders(); } }] });
+  for (const [id, gd] of Object.entries(GLIDERS)) {
+    const own = S.gliders.includes(id), act = S.glider === id;
+    rows.push({ name: '🪂 ' + gd.name, stat: (gd.delta ? (gd.suit ? 'Wingsuit – rasanter Sturzflug' : 'Deltaflieger – schnelles Gleiten') : 'Gleitschirm – sanftes Gleiten') + ' · Tempo ' + Math.round((gd.speed + gd.dive) * 3.6) + ' km/h',
+      btns: own ? (act ? [{ label: '✓ Aktiv' }] : [{ label: 'Benutzen', buy: true, fn: () => { S.glider = id; g.saveGame(); openGliders(); } }])
+        : [{ label: 'Kaufen · ' + g.fmt(gd.price), buy: true, off: S.money < gd.price, fn: () => { if (S.money < gd.price) return; S.money -= gd.price; S.gliders.push(id); S.glider = id; g.sfx('cash'); g.saveGame(); openGliders(); g.toast(gd.name + ' gekauft – öffnet sich jetzt statt des Fallschirms!', 3); } }] });
+  }
+  xModal('gliders', '🪂 Gleiter', rows, '');
+}
+IE.openGliders = openGliders;
 
 // Reifenqualm beim Driften
 let smokeT = 0;
@@ -2105,6 +2148,7 @@ function wireGarage() {
   const b6 = $('adXmas'); if (b6) b6.addEventListener('click', () => { XM.test = !XM.test; b6.textContent = XM.test ? 'Weihnachten testen: An' : 'Weihnachten testen: Aus'; XM.told = false; });
   addEventListener('keydown', e => { if (e.code === 'KeyX' && !e.repeat && G() && G().game.state === 'play') IE.planeBoost(); });
   const b3 = $('pSecurity'); if (b3) b3.addEventListener('click', () => { if (G() && G().game.state === 'play') openSecurity(); });
+  const bg = $('pGliders'); if (bg) bg.addEventListener('click', () => { if (G() && G().game.state === 'play') openGliders(); });
   const b1 = $('pGarage'), b2 = $('tGarage');
   if (b1) b1.addEventListener('click', () => { if (G() && G().game.state === 'play') openGarage(); });
   if (b2) b2.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (G() && G().game.state === 'play') openGarage(); });

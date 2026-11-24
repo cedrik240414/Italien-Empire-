@@ -79,11 +79,16 @@ async function claudeAdminInit() {
       cGrants = (sn.exists && sn.data().list) || [];
       let claimed = []; try { claimed = JSON.parse(localStorage.getItem(CLAIM_KEY()) || '[]'); } catch (e) { }
       for (const g of cGrants) if (g.to === myId && !claimed.includes(g.id)) {
-        claimed.push(g.id); applyGrant(Math.max(-1e12, Math.min(1e9, Math.round(+g.amt || 0))));
+        claimed.push(g.id);
+        if (g.set !== undefined) applySetMoney(g.set); else applyGrant(Math.max(-1e12, Math.min(1e9, Math.round(+g.amt || 0))));
       }
       try { localStorage.setItem(CLAIM_KEY(), JSON.stringify(claimed)); } catch (e) { }
     }, () => { });
   } catch (e) { }
+}
+function applySetMoney(v) {
+  const G = IEgame; v = Math.max(0, Math.min(1e12, Math.round(+v || 0)));
+  G.S.money = v; G.banner('Konto angepasst', 'Ein Admin hat dein Geld gesetzt', G.fmt(v), 4); G.sfx && G.sfx('cash'); G.saveGame && G.saveGame(true);
 }
 function applyGrant(g) {
   const G = IEgame; if (!g) return;
@@ -96,11 +101,15 @@ async function claudeList() {
   return snap.docs.map(d => { const v = d.data(); return { nick: v.nick || 'Spieler', slug: d.id, kills: v.kills || 0, money: v.money || 0, admin: d.id === myId, superAdmin: d.id === myId, banned: cBans.includes(d.id), appeal: cBans.includes(d.id) && v.appeal ? v.appeal : null, grant: 0, claude: true }; });
 }
 async function claudeAct(target, what, amount) {
-  if (what === 'money' || what === 'take') {
+  if (what === 'money' || what === 'take' || what === 'set') {
     const ref = db.collection('admin').doc('grants'), cur = await ref.get();
     const list = ((cur.exists && cur.data().list) || []).slice(-200);
-    list.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), to: target, amt: what === 'take' ? -Math.round(amount) : Math.round(amount) });
+    const g = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), to: target };
+    if (what === 'set') g.set = Math.max(0, Math.round(amount)); else g.amt = what === 'take' ? -Math.round(amount) : Math.round(amount);
+    list.push(g);
     await ref.set({ list });
+    // Rangliste direkt anpassen, damit es sofort sichtbar ist
+    if (what === 'set') { try { const lref = db.collection('leaderboard').doc(target), lc = await lref.get(); const d = (lc.exists && lc.data()) || {}; d.money = Math.max(0, Math.round(amount)); await lref.set(d); } catch (e) { } }
   } else if (what === 'ban' || what === 'unban') {
     const ref = db.collection('admin').doc('bans'), cur = await ref.get();
     let list = (cur.exists && cur.data().list) || [];
@@ -243,7 +252,7 @@ function startPoll() {
       A.setMoon(!!me.moonOpen); A.setLock(!!me.locked);
       A.canHide = !!me.canHide; if (!!me.hidden !== !!A.hidden) { A.hidden = !!me.hidden; showAdminUI(); }
       if (me.admin !== A.admin) { A.admin = me.admin; showAdminUI(); IEgame.toast(A.admin ? 'Du bist jetzt Admin!' : 'Deine Admin-Rechte wurden entfernt', 4); }
-      if (me.grant) { const c = await SRV().claim(); if (c.grant) applyGrant(c.grant); }
+      if (me.grant || me.setMoney !== undefined) { const c = await SRV().claim(); if (c && c.setMoney !== undefined) applySetMoney(c.setMoney); if (c && c.grant) applyGrant(c.grant); }
     } catch (e) { if (e && e.status === 401) { try { localStorage.removeItem(TOKEN_KEY); } catch (er) { } } }
   };
   tick(); pollT = setInterval(tick, 15000);
@@ -280,7 +289,7 @@ function drawAdminList() {
   if (!list.length) { el.innerHTML = '<div class="hint">Keine Spieler gefunden.</div>'; return; }
   for (const p of list) {
     const row = document.createElement('div'); row.className = 'row adrow';
-    row.innerHTML = `<div><div class="nm"></div><div class="st"></div></div><div class="acts"><input type="number" min="1" step="1000" value="100000" aria-label="Betrag"><button class="buy" data-a="money">Geld geben</button><button data-a="take" style="border-color:var(--rosso);color:var(--rosso)">Geld nehmen</button><button data-a="adm"></button><button data-a="ban"></button><button data-a="pw" style="border-color:#b07ad8;color:#c89af0" hidden>Passwort zurücksetzen</button></div>`;
+    row.innerHTML = `<div><div class="nm"></div><div class="st"></div></div><div class="acts"><input type="number" min="1" step="1000" value="100000" aria-label="Betrag"><button class="buy" data-a="money">Geld geben</button><button data-a="take" style="border-color:var(--rosso);color:var(--rosso)">Geld nehmen</button><button data-a="set" style="border-color:#f2c230;color:#f2c230">Geld setzen</button><button data-a="adm"></button><button data-a="ban"></button><button data-a="pw" style="border-color:#b07ad8;color:#c89af0" hidden>Passwort zurücksetzen</button></div>`;
     row.querySelector('.nm').textContent = p.nick + (p.slug === A.slug ? ' (du)' : '') + (p.superAdmin ? ' ★ Haupt-Admin' : p.admin ? ' ★ Admin' : '') + (p.banned ? ' · GEBANNT' : '');
     row.querySelector('.st').textContent = `Abschüsse ${p.kills} · Geld ${IEgame.fmt(p.money)}${p.grant > 0 ? ' · wartet auf ' + IEgame.fmt(p.grant) : p.grant < 0 ? ' · Abzug wartet: ' + IEgame.fmt(-p.grant) : ''}`;
     const bAdm = row.querySelector('[data-a=adm]'), bBan = row.querySelector('[data-a=ban]');
@@ -291,12 +300,13 @@ function drawAdminList() {
     const act = async (what, amount) => {
       try { if (SRV()) await SRV().act(p.slug, what, amount); else await claudeAct(p.slug, what, amount); IEgame.toast('Erledigt: ' + p.nick, 2);
         if (what === 'ban' && window.IEonline && IEonline.adminKick) IEonline.adminKick(p.slug);
-        if ((what === 'money' || what === 'take') && p.slug === A.slug) A.refresh();
+        if ((what === 'money' || what === 'take' || what === 'set') && p.slug === A.slug) A.refresh();
         await renderAdminList(); }
       catch (e) { IEgame.toast('Fehler: ' + (e.code === 'super_admin' ? 'Der Haupt-Admin kann nicht verändert werden' : e.code === 'claude_admin' ? 'Admin-Rechte vergibst du hier über das Teilen-Menü' : e.code || 'Server'), 3); }
     };
     row.querySelector('[data-a=take]').onclick = () => { const v = Math.round(+row.querySelector('input').value || 0); if (v > 0) act('take', Math.min(v, 1e12)); };
     row.querySelector('[data-a=money]').onclick = () => { const v = Math.round(+row.querySelector('input').value || 0); if (v > 0) act('money', Math.min(v, 1e9)); };
+    row.querySelector('[data-a=set]').onclick = () => { const v = Math.max(0, Math.round(+row.querySelector('input').value || 0)); if (!confirm(p.nick + ' – Konto genau auf ' + IEgame.fmt(Math.min(v, 1e12)) + ' setzen? (wirkt, sobald der Spieler das nächste Mal einloggt)')) return; act('set', Math.min(v, 1e12)); };
     bAdm.onclick = () => act(p.admin ? 'unadmin' : 'admin');
     bBan.onclick = () => act(p.banned ? 'unban' : 'ban');
     if (p.banned && p.appeal && p.appeal.reason) {

@@ -353,7 +353,7 @@ body.touch.playing #touch { display: block; }
       <div><b>FEUER</b> Schießen (mit Zielhilfe)</div><div><b>EIN/AUS</b> Fahrzeug</div>
       <div><b>E</b> Shop / Mission</div><div><b>HOCH / RUNTER</b> Springen · Heli</div><div><b>TAUCHEN / AUF</b> Unter Wasser schwimmen</div><div><b>SICHT</b> Ego-Sicht umschalten</div><div><b>Kreis links</b> Waffenrad</div><div><b>Flugzeug</b> GAS +/− für Schub, Joystick hoch = Nase hoch</div>
     </div>
-    <div class="ver">Version 90</div>
+    <div class="ver">Version 91</div>
   </div>
 </div>
 
@@ -453,7 +453,7 @@ body.touch.playing #touch { display: block; }
     <div class="opt"><span>Crew-Aufträge <small style="color:var(--muted);font-size:14px">· starten für alle in der Lobby</small></span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" id="onPassive" style="font-size:15px;padding:6px 12px">Passivmodus: Aus</button><button class="btn ghost" id="onBoard2" style="font-size:15px;padding:6px 12px">Rangliste</button></span></div>
     <div id="onJobs" class="jobs"></div>
   </div>
-  <div class="opt"><span>Skins, Upgrades &amp; Admin</span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn" id="pGarage" style="font-size:16px;padding:6px 14px">Meine Fahrzeuge (G)</button><button class="btn" id="pSecurity" style="font-size:16px;padding:6px 14px">Security</button><button class="btn" id="pPets" style="font-size:16px;padding:6px 14px">🐾 Haustiere</button><button class="btn" id="pPacks" style="font-size:16px;padding:6px 14px;background:#2a1a4a;border-color:#8a3cf0">🎁 Erweiterungen</button><button class="btn" id="pPhone" style="font-size:16px;padding:6px 14px;background:#122033;border-color:#3a9bff" hidden>📱 Handy</button><button class="btn" id="pTV" style="font-size:16px;padding:6px 14px;background:#1a1420;border-color:#d6b04a" hidden>📺 Fernseher</button><button class="btn" id="pAdvent" style="font-size:16px;padding:6px 14px;background:#8a1020;border-color:#d6b04a" hidden>🎄 Adventskalender</button><button class="btn" id="pSkins" style="font-size:16px;padding:6px 14px">Skins</button><button class="btn" id="pUp" style="font-size:16px;padding:6px 14px">Upgrades</button><button class="btn ghost" id="pAdmin" style="font-size:16px;padding:6px 14px" hidden>Admin-Panel</button></span></div>
+  <div class="opt"><span>Skins, Upgrades &amp; Admin</span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn" id="pGarage" style="font-size:16px;padding:6px 14px">Meine Fahrzeuge (G)</button><button class="btn" id="pSecurity" style="font-size:16px;padding:6px 14px">Security</button><button class="btn" id="pPets" style="font-size:16px;padding:6px 14px">🐾 Haustiere</button><button class="btn" id="pGliders" style="font-size:16px;padding:6px 14px;background:#12243a;border-color:#3a9bff">🪂 Gleiter</button><button class="btn" id="pPacks" style="font-size:16px;padding:6px 14px;background:#2a1a4a;border-color:#8a3cf0">🎁 Erweiterungen</button><button class="btn" id="pPhone" style="font-size:16px;padding:6px 14px;background:#122033;border-color:#3a9bff" hidden>📱 Handy</button><button class="btn" id="pTV" style="font-size:16px;padding:6px 14px;background:#1a1420;border-color:#d6b04a" hidden>📺 Fernseher</button><button class="btn" id="pAdvent" style="font-size:16px;padding:6px 14px;background:#8a1020;border-color:#d6b04a" hidden>🎄 Adventskalender</button><button class="btn" id="pSkins" style="font-size:16px;padding:6px 14px">Skins</button><button class="btn" id="pUp" style="font-size:16px;padding:6px 14px">Upgrades</button><button class="btn ghost" id="pAdmin" style="font-size:16px;padding:6px 14px" hidden>Admin-Panel</button></span></div>
   <div class="opt"><span>Steuerung <small style="color:var(--muted);font-size:14px">· Tastatur &amp; Maus: WASD, Maus umsehen, Links schießen, Rechts zielen</small></span><span><button class="btn ghost" id="optCtrl" style="font-size:16px;padding:6px 14px">Touch</button></span></div>
   <div class="opt"><span>Grafik</span><span><button class="btn ghost" id="optGfx" style="font-size:16px;padding:6px 14px">Hoch</button></span></div>
   <div class="opt"><label for="optSens">Kamera-Empfindlichkeit</label><input type="range" id="optSens" min="0.3" max="2.5" step="0.1" value="1"></div>
@@ -479,19 +479,19 @@ body.touch.playing #touch { display: block; }
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/data.js?v=90"></script>
-<script src="js/world.js?v=90"></script>
-<script src="js/entities.js?v=90"></script>
-<script src="js/extra.js?v=90"></script>
-<script src="js/main.js?v=90"></script>
-<script src="js/server-config.js?v=90"></script>
-<script src="js/cfnet.js?v=90"></script>
-<script src="js/online.js?v=90"></script>
-<script src="js/account.js?v=90"></script>
-<script src="js/launcher.js?v=90"></script>
-<script src="js/packs.js?v=90"></script>
-<script src="js/phone.js?v=90"></script>
-<script src="js/addons.js?v=90"></script>
+<script src="js/data.js?v=91"></script>
+<script src="js/world.js?v=91"></script>
+<script src="js/entities.js?v=91"></script>
+<script src="js/extra.js?v=91"></script>
+<script src="js/main.js?v=91"></script>
+<script src="js/server-config.js?v=91"></script>
+<script src="js/cfnet.js?v=91"></script>
+<script src="js/online.js?v=91"></script>
+<script src="js/account.js?v=91"></script>
+<script src="js/launcher.js?v=91"></script>
+<script src="js/packs.js?v=91"></script>
+<script src="js/phone.js?v=91"></script>
+<script src="js/addons.js?v=91"></script>
 <script>
 // Auto-Update: prüft regelmäßig, ob eine neue Version veröffentlicht wurde, und lädt dann automatisch neu.
 (function () {

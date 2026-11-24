@@ -24,7 +24,7 @@ isTouch = opts.ctrl === 'kbm' ? false : opts.ctrl === 'touch' ? true : touchDevi
 opts.gfx = opts.gfx || (touchDevice ? 'mittel' : 'hoch'); opts.fp = !!opts.fp; opts.sens = opts.sens || 1; if (opts.snd === undefined) opts.snd = true;
 const saveOpts = () => { try { localStorage.setItem('italienEmpire_opts', JSON.stringify(opts)); } catch (e) { } };
 
-const S = { cheat250: false, villas: [], biz: {}, guards: 0, guardsOn: true, money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], up: {}, skins: [], skin: '', packs: [], phone: false, phonePro: false, videos: [], subs: [], channel: { subs: 0, views: 0, cash: 0 }, gliderPaint: {}, mission: 0, char: 'jack', armor: 0, done: false };
+const S = { cheat250: false, villas: [], biz: {}, guards: 0, guardsOn: true, money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], up: {}, skins: [], skin: '', packs: [], phone: false, phonePro: false, videos: [], subs: [], channel: { subs: 0, views: 0, cash: 0 }, gliderPaint: {}, gliders: [], glider: '', mission: 0, char: 'jack', armor: 0, done: false };
 IE.gliderPaint = S.gliderPaint;
 // Spielstand: lokal + (mit Konto auf dem eigenen Server) in der Cloud – so ist er auf jedem Gerät da
 const CLOUD = { busy: false, lastPush: 0, timer: null, pending: null };
@@ -876,9 +876,19 @@ function updatePlayer(dt) {
     if (ctrl && P.jumpReq > 0 && P.onGround) { P.jumpReq = 0; P.vy = game.ch.jump ? 22 : 7.5; P.onGround = false; }
     // Fallschirm öffnen (in der Luft, hoch genug)
     if (ctrl && P.jumpReq > 0 && !P.onGround && !P.chute && P.pos.y - g > 8) { P.jumpReq = 0; P.chute = true; sfx('beep'); toast('🪂 Fallschirm offen', 1.5); }
-    if (P.bailV) { P.pos.x += P.bailV.x * dt; P.pos.z += P.bailV.z * dt; const dr = P.onGround ? 6 : P.chute ? 1.5 : 0.25; P.bailV.x *= Math.exp(-dr * dt); P.bailV.z *= Math.exp(-dr * dt); if (Math.hypot(P.bailV.x, P.bailV.z) < 0.3) P.bailV = null; }
-    P.vy -= (game.ch.moon ? 5 : 24) * dt; if (P.chute) P.vy = Math.max(P.vy, -11); P.pos.y += P.vy * dt;
-    if (P.pos.y <= g && !P.onGround) { const hv = P.bailV ? Math.hypot(P.bailV.x, P.bailV.z) : 0; if (hv > 9 && !P.chute && !game.ch.moon) hurtPlayer((hv - 9) * 4); if (P.chute) { P.chute = false; P.vy = 0; } }
+    if (P.chute && S.glider && IE.gliderDef && IE.gliderDef(S.glider)) {
+      // Gleiter (Wingsuit/Schirm): nach vorne-unten schauen = schneller gleiten
+      const gd = IE.gliderDef(S.glider), dive = clamp(cam.pitch, -0.4, 1.2), ff = IE.fwd(cam.yaw);
+      const spd = gd.speed + Math.max(0, dive) * gd.dive;
+      P.pos.x += ff.x * spd * dt; P.pos.z += ff.z * spd * dt;
+      P.yaw += angDiff(P.yaw, cam.yaw) * Math.min(1, dt * 4);
+      P.vy = -(3.2 + Math.max(0, dive) * 15) + Math.max(0, -dive) * 3; P.pos.y += P.vy * dt; P.bailV = null;
+      if (P.pos.y <= g) { P.chute = false; P.vy = 0; }
+    } else {
+      if (P.bailV) { P.pos.x += P.bailV.x * dt; P.pos.z += P.bailV.z * dt; const dr = P.onGround ? 6 : P.chute ? 1.5 : 0.25; P.bailV.x *= Math.exp(-dr * dt); P.bailV.z *= Math.exp(-dr * dt); if (Math.hypot(P.bailV.x, P.bailV.z) < 0.3) P.bailV = null; }
+      P.vy -= (game.ch.moon ? 5 : 24) * dt; if (P.chute) P.vy = Math.max(P.vy, -11); P.pos.y += P.vy * dt;
+      if (P.pos.y <= g && !P.onGround) { const hv = P.bailV ? Math.hypot(P.bailV.x, P.bailV.z) : 0; if (hv > 9 && !P.chute && !game.ch.moon) hurtPlayer((hv - 9) * 4); if (P.chute) { P.chute = false; P.vy = 0; } }
+    }
     if (P.pos.y <= g) { if (P.vy < -22 && !game.ch.jump && !game.ch.moon) hurtPlayer((-P.vy - 22) * 6); P.pos.y = g; P.vy = 0; P.onGround = true; }
     else if (P.pos.y - g > 0.3) P.onGround = false;
     if (!P.onGround && g < -1.3 && P.pos.y < -1.25) { P.pos.y = -1.25; P.vy = 0; }
