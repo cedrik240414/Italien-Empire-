@@ -481,6 +481,60 @@ IE.makePlane = function (def) {
     // Fahrwerk
     for (const [gx, gz] of [[2.6, 0], [-1.6, 2.0], [-1.6, -2.0]]) { mesh(new T.CylinderGeometry(0.4, 0.4, 0.3, 10).rotateX(Math.PI / 2), dk, gx, 0.4, gz); mesh(new T.BoxGeometry(0.16, 1.0, 0.16), dk, gx, 0.9, gz); }
     return { group: outer, L, W, H: gearH + 4, bodyMat: bm, prop: null, gearH, inner: g };
+  } else if (k === 'cargo') {
+    // Airbus A400M – graues Transportflugzeug: dicker Rumpf, Hochdecker, 4 Turboprops, T-Leitwerk, Heckrampe
+    L = 20; W = 24; gearH = 2.2;
+    const grey = bm, dark = am, metal = lam(0x9aa0a6), tire = dk;
+    const yb = gearH + 1.9;
+    mesh(fus(17, 1.9, 1.3), grey, -1.5, yb, 0);
+    const nose = mesh(new T.SphereGeometry(1.9, 16, 12), grey, 7.0, yb, 0); nose.scale.set(1.4, 1, 1);
+    const tail = mesh(fus(5.5, 1.3, 0.55), grey, -9.6, yb + 1.3, 0); tail.rotation.z = -0.32;
+    // Cockpit
+    mesh(new T.BoxGeometry(1.5, 0.7, 2.3), glassMat, 6.0, yb + 1.15, 0);
+    for (const sz of [-1, 1]) mesh(new T.BoxGeometry(1.1, 0.55, 0.08), glassMat, 6.7, yb + 0.85, sz * 1.15);
+    // Heckrampe (dunkel, angeschrägt)
+    mesh(new T.BoxGeometry(3.2, 0.25, 2.6), dark, -11.4, gearH + 0.7, 0).rotation.z = 0.4;
+    // Hochliegender Flügel
+    mesh(new T.BoxGeometry(5.2, 0.5, 23), grey, -0.5, yb + 1.95, 0);
+    mesh(new T.BoxGeometry(1.3, 0.18, 23.1), dark, -2.7, yb + 2.0, 0);
+    // T-Leitwerk
+    mesh(new T.BoxGeometry(2.2, 4.4, 0.5), grey, -10.9, yb + 3.4, 0);
+    mesh(new T.BoxGeometry(2.4, 0.42, 9), grey, -11.3, yb + 5.4, 0);
+    // 4 Turboprops auf dem Flügel
+    const props = [];
+    for (const zz of [-8.4, -4.3, 4.3, 8.4]) {
+      mesh(fus(4.2, 0.72, 0.5), metal, 1.1, yb + 1.75, zz);
+      const p = new T.Group(); p.position.set(3.5, yb + 1.75, zz); g.add(p);
+      const spin = new T.Mesh(new T.ConeGeometry(0.42, 0.95, 12), dark); spin.rotation.z = -Math.PI / 2; spin.position.x = 0.15; p.add(spin);
+      for (let b = 0; b < 6; b++) { const bl = new T.Mesh(new T.BoxGeometry(0.08, 3.0, 0.34), lam(0x15151a)); bl.rotation.x = b * Math.PI / 3; p.add(bl); }
+      props.push(p);
+    }
+    // Fahrwerk (Bugrad + mehrere Hauptfahrwerke)
+    for (const [gx, gz] of [[6, 0], [-3, 2.0], [-3, -2.0], [-6, 2.0], [-6, -2.0]]) { mesh(new T.CylinderGeometry(0.5, 0.5, 0.4, 10).rotateX(Math.PI / 2), tire, gx, 0.5, gz); mesh(new T.BoxGeometry(0.22, 1.7, 0.22), tire, gx, 1.35, gz); }
+    return { group: outer, L, W, H: yb + 6, bodyMat: bm, prop: null, props, gearH, inner: g, hold: true };
+  } else if (k === 'spyjet') {
+    // Lockheed SR-71 Blackbird – schlanker schwarzer Überschalljet mit Chines, 2 Triebwerksgondeln, 2 geneigten Leitwerken
+    L = 24; W = 17; gearH = 1.3;
+    const blk = bm, red = lam(0xb0222a), metal = lam(0x26262c);
+    const yb = gearH + 1.0;
+    mesh(fus(15, 0.95, 0.55), blk, -2, yb, 0);
+    const nc = new T.ConeGeometry(0.9, 8, 14); nc.rotateZ(-Math.PI / 2); mesh(nc, blk, 9.3, yb, 0);
+    // Chines (flache Rumpfkanten)
+    for (const sz of [-1, 1]) mesh(new T.BoxGeometry(15, 0.14, 1.1), blk, 2.5, yb, sz * 1.0);
+    mesh(new T.BoxGeometry(1.0, 0.45, 1.2), glassMat, 5.0, yb + 0.7, 0);
+    // Delta-Flügel
+    const ws = new T.Shape(); ws.moveTo(3, 0); ws.lineTo(-7, 7.5); ws.lineTo(-8.5, 7.5); ws.lineTo(-7.5, 0); ws.lineTo(-8.5, -7.5); ws.lineTo(-7, -7.5); ws.closePath();
+    const wg = new T.ExtrudeGeometry(ws, { depth: 0.22, bevelEnabled: false }); wg.rotateX(Math.PI / 2); mesh(wg, blk, -1, yb - 0.1, 0);
+    // 2 große Triebwerksgondeln mit Einlass-Spitzkegeln, Nachbrenner-Glühen, geneigte Leitwerke
+    for (const sz of [-1, 1]) {
+      mesh(fus(8, 1.05, 0.9), metal, -1.5, yb, sz * 3.6);
+      const inlet = new T.ConeGeometry(0.72, 1.8, 14); inlet.rotateZ(-Math.PI / 2); mesh(inlet, dk, 3.2, yb, sz * 3.6);
+      mesh(new T.CylinderGeometry(0.95, 0.95, 0.5, 16).rotateZ(Math.PI / 2), lam(0xff5a20), -5.7, yb, sz * 3.6);
+      const fin = mesh(new T.BoxGeometry(2.2, 2.7, 0.2), blk, -4.6, yb + 1.7, sz * 3.6); fin.rotation.x = sz * 0.32;
+    }
+    for (const sz of [-1, 1]) mesh(new T.BoxGeometry(11, 0.06, 0.06), red, 1, yb + 0.5, sz * 0.5);
+    for (const [gx, gz] of [[6, 0], [-2, 3.6], [-2, -3.6]]) { mesh(new T.CylinderGeometry(0.34, 0.34, 0.3, 10).rotateX(Math.PI / 2), dk, gx, 0.4, gz); mesh(new T.BoxGeometry(0.14, 1.0, 0.14), dk, gx, 0.9, gz); }
+    return { group: outer, L, W, H: yb + 3, bodyMat: bm, prop: null, gearH, inner: g };
   } else {
     L = 15; W = 10; gearH = 1.3;
     mesh(fus(11, 1.0, 0.8), bm, -1, gearH + 1.0, 0);
@@ -551,6 +605,7 @@ IE.updatePlane = function (v, inp, dt) {
   if (IE.pushOut(v.pos, Math.min(3, v.m.L * 0.2), v.pos.y, 2.5)) { if (v.speed > 14) v.health = 0; else v.speed *= -0.2; }
   v.onGround = v.pos.y <= g2 + 0.1;
   if (v.m.prop) v.m.prop.rotation.x += (0.2 + v.throttle) * dt * 50;
+  if (v.m.props) for (const pr of v.m.props) pr.rotation.x += (0.2 + v.throttle) * dt * 50;
   v.group.position.copy(v.pos); v.group.rotation.order = 'YXZ'; v.group.rotation.y = v.yaw; v.group.rotation.x = -v.pitch; v.group.rotation.z = v.roll;
 };
 

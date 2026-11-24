@@ -816,7 +816,17 @@ function updatePlayer(dt) {
   if (P.ride) { // Beifahrer: folgt dem Auto des Fahrers
     const r = ONL() && IEonline.peers.get(P.ride);
     if (!r || !r.pr || !r.pr.v || r.pr.v.t === 'airship' || r.pr.dead) { P.ride = null; P.h.group.visible = true; placePlayer(P.pos.x + 2, P.pos.z); toast('Die Fahrt ist vorbei', 1.6); }
-    else { const f = IE.fwd(r.pr.v.yaw || 0); P.pos.set(r.pos.x - f.z * 0.45, r.pos.y, r.pos.z + f.x * 0.45); P.vy = 0; P.onGround = true; P.yaw = r.pr.v.yaw || 0; P.h.group.visible = false; P.aimT -= dt; return; }
+    else {
+      const f = IE.fwd(r.pr.v.yaw || 0);
+      if (r.pr.v.t === 'plane' && r.pr.v.id === 'cargo') {
+        // Frachtflugzeug: 6 Sitzplätze im Laderaum – jeder Mitfahrer bekommt anhand seiner ID einen eigenen Platz
+        const seats = [[3, -1.3], [3, 1.3], [7, -1.3], [7, 1.3], [11, -1.3], [11, 1.3]];
+        const id = (ONL() && IEonline.myId) || ''; let hsh = 0; for (let i = 0; i < id.length; i++) hsh = (hsh * 31 + id.charCodeAt(i)) | 0;
+        const s = seats[Math.abs(hsh) % 6];
+        P.pos.set(r.pos.x - f.x * s[0] - f.z * s[1], r.pos.y, r.pos.z - f.z * s[0] + f.x * s[1]);
+      } else P.pos.set(r.pos.x - f.z * 0.45, r.pos.y, r.pos.z + f.x * 0.45);
+      P.vy = 0; P.onGround = true; P.yaw = r.pr.v.yaw || 0; P.h.group.visible = false; P.aimT -= dt; return;
+    }
   }
   const ctrl = !dlg.active && !uiOpen();
   const mx = ctrl ? inp.mx : 0, my = ctrl ? inp.my : 0;

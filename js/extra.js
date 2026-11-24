@@ -2336,9 +2336,50 @@ function openSecurity() {
 }
 IE.openSecurity = openSecurity;
 // ----- Hooks für main.js -----
+// ===== Frachtflugzeug: Autos verladen =====
+const CARGO_CAP = 4;
+function nearCargoPlane(P) {
+  let best = null, bd = 18;
+  for (const v of IE.vehicles) {
+    if (v.dead || v.type !== 'plane' || !v.def.carrier || !v.onGround) continue;
+    const d = Math.hypot(v.pos.x - P.pos.x, v.pos.z - P.pos.z);
+    if (d < bd) { bd = d; best = v; }
+  }
+  return best;
+}
+function nearLoadableCar(P) {
+  let best = null, bd = 9;
+  for (const v of IE.vehicles) {
+    if (v.dead || v.type !== 'car' || v === P.veh || v.traffic || v.driver === 'npc') continue;
+    const d = Math.hypot(v.pos.x - P.pos.x, v.pos.z - P.pos.z);
+    if (d < bd) { bd = d; best = v; }
+  }
+  return best;
+}
+function cargoVisual(plane) {
+  const scene = G().scene;
+  if (plane.cargoHold) { plane.group.remove(plane.cargoHold); plane.cargoHold = null; }
+  const carried = plane.carried || []; if (!carried.length) return;
+  const hold = new T.Group();
+  carried.forEach((c, i) => {
+    let cm; try { cm = IE.makeCar((IE.carById[c.defId] || IE.cars[0]).kind, c.color); } catch (e) { return; }
+    cm.group.position.set(0, (plane.m.gearH || 1.6) + 0.15, -1.5 - i * 4.7);
+    cm.group.scale.setScalar(0.9);
+    hold.add(cm.group);
+  });
+  plane.group.add(hold); plane.cargoHold = hold;
+}
 IE.extraPrompt = function () {
   const g = G(), P = g.P; if (!g) return '';
   if (launch) return '';
+  if (!P.veh && !P.interior) {
+    const plane = nearCargoPlane(P);
+    if (plane) {
+      plane.carried = plane.carried || [];
+      if (nearLoadableCar(P) && plane.carried.length < CARGO_CAP) return '<b>E</b> · 🚗 Auto ins Frachtflugzeug laden (' + plane.carried.length + '/' + CARGO_CAP + ')';
+      if (plane.carried.length > 0) return '<b>E</b> · 🚗 Auto ausladen (' + plane.carried.length + ' an Bord)';
+    }
+  }
   { const ip = IE.islandPrompt && IE.islandPrompt(); if (ip) return ip; }
   if (P.interior) { const it = P.interior.it; if (it.type === 'backrooms' && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 3.2) return g.S.backroomsLoot ? 'Die Truhe ist leer …' : '<b>E</b> · Truhe öffnen'; if (it.type.indexOf('villa') === 0 && P.interior.villa && Math.hypot(P.pos.x - it.item.x, P.pos.z - it.item.z) < 4.5) return '<b>E</b> · Ausruhen (Gesundheit voll + speichern)'; if (it.type.indexOf('villa_') === 0 && Math.hypot(P.pos.x - it.door.x, P.pos.z - it.door.z) > 3) return '<b>E</b> · Haus-Menü (Möbel & Lackierung)'; return ''; }
   if (!P.veh && rocket && Math.hypot(P.pos.x - RK.x, P.pos.z - RK.z) < 30) return IE.moonOpen() ? '<b>E</b> · Mit der Rakete zum Mond fliegen' : isAdm() ? '<b>E</b> · ★ Admin: Rakete jetzt für ALLE starten (Countdown ' + fmtCD(RK.launch - Date.now()) + ')' : 'Mondrakete · Start in ' + fmtCD(RK.launch - Date.now());
@@ -2357,6 +2398,30 @@ IE.extraPrompt = function () {
 IE.extraAct = function () {
   const g = G(), P = g.P;
   if (launch) return true;
+  if (!P.veh && !P.interior) {
+    const plane = nearCargoPlane(P);
+    if (plane) {
+      plane.carried = plane.carried || [];
+      const car = nearLoadableCar(P);
+      if (car && plane.carried.length < CARGO_CAP) {
+        plane.carried.push({ defId: car.def.id, color: car.m.bodyMat ? car.m.bodyMat.color.getHex() : car.def.color, owned: !!car.owned });
+        G().scene.remove(car.group);
+        const idx = IE.vehicles.indexOf(car); if (idx >= 0) IE.vehicles.splice(idx, 1);
+        cargoVisual(plane);
+        g.toast('🚗 ' + car.def.name + ' verladen (' + plane.carried.length + '/' + CARGO_CAP + ')', 2.2); g.sfx('pass');
+        return true;
+      }
+      if (plane.carried.length > 0) {
+        const c = plane.carried.pop();
+        const f = IE.fwd(plane.yaw), back = plane.m.L * 0.6 + 5;
+        const bx = plane.pos.x - f.x * back, bz = plane.pos.z - f.z * back;
+        try { IE.spawnCar(G().scene, c.defId, bx, bz, plane.yaw, { color: c.color, owned: c.owned }); } catch (e) { }
+        cargoVisual(plane);
+        g.toast('🚗 Auto ausgeladen', 2); g.sfx('pass');
+        return true;
+      }
+    }
+  }
   if (IE.islandAct && IE.islandAct()) return true;
   if (P.interior && P.interior.it.type === 'backrooms' && Math.hypot(P.pos.x - P.interior.it.item.x, P.pos.z - P.interior.it.item.z) < 3.2) { if (!g.S.backroomsLoot) { g.S.backroomsLoot = true; g.addMoney(100000000, true); g.sfx('cash'); g.banner('JACKPOT', 'Die Truhe der Backrooms', '+ ' + g.fmt(100000000), 6); g.saveGame(true); } return true; }
   if (!P.veh && !P.interior && rocket && Math.hypot(P.pos.x - RK.x, P.pos.z - RK.z) < 30) { if (!IE.moonOpen() && isAdm() && window.IEaccount && IEaccount.unlockMoon) IEaccount.unlockMoon(); if (IE.moonOpen() || isAdm()) startLaunch(true); else g.toast('Die Rakete startet am 25. November um 16:00 Uhr', 3); return true; }
