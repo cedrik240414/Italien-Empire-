@@ -576,9 +576,10 @@ IE.updatePlane = function (v, inp, dt) {
     if (v.speed < d.minSpeed && v.pitch > 0) v.pitch = Math.max(0, v.pitch - dt);
   } else {
     const turn = d.turn;
-    if (d.kind === 'stunt' || d.kind === 'fighter') v.roll += (inp.x || 0) * 2.6 * turn * 0.6 * dt;
+    const canRoll = d.kind === 'stunt' || d.kind === 'fighter' || d.kind === 'spyjet';
+    if (canRoll) v.roll += (inp.x || 0) * 2.6 * turn * 0.6 * dt;
     else { const base = Math.abs(inp.y || 0) > 0.2 ? Math.round(v.roll / Math.PI) * Math.PI : Math.round(v.roll / (Math.PI * 2)) * Math.PI * 2; v.roll += (base + (inp.x || 0) * 0.9 - v.roll) * Math.min(1, dt * 1.8); }
-    if (!(inp.x) && (d.kind === 'stunt' || d.kind === 'fighter')) { const b = Math.abs(inp.y || 0) > 0.2 ? Math.round(v.roll / Math.PI) * Math.PI : Math.round(v.roll / (Math.PI * 2)) * Math.PI * 2; v.roll += (b - v.roll) * Math.min(1, dt * 1.2); }
+    if (!(inp.x) && canRoll) { const b = Math.abs(inp.y || 0) > 0.2 ? Math.round(v.roll / Math.PI) * Math.PI : Math.round(v.roll / (Math.PI * 2)) * Math.PI * 2; v.roll += (b - v.roll) * Math.min(1, dt * 1.2); }
     const cr = Math.cos(v.roll);
     v.pitch += (inp.y || 0) * 0.8 * turn * cr * dt;
     v.yaw -= Math.sin(v.roll) * 0.75 * turn * Math.min(v.speed / d.minSpeed, 1.6) * dt * Math.sign(cr || 1) * (cr < 0 ? -1 : 1);
