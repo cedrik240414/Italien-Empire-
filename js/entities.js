@@ -426,6 +426,7 @@ IE.makePlane = function (def) {
 };
 IE.spawnPlane = function (scene, defId, x, z, yaw, y) {
   const def = IE.planeById[defId], m = IE.makePlane(def);
+  if (def.glider && IE.gliderPaint && IE.gliderPaint[defId] !== undefined && m.bodyMat) m.bodyMat.color.setHex(IE.gliderPaint[defId]);
   const v = { type: 'plane', def, m, group: m.group, pos: new T.Vector3(x, y !== undefined ? y : IE.supportH(x, z, 999), z), yaw: yaw || 0, pitch: 0, roll: 0, speed: 0, throttle: 0, vy: 0,
     health: def.kind === 'jet' ? 2500 : 1500, maxHealth: def.kind === 'jet' ? 2500 : 1500, driver: null, dead: false, burn: 0, onGround: true };
   m.group.position.copy(v.pos); m.group.rotation.y = v.yaw; scene.add(m.group); IE.vehicles.push(v); return v;

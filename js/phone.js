@@ -81,7 +81,7 @@
     const g = G();
     if (streaming && g && g.game.state === 'play') {
       if (!liveEl) { liveEl = document.createElement('div'); liveEl.className = 'liveBadge'; document.body.appendChild(liveEl); }
-      liveEl.innerHTML = '<span class="dot"></span>LIVE · ' + (g.streamViewers || 0) + ' Zuschauer';
+      liveEl.innerHTML = '<span class="dot"></span>LIVE' + (g.streamViewers > 0 ? ' · ' + g.streamViewers + ' Zuschauer' : '');
       liveEl.style.display = '';
     } else if (liveEl) liveEl.style.display = 'none';
   }
@@ -89,17 +89,13 @@
   // ---------- Einnahmen-Tick ----------
   setInterval(() => {
     const g = G(); if (!g || g.game.state !== 'play' || !g.S.phone) return;
-    const S = g.S, ch = S.channel = S.channel || { subs: 0, views: 0, cash: 0 }, pro = S.phonePro ? 2.2 : 1;
-    let gained = 0;
-    (S.videos || []).forEach(v => { if (v.uploaded) { const inc = Math.floor((1 + Math.random() * 5) * pro * (1 + ch.subs / 800)); v.views += inc; ch.views += inc; gained += inc; } });
-    if (gained > 0 && Math.random() < 0.7) ch.subs += Math.max(1, Math.floor(gained / 50 * pro));
-    ch.cash += Math.floor(gained * 2.5 * pro);
-    if (streaming) {
-      const vn = Math.floor((25 + Math.random() * 70) * pro * (1 + ch.subs / 2000)); g.streamViewers = vn;
-      ch.subs += Math.floor(vn * 0.04 * Math.random() * pro + 0.5); ch.views += vn; ch.cash += Math.floor(vn * 14 * pro);
-    }
+    const S = g.S, ch = S.channel = S.channel || { subs: 0, views: 0, cash: 0 }, pro = S.phonePro ? 1.5 : 1;
+    // KEINE Fake-Abonnenten/-Zuschauer mehr: Abos & Aufrufe werden nicht künstlich erhöht.
+    // Nur ein kleiner Verdienst fürs Streamen und für hochgeladene Videos (deutlich weniger als früher).
+    if (streaming) ch.cash += Math.floor((35 + Math.random() * 35) * pro);
+    const upCount = (S.videos || []).filter(v => v.uploaded).length;
+    if (upCount) ch.cash += Math.floor(upCount * 4 * pro);
     updateLive();
-    if ((viewTimer || streaming) && !$('phoneModal').hidden) { /* live refresh handled by open views */ }
   }, 1000);
 
   // ---------- Phone-Navigation ----------
@@ -143,7 +139,7 @@
     const snd = document.createElement('button'); snd.textContent = '➤'; inWrap.appendChild(inp); inWrap.appendChild(snd); box.appendChild(inWrap); host.appendChild(box);
     const esc = t => String(t).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
     const add = (nm, tx, self) => { const m = document.createElement('div'); m.className = 'scMsg'; m.innerHTML = '<b style="color:' + (self ? '#f2c230' : '#7fd0ff') + '">' + esc(nm) + '</b> ' + esc(tx); msgs.appendChild(m); while (msgs.children.length > 40) msgs.removeChild(msgs.firstChild); msgs.scrollTop = msgs.scrollHeight; };
-    const send = () => { const t = inp.value.trim(); if (!t) return; add((window.IEaccount && IEaccount.nick) || 'Du', t, true); inp.value = ''; if (g.S.channel) g.S.channel.subs = (g.S.channel.subs || 0) + (Math.random() < 0.3 ? 1 : 0); };
+    const send = () => { const t = inp.value.trim(); if (!t) return; add((window.IEaccount && IEaccount.nick) || 'Du', t, true); inp.value = ''; };
     snd.onclick = send; inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.code === 'Enter') send(); });
     for (let i = 0; i < 4; i++) add(CHAT_USERS[(Math.random() * CHAT_USERS.length) | 0], CHAT_MSGS[(Math.random() * CHAT_MSGS.length) | 0]);
     streamChatIv = setInterval(() => { if ($('phoneModal').hidden && $('tvModal').hidden) { stopStreamChat(); return; } add(CHAT_USERS[(Math.random() * CHAT_USERS.length) | 0], CHAT_MSGS[(Math.random() * CHAT_MSGS.length) | 0]); }, 1300 + Math.random() * 1400);
@@ -181,9 +177,9 @@
   function fmtN(n) { n = n || 0; return n >= 1e6 ? (n / 1e6).toFixed(1) + ' Mio' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : (n | 0) + ''; }
 
   function toggleStream() {
-    const g = G(); streaming = !streaming; g.streaming = streaming; g.streamViewers = streaming ? 20 : 0;
+    const g = G(); streaming = !streaming; g.streaming = streaming; g.streamViewers = 0; // echte Zuschauer sind andere Online-Spieler
     g.sfx(streaming ? 'pass' : 'click');
-    if (streaming) g.banner('🔴 LIVE', '📡', 'Du streamst jetzt – Zuschauer bringen dir Geld!', 3);
+    if (streaming) g.banner('🔴 LIVE', '📡', 'Du bist jetzt live. Andere Spieler können zuschauen.', 3);
     else g.toast('Stream beendet', 2);
     updateLive(); g.saveGame(); home();
   }
@@ -219,7 +215,7 @@
       host.innerHTML = ''; if (back) host.appendChild(backBtn(back));
       // Live-Streams zuerst
       const live = [];
-      if (streaming) live.push({ title: '🔴 DU bist LIVE – ' + (g.streamViewers || 0) + ' Zuschauer', thumb: gradThumb('LIVE: Mein Stream', 0, '🔴'), mine: true, ch: { name: 'Mein Kanal', emoji: '⭐' }, views: g.streamViewers || 0, live: true });
+      if (streaming) live.push({ title: '🔴 DU bist LIVE', thumb: gradThumb('LIVE: Mein Stream', 0, '🔴'), mine: true, ch: { name: 'Mein Kanal', emoji: '⭐' }, views: g.streamViewers || 0, live: true });
       // Live-Streams anderer echter Spieler (Online-Lobby)
       const onl = window.IEonline && window.IEonline.active;
       if (onl && window.IEonline.livePeers) for (const c of window.IEonline.livePeers()) live.push({ title: '🔴 ' + c.name + ' ist LIVE – zuschauen!', thumb: gradThumb('LIVE: ' + c.name, 200, '🔴'), ch: { name: c.name, emoji: '🧑' }, views: c.subs, live: true, spectate: c.r });
@@ -265,7 +261,7 @@
     if (v && v.live) buildStreamChat(parent); // Live-Stream: Chat anzeigen
     // Aufrufe zählen hoch während man guckt
     if (viewTimer) clearInterval(viewTimer);
-    viewTimer = setInterval(() => { views += 1 + ((Math.random() * 8) | 0); const el = $('vViews'); if (el) el.textContent = fmtN(views); else { clearInterval(viewTimer); viewTimer = null; } if (v && v.uploaded) v.views = views; }, 1200);
+    // Keine künstlich hochzählenden Aufrufe mehr – Aufrufe bleiben echt/statisch.
   }
 
   function catHub(mode) {

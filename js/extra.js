@@ -2037,6 +2037,7 @@ function freeSpot(cx, cz, r, need) {
 function clearDelivered(type, id) { for (const v of IE.vehicles) if (v.delivered && v.type === type && !v.driver && (!id || v.def.id === id)) v.removeMe = true; }
 function deliver(kind, id, air) {
   const g = G(), P = g.P, sc = g.scene;
+  IE.gliderPaint = g.S.gliderPaint = g.S.gliderPaint || {}; // gespeicherte Gleiter-Farben anwenden
   if (P.interior) { g.toast('Geh erst nach draußen', 2); return; }
   if (R && R.state !== 'lobby') { g.toast('Nicht während eines Rennens', 2); return; }
   const pp = P.veh ? P.veh.pos : P.pos; let v = null;
@@ -2078,9 +2079,18 @@ function openGarage() {
     } };
   };
   const withSell = (btns, def, listKey, nm) => { const s = sellBtn(def, listKey, nm); if (s) btns.push(s); return btns; };
+  // Gleiter anpassen (Farbe)
+  const GLIDER_COLORS = [['Weiß', 0xf2f2ee], ['Rot', 0xc8101a], ['Blau', 0x3a9bff], ['Grün', 0x48e07a], ['Gelb', 0xf2c230], ['Pink', 0xff5fd2], ['Lila', 0x8a3cf0], ['Schwarz', 0x1a1a1f], ['Orange', 0xf28a1a], ['Türkis', 0x18c2d8], ['Gold', 0xd6b04a]];
+  const paintGlider = (p) => {
+    S.gliderPaint = S.gliderPaint || {}; IE.gliderPaint = S.gliderPaint;
+    const cur = S.gliderPaint[p.id] !== undefined ? S.gliderPaint[p.id] : p.color;
+    const rr = [{ name: '‹ Zurück zur Garage', btns: [{ label: 'Zurück', fn: () => openGarage() }] }];
+    for (const [nm, hex] of GLIDER_COLORS) rr.push({ name: nm, stat: cur === hex ? 'Aktuell gewählt' : '', btns: [{ label: cur === hex ? '✓ Gewählt' : 'Diese Farbe', buy: cur !== hex, off: cur === hex, fn: () => { S.gliderPaint[p.id] = hex; IE.gliderPaint = S.gliderPaint; g.sfx('pass'); g.saveGame(); g.toast(p.name + ' lackiert: ' + nm, 2); paintGlider(p); } }] });
+    xModal('garage', '🎨 ' + p.name + ' anpassen', rr, 'Wähle die Farbe deines Gleiters – sie gilt, sobald du ihn das nächste Mal herholst.');
+  };
   for (const c of cars) rows.push({ name: '🚗 ' + c.name + (c.pack ? ' · 🎁 Pack' : ''), stat: 'Auto · ' + Math.round(c.speed * 3.6 * (1 + 0.07 * ((S.tune && S.tune[c.id] && S.tune[c.id].engine) || 0))) + ' km/h', btns: withSell([{ label: 'Tuning', fn: () => openTuning(c.id) }, { label: 'Herholen', buy: true, fn: () => deliver('car', c.id) }], c, 'cars', c.name) });
   for (const h of helis) rows.push({ name: '🚁 ' + h.name + (h.pack ? ' · 🎁 Pack' : ''), stat: 'Helikopter', btns: withSell([{ label: 'Herholen', buy: true, fn: () => deliver('heli', h.id) }], h, 'helis', h.name) });
-  for (const p of planes) rows.push({ name: '✈ ' + p.name + (p.pack ? ' · 🎁 Pack' : ''), stat: 'Flugzeug', btns: withSell([{ label: 'Am Boden', fn: () => deliver('plane', p.id, false) }, { label: 'In der Luft', buy: true, fn: () => deliver('plane', p.id, true) }], p, 'planes', p.name) });
+  for (const p of planes) { const btns = [{ label: 'Am Boden', fn: () => deliver('plane', p.id, false) }, { label: 'In der Luft', buy: true, fn: () => deliver('plane', p.id, true) }]; if (p.glider) btns.push({ label: '🎨 Anpassen', fn: () => paintGlider(p) }); withSell(btns, p, 'planes', p.name); rows.push({ name: '✈ ' + p.name + (p.pack ? ' · 🎁 Pack' : '') + (p.glider ? ' · 🪁 Gleiter' : ''), stat: 'Flugzeug', btns }); }
   for (const b of boats) rows.push({ name: '⛵ ' + b.name + (b.pack ? ' · 🎁 Pack' : ''), stat: 'Boot · kommt ins nächste Wasser', btns: withSell([{ label: 'Herholen', buy: true, fn: () => deliver('boat', b.id) }], b, 'boats', b.name) });
   if (!rows.length) rows.push({ name: 'Noch keine Fahrzeuge', stat: 'Kauf dir Autos, Helikopter, Boote oder Flugzeuge in den Läden – dann kannst du sie hier überall herholen.' });
   rows.push({ name: '🏁 Schnellreise zur Rennstrecke', stat: 'Autodromo dell\'Adriatico · € 2.000', btns: [{ label: 'Hinreisen', off: S.money < 2000, fn: () => { if (R && R.state !== 'lobby') return; S.money -= 2000; g.closeModals(); const sp = IE.raceStart; g.teleportTo(sp.x + 18, IE.groundH(sp.x, sp.z), sp.z + 18); } }] });

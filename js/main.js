@@ -24,7 +24,8 @@ isTouch = opts.ctrl === 'kbm' ? false : opts.ctrl === 'touch' ? true : touchDevi
 opts.gfx = opts.gfx || (touchDevice ? 'mittel' : 'hoch'); opts.fp = !!opts.fp; opts.sens = opts.sens || 1; if (opts.snd === undefined) opts.snd = true;
 const saveOpts = () => { try { localStorage.setItem('italienEmpire_opts', JSON.stringify(opts)); } catch (e) { } };
 
-const S = { cheat250: false, villas: [], biz: {}, guards: 0, guardsOn: true, money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], up: {}, skins: [], skin: '', packs: [], phone: false, phonePro: false, videos: [], subs: [], channel: { subs: 0, views: 0, cash: 0 }, mission: 0, char: 'jack', armor: 0, done: false };
+const S = { cheat250: false, villas: [], biz: {}, guards: 0, guardsOn: true, money: 5000, weapons: { faust: 0, pistola: 48 }, cur: 'pistola', cars: [], helis: [], boats: [], planes: ['piccolo'], wrecks: [], up: {}, skins: [], skin: '', packs: [], phone: false, phonePro: false, videos: [], subs: [], channel: { subs: 0, views: 0, cash: 0 }, gliderPaint: {}, mission: 0, char: 'jack', armor: 0, done: false };
+IE.gliderPaint = S.gliderPaint;
 // Spielstand: lokal + (mit Konto auf dem eigenen Server) in der Cloud – so ist er auf jedem Gerät da
 const CLOUD = { busy: false, lastPush: 0, timer: null, pending: null };
 const cloudAcc = () => window.IECF && IECF.account && window.IEaccount && IEaccount.token ? IECF.account : null;

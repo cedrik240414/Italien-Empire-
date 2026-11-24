@@ -794,3 +794,43 @@ IE.packs.push(
     cars: ['jonathanmobil'], weapons: ['stuhl', 'mace', 'molotov'], skins: ['jonathan'] }
 );
 IE.packById = {}; IE.packs.forEach(p => IE.packById[p.id] = p);
+
+// ===================== PINGUIN, SCHOLL SMP, AVOCADO3SEB PACKS + GLEITER =====================
+IE.cars.push(
+  { id: 'pinguinauto', name: 'Pinguin-Mobil (Pinguin)', price: 0, speed: 56, accel: 24, grip: 2.6, color: 0x1a1a1a, kind: 'suv',    pack: 'pinguin' },
+  { id: 'minecart',    name: 'Minecart (Scholl SMP)',   price: 0, speed: 52, accel: 20, grip: 2.3, color: 0xb0b4ba, kind: 'pickup', pack: 'schollsmp' },
+  { id: 'avocadoauto', name: 'Avocado-Flitzer (Avocado3seb)', price: 0, speed: 72, accel: 30, grip: 2.6, color: 0x6a9a3a, kind: 'sport', pack: 'avocado' }
+);
+IE.boats.push(
+  { id: 'eisboot', name: 'Eisbrecher-Boot (Pinguin)', price: 0, speed: 60, accel: 26, color: 0xeaf2f8, accent: 0x3a9bff, kind: 'speed', pack: 'pinguin' }
+);
+IE.planes.push(
+  { id: 'segler',      name: 'Segelflugzeug (Gleiter)',    price: 300000, speed: 72,  minSpeed: 18, turn: 1.6, color: 0xf2f2ee, accent: 0x3a9bff, kind: 'stunt', glider: true },
+  { id: 'drachen',     name: 'Drachenflieger (Gleiter)',   price: 180000, speed: 55,  minSpeed: 14, turn: 2.2, color: 0xf2a020, accent: 0xc8101a, kind: 'stunt', glider: true },
+  { id: 'gleitschirm', name: 'Gleitschirm (Gleiter)',      price: 150000, speed: 46,  minSpeed: 12, turn: 2.5, color: 0xff5fd2, accent: 0xffffff, kind: 'stunt', glider: true }
+);
+IE.weapons.push(
+  { id: 'diamantschwert', name: 'Diamantschwert (Scholl SMP)', price: 0, dmg: 160, rate: 0.35, range: 3.2, spread: 0, ammoPrice: 0, clip: 9999, pellets: 1, auto: true,  melee: true, pack: 'schollsmp' },
+  { id: 'spitzhacke',     name: 'Diamant-Spitzhacke (Scholl SMP)', price: 0, dmg: 95, rate: 0.5, range: 2.8, spread: 0, ammoPrice: 0, clip: 9999, pellets: 1, auto: false, melee: true, knock: true, pack: 'schollsmp' },
+  { id: 'tnt',            name: 'TNT (Scholl SMP)',           price: 0, dmg: 350, rate: 1.6, range: 120, spread: 0.01, ammoPrice: 0, clip: 8, pellets: 1, auto: false, explode: 11, pack: 'schollsmp' },
+  { id: 'avocadowerfer',  name: 'Avocado-Werfer (Avocado3seb)', price: 0, dmg: 40, rate: 0.7, range: 90, spread: 0.02, ammoPrice: 0, clip: 14, pellets: 1, auto: false, explode: 3, pack: 'avocado' }
+);
+IE.skins.push(
+  { id: 'pinguin',  name: 'Pinguin',   cat: 'Pack', price: 0, fromPack: 'pinguin',   look: { pants: 0x111111, jacket: 0x1a1a1a, shirt: 0xffffff, skin: SK.light, hair: 0x111111, hands: 0x111111, shoes: 0xf2a020 } },
+  { id: 'steve',    name: 'Steve',     cat: 'Pack', price: 0, fromPack: 'schollsmp', look: { pants: 0x3a5fb0, jacket: 0x1aa0a0, shirt: 0x1aa0a0, skin: 0xe0a070, hair: 0x3a2a1a } },
+  { id: 'avocado',  name: 'Avocado',   cat: 'Pack', price: 0, fromPack: 'avocado',   look: { pants: 0x3a5a2a, jacket: 0x6a9a3a, shirt: 0xd8c84a, skin: SK.tan, hair: 0x2a1a10 } }
+);
+IE.carById = {}; IE.cars.forEach(c => IE.carById[c.id] = c);
+IE.boatById = {}; IE.boats.forEach(b => IE.boatById[b.id] = b);
+IE.planeById = {}; IE.planes.forEach(p => IE.planeById[p.id] = p);
+IE.weaponById = {}; IE.weapons.forEach(w => IE.weaponById[w.id] = w);
+IE.skinById = {}; IE.skins.forEach(s => IE.skinById[s.id] = s);
+IE.packs.push(
+  { id: 'pinguin', name: 'Pinguin', emoji: '🐧', color: 0x1a1a1a, price: 40000000, desc: 'Pinguin-Mobil, Eisbrecher-Boot und Pinguin-Outfit.',
+    cars: ['pinguinauto'], boats: ['eisboot'], skins: ['pinguin'] },
+  { id: 'schollsmp', name: 'Scholl SMP', emoji: '⛏️', color: 0x1aa0a0, price: 60000000, desc: 'Minecraft-Sachen: Minecart, Diamantschwert, Diamant-Spitzhacke, TNT und Steve-Outfit.',
+    cars: ['minecart'], weapons: ['diamantschwert', 'spitzhacke', 'tnt'], skins: ['steve'] },
+  { id: 'avocado', name: 'Avocado3seb', emoji: '🥑', color: 0x6a9a3a, price: 40000000, desc: 'Avocado-Sachen: Avocado-Flitzer, Avocado-Werfer und Avocado-Outfit.',
+    cars: ['avocadoauto'], weapons: ['avocadowerfer'], skins: ['avocado'] }
+);
+IE.packById = {}; IE.packs.forEach(p => IE.packById[p.id] = p);
