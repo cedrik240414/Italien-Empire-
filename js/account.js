@@ -70,6 +70,7 @@ async function claudeAdminInit() {
   if (!db || !myId) return;
   try {
     db.collection('admin').doc('moon').onSnapshot(sn => { A.setMoon(!!(sn.exists && sn.data().open)); }, () => { });
+    db.collection('admin').doc('lock').onSnapshot(sn => { A.setLock(!!(sn.exists && sn.data().on)); }, () => { });
     db.collection('admin').doc('bans').onSnapshot(sn => {
       cBans = (sn.exists && sn.data().list) || [];
       if (cBans.includes(myId) && !A.claudeAdmin) { if (window.IEonline && IEonline.active) IEonline.leave(); A.onBanned(); }
@@ -176,8 +177,23 @@ A.unlockMoon = async function (open) {
   if (ok) IEgame.toast(open ? '★ Mond für ALLE Spieler freigeschaltet' : 'Mond wieder gesperrt (Countdown läuft)', 3);
   return ok;
 };
-// Mond-Status regelmäßig vom Server holen (auch ohne Anmeldung)
-setTimeout(function moonPoll() { if (SRV() && SRV().state) SRV().state().then(r => A.setMoon(!!r.moonOpen)).catch(() => { }); setTimeout(moonPoll, 20000); }, 1500);
+// Server-Sperre (Admin): niemand außer Admins kann spielen, solange gesperrt
+A.setLock = function (locked) {
+  const IE = IEgame.IE; IE.serverLocked = !!locked;
+  const show = !!locked && !A.admin, ls = document.getElementById('lockScreen');
+  if (ls) ls.hidden = !show;
+  if (show) { try { if (IEgame.saveGame && IEgame.game.state === 'play') IEgame.saveGame(); } catch (e) { } try { if (document.pointerLockElement) document.exitPointerLock(); } catch (e) { } }
+};
+A.serverLock = async function (on) {
+  on = !!on; IEgame.IE.serverLocked = on; let ok = true;
+  try { if (SRV() && SRV().lock) await SRV().lock(on); else if (db && A.claudeAdmin) await db.collection('admin').doc('lock').set({ on, t: Date.now() }); }
+  catch (e) { ok = false; IEgame.toast('Server-Fehler: Die Sperre konnte nicht gesetzt werden', 4); }
+  A.setLock(on);
+  if (ok) IEgame.toast(on ? '🔒 Server für alle Spieler GESPERRT' : '🔓 Server wieder freigegeben', 3);
+  return ok;
+};
+// Mond- & Sperr-Status regelmäßig vom Server holen (auch ohne Anmeldung)
+setTimeout(function moonPoll() { if (SRV() && SRV().state) SRV().state().then(r => { A.setMoon(!!r.moonOpen); A.setLock(!!r.locked); }).catch(() => { }); setTimeout(moonPoll, 20000); }, 1500);
 A.onBanned = function (opts) { showBanBox(opts); };
 async function submitAppealClaude(reason) {
   if (!db || !myId) throw Object.assign(new Error('nodb'), { code: 'no_session' });
@@ -224,7 +240,7 @@ function startPoll() {
     try {
       const me = await SRV().me();
       if (me.banned && !me.superAdmin) { A.onBanned(); return; }
-      A.setMoon(!!me.moonOpen);
+      A.setMoon(!!me.moonOpen); A.setLock(!!me.locked);
       A.canHide = !!me.canHide; if (!!me.hidden !== !!A.hidden) { A.hidden = !!me.hidden; showAdminUI(); }
       if (me.admin !== A.admin) { A.admin = me.admin; showAdminUI(); IEgame.toast(A.admin ? 'Du bist jetzt Admin!' : 'Deine Admin-Rechte wurden entfernt', 4); }
       if (me.grant) { const c = await SRV().claim(); if (c.grant) applyGrant(c.grant); }
@@ -242,6 +258,7 @@ async function openAdmin() {
   const g = IEgame;
   $('adFly').textContent = g.P.fly ? 'Flugmodus: An' : 'Flugmodus: Aus';
   $('adMoon').textContent = IEgame.IE.moonUnlocked ? 'Mond: offen für alle' : 'Mond: gesperrt';
+  if ($('adLock')) $('adLock').textContent = IEgame.IE.serverLocked ? '🔒 Server: GESPERRT' : '🔓 Server: offen';
   $('adUndercover').hidden = !A.canHide; $('adUndercover').textContent = A.hidden ? 'Undercover-Admin entfernen' : 'Wieder Undercover-Admin werden';
   $('adGod').textContent = g.game.ch && g.game.ch.god ? 'Unsterblich: An' : 'Unsterblich: Aus';
   $('adSpeed').value = g.P.flySpeed || 120; $('adSpeedV').textContent = Math.round(($('adSpeed').value) * 3.6) + ' km/h';
@@ -317,6 +334,7 @@ $('adUndercover').addEventListener('click', async () => {
   catch (e) { IEgame.toast('Fehler: ' + (e.code || 'Server'), 3); }
 });
 $('adMoon').addEventListener('click', async () => { const open = !IEgame.IE.moonUnlocked; await A.unlockMoon(open); $('adMoon').textContent = IEgame.IE.moonUnlocked ? 'Mond: offen für alle' : 'Mond: gesperrt'; });
+if ($('adLock')) $('adLock').addEventListener('click', async () => { const on = !IEgame.IE.serverLocked; await A.serverLock(on); $('adLock').textContent = IEgame.IE.serverLocked ? '🔒 Server: GESPERRT' : '🔓 Server: offen'; });
 $('adGod').addEventListener('click', () => { const g = IEgame; g.game.ch = g.game.ch || {}; g.game.ch.god = !g.game.ch.god; if (g.game.ch.god) g.hurtPlayer(0); $('adGod').textContent = g.game.ch.god ? 'Unsterblich: An' : 'Unsterblich: Aus'; g.toast(g.game.ch.god ? '★ Unsterblich' : 'Unsterblich aus', 2); });
 $('adSpeed').addEventListener('input', () => { const v = +$('adSpeed').value; $('adSpeedV').textContent = Math.round(v * 3.6) + ' km/h'; IEgame.P.flySpeed = v; });
 $('adYacht').addEventListener('click', () => { if (IEgame.game.state !== 'play') { IEgame.toast('Starte zuerst ein Spiel', 2); return; } IEgame.spawnAirship(); IEgame.closeModals(); });

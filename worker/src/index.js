@@ -58,7 +58,7 @@ export class Hub {
     const st = this.state.storage;
     let b = {}; if (req.method === 'POST') { try { b = await req.json(); } catch (e) { return j({ error: 'bad_json' }, 400); } }
     const token = b.token || url.searchParams.get('token');
-    if (action === 'state') return j({ moonOpen: !!(await st.get('moonOpen')) }); // öffentlich: Mond freigeschaltet?
+    if (action === 'state') return j({ moonOpen: !!(await st.get('moonOpen')), locked: !!(await st.get('serverLocked')) }); // öffentlich: Mond freigeschaltet? / Server gesperrt?
     if (action === 'houses') { const hs = await st.list({ prefix: 'h:' }), out = {}; for (const [k, v] of hs) out[k.slice(2)] = { slug: v.slug, nick: v.nick, paint: v.paint || 'standard' }; return j({ houses: out }); }
     if (action === 'register') {
       const nick = String(b.nick || '').trim().replace(/\s+/g, ' ');
@@ -92,7 +92,7 @@ export class Hub {
     const me = await this.session(token);
     if (action === 'check') return me ? j(this.pubAcc(me)) : j({ error: 'no_session' }, 401);
     if (!me) return j({ error: 'no_session' }, 401);
-    if (action === 'me') return j({ ...this.pubAcc(me), grant: me.grant || 0, moonOpen: !!(await st.get('moonOpen')) });
+    if (action === 'me') return j({ ...this.pubAcc(me), grant: me.grant || 0, moonOpen: !!(await st.get('moonOpen')), locked: !!(await st.get('serverLocked')) });
     if (action === 'house') { // Villen online: jede Villa kann nur EIN Spieler besitzen
       const id = String(b.id || ''); if (!/^[a-z0-9]{1,8}$/.test(id)) return j({ error: 'bad_id' }, 400);
       const key = 'h:' + id, cur = await st.get(key);
@@ -121,6 +121,7 @@ export class Hub {
     if (!isAdmin || (me.banned && !isSuper(me.slug))) return j({ error: 'not_admin' }, 403);
     if (action === 'undercover') { if (!canHide(me.slug)) return j({ error: 'forbidden' }, 403); me.revealed = b.on === false; await st.put('a:' + me.slug, me); return j({ ok: true, ...this.pubAcc(me) }); }
     if (action === 'moon') { if (b.open === false) await st.delete('moonOpen'); else await st.put('moonOpen', Date.now()); return j({ ok: true, moonOpen: b.open !== false }); } // Admin schaltet den Mond für alle frei
+    if (action === 'lock') { if (b.on) await st.put('serverLocked', Date.now()); else await st.delete('serverLocked'); return j({ ok: true, locked: !!b.on }); } // Admin sperrt/entsperrt den Server für alle
     if (action === 'list') {
       const accs = [...(await st.list({ prefix: 'a:' })).values()];
       const board = await st.list({ prefix: 'p:' });

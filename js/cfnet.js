@@ -102,6 +102,7 @@ const account = {
   save: (slot, data, t) => post('/acc/save', { token: tok(), slot, data, t }),
   load: slot => post('/acc/load', { token: tok(), slot }),
   moon: open => post('/acc/moon', { token: tok(), open: open !== false }),
+  lock: on => post('/acc/lock', { token: tok(), on: !!on }),
   state: () => post('/acc/state', {}),
   houses: () => post('/acc/houses', {}),
   house: (op, id, paint) => post('/acc/house', { token: tok(), op, id, paint }),

@@ -1987,6 +1987,9 @@ function frame() {
 }
 function frameBody() {
   const now = performance.now(); let dt = Math.min(0.05, (now - last) / 1000); last = now;
+  // Server-Sperre: Nicht-Admins können nicht spielen, solange ein Admin den Server gesperrt hat
+  if (IE.serverLocked && !(window.IEaccount && IEaccount.admin)) { const ls = $('lockScreen'); if (ls) ls.hidden = false; try { renderer.render(scene, camera); } catch (e) { } return; }
+  else { const ls = $('lockScreen'); if (ls && !ls.hidden) ls.hidden = true; }
   if (!$('wheel').hidden) dt *= 0.15;
   if (game.state === 'title') { titleCam(dt); renderer.render(scene, camera); return; }
   if (game.state !== 'play') return;
