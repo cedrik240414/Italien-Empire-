@@ -2463,6 +2463,74 @@ IE.extraUpdate = function (dt) {
   if (IE.raceBeam) IE.raceBeam.visible = !R;
   updateRace(dt); updateRob(dt); updateBankRob(dt);
 };
+// ===== Admin-Cutscene: Spionagejet über die hohen Berge Richtung Neapel =====
+(function () {
+  let CS = null;
+  const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  const vlerp = (a, b, t, out) => out.set(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t);
+  const curPos = new T.Vector3(), curLook = new T.Vector3();
+
+  IE.startCutscene = function () {
+    if (CS) return;
+    const g = G(), scene = g.scene;
+    const NP = IE.cityById.neapel;
+    const R = IE.geo(14.2, 41.75);                       // hoher Apennin-Kamm nördlich von Neapel
+    const dir = new T.Vector3(NP.x - R.x, 0, NP.z - R.z); dir.normalize();
+    const start = new T.Vector3(R.x - dir.x * 2200, 0, R.z - dir.z * 2200);
+    const end = new T.Vector3(NP.x + dir.x * 700, 0, NP.z + dir.z * 700);
+    const jetM = IE.makePlane(IE.planeById.blackbird); jetM.group.rotation.order = 'YXZ';
+    scene.add(jetM.group);
+    CS = { t: 0, dur: 21, jet: jetM, start, end, dir, NP, pos: new T.Vector3(), right: new T.Vector3(-dir.z, 0, dir.x) };
+    IE.cutscene = CS;
+    document.body.classList.add('cutsceneOn');
+    const box = document.getElementById('cutscene'); if (box) box.hidden = false;
+    const sk = document.getElementById('csSkip'); if (sk) sk.onclick = () => IE.endCutscene();
+    try { g.sfx && g.sfx('beep'); } catch (e) { }
+  };
+  IE.endCutscene = function () {
+    if (!CS) return;
+    try { G().scene.remove(CS.jet.group); } catch (e) { }
+    CS = null; IE.cutscene = null;
+    document.body.classList.remove('cutsceneOn');
+    const box = document.getElementById('cutscene'); if (box) box.hidden = true;
+  };
+  IE.cutsceneTick = function (dt) {
+    const cs = CS; if (!cs) return;
+    const g = G(), cam = g.camera;
+    cs.t += dt;
+    const tt = Math.min(1, cs.t / cs.dur), pe = ease(tt);
+    // Jet entlang des Pfades, immer über den Gipfeln
+    vlerp(cs.start, cs.end, pe, cs.pos);
+    cs.pos.y = Math.max(IE.groundH(cs.pos.x, cs.pos.z) + 70, 300 - pe * 120);
+    const D = cs.dir, Rt = cs.right, P = cs.pos;
+    cs.jet.group.position.copy(P);
+    cs.jet.group.rotation.y = Math.atan2(D.x, D.z);
+    cs.jet.group.rotation.x = -0.04 - pe * 0.06;
+    cs.jet.group.rotation.z = Math.sin(cs.t * 0.6) * 0.18;
+    // Himmel folgt der Kamera, großzügiger Nebel für die Fernsicht
+    if (IE.sky) IE.sky.position.copy(cam.position);
+    if (g.scene.fog) { g.scene.fog.near = 900; g.scene.fog.far = 9000; }
+    const shots = [[0, 0.20], [0.20, 0.40], [0.40, 0.58], [0.58, 0.74], [0.74, 1.01]];
+    let si = shots.findIndex(s => tt >= s[0] && tt < s[1]); if (si < 0) si = 4;
+    const lt = (tt - shots[si][0]) / (shots[si][1] - shots[si][0]);
+    if (si === 0) { // Totale über den Bergen
+      curPos.set(P.x - D.x * 120 + Rt.x * (270 - lt * 70), P.y + 150 - lt * 30, P.z - D.z * 120 + Rt.z * (270 - lt * 70)); curLook.set(P.x, P.y, P.z); cam.fov = 54;
+    } else if (si === 1) { // Nahaufnahme seitlich (Rumpf & Triebwerke)
+      const d = 13 + Math.sin(lt * Math.PI) * 3; curPos.set(P.x + Rt.x * d - D.x * 2, P.y + 2.5, P.z + Rt.z * d - D.z * 2); curLook.set(P.x, P.y + 1, P.z); cam.fov = 40;
+    } else if (si === 2) { // Unterseite / Nachbrenner
+      curPos.set(P.x + D.x * 26 + Rt.x * 5, P.y - 12, P.z + D.z * 26 + Rt.z * 5); curLook.set(P.x, P.y + 2, P.z); cam.fov = 48;
+    } else if (si === 3) { // Cockpit / Nase ganz nah
+      curPos.set(P.x + D.x * 17 + Rt.x * 3.2, P.y + 2.2, P.z + D.z * 17 + Rt.z * 3.2); curLook.set(P.x + D.x * 4, P.y + 1.2, P.z + D.z * 4); cam.fov = 36;
+    } else { // Enthüllung: Neapel & Vesuv
+      curPos.set(P.x - D.x * 130 + Rt.x * 70, P.y + 72, P.z - D.z * 130 + Rt.z * 70); curLook.set(P.x * 0.55 + cs.NP.x * 0.45, P.y * 0.62, P.z * 0.55 + cs.NP.z * 0.45); cam.fov = 60;
+    }
+    cam.position.copy(curPos); cam.lookAt(curLook); cam.updateProjectionMatrix();
+    const subs = ['Hoch über den Gipfeln der Berge …', 'Merlo Nero SR-71 · Überschall', 'Kurs Süd – die Nachbrenner glühen', 'Ziel in Sicht', 'Neapel.'];
+    const sub = document.getElementById('csSub'); if (sub && sub.textContent !== subs[si]) sub.textContent = subs[si];
+    if (cs.t >= cs.dur) IE.endCutscene();
+  };
+  addEventListener('keydown', e => { if (CS && (e.code === 'Escape' || e.code === 'Enter' || e.code === 'KeyP')) { e.preventDefault(); e.stopPropagation(); IE.endCutscene(); } }, true);
+})();
 IE.mapBase = function (g, s, x0, z0) {
   if (IE.trackPts) { g.strokeStyle = '#2b2d31'; g.lineWidth = 3; g.beginPath(); IE.trackPts.forEach((p, i) => { const x = (p.x - x0) * s, y = (p.z - z0) * s; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); g.stroke(); }
   if (IE.trackRoadPts) { g.strokeStyle = '#f2d36b'; g.lineWidth = 2; g.beginPath(); IE.trackRoadPts.forEach((p, i) => { const x = (p.x - x0) * s, y = (p.z - z0) * s; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); }

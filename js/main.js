@@ -2031,6 +2031,7 @@ function frameBody() {
   if (game.state === 'title') { titleCam(dt); renderer.render(scene, camera); return; }
   if (game.state !== 'play') return;
   game.time += dt;
+  if (IE.cutscene) { try { IE.cutsceneTick(dt); } catch (e) { console.error(e); IE.cutscene = null; document.body.classList.remove('cutsceneOn'); const b = $('cutscene'); if (b) b.hidden = true; } renderer.render(scene, camera); return; }
   readMove();
   // Einmal-Aktionen
   if (game.spectate && (!game.spectate.pos || (ONL() && IEonline.peers && !IEonline.peers.has(game.spectate.peer)) || !(game.spectate.pr && game.spectate.pr.str))) stopSpectate();

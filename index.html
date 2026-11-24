@@ -297,6 +297,13 @@ body.touch.playing #touch { display: block; }
 .ttop { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); display: flex; gap: 8px; left: calc(200px + env(safe-area-inset-left, 0px)); pointer-events: auto; }
 @media (prefers-reduced-motion: reduce) { #banner .in { animation: none; } #stars.flash .on { animation: none; } }
 @media (max-width: 700px) { #title .lead { font-size: 15px; } #obj { font-size: 18px; max-width: 46vw; } }
+#cutscene { position: fixed; inset: 0; z-index: 320; pointer-events: none; }
+#cutscene .csbar { position: absolute; left: 0; right: 0; height: 11%; background: #000; }
+#cutscene .csbar.top { top: 0; } #cutscene .csbar.bot { bottom: 0; }
+#csTitle { position: absolute; top: calc(11% + 14px); left: 24px; color: #f2c230; font: 700 20px 'Barlow Condensed', Arial; letter-spacing: 2px; text-shadow: 0 2px 6px #000; }
+#csSub { position: absolute; bottom: calc(11% + 18px); left: 24px; right: 24px; color: #f4f4f0; font: 600 24px 'Barlow Condensed', Arial; text-shadow: 0 2px 8px #000; }
+#csSkip { position: absolute; bottom: calc(11% + 14px); right: 20px; pointer-events: auto; background: rgba(0,0,0,0.55); color: #fff; border: 1px solid rgba(255,255,255,0.45); padding: 8px 14px; border-radius: 8px; font: 600 15px Arial; cursor: pointer; }
+body.cutsceneOn .hud, body.cutsceneOn .tb, body.cutsceneOn #joyBase, body.cutsceneOn #joyKnob, body.cutsceneOn #chatBtn, body.cutsceneOn #chatLog { display: none !important; }
 </style>
 
 <canvas id="c"></canvas>
@@ -353,7 +360,7 @@ body.touch.playing #touch { display: block; }
       <div><b>FEUER</b> Schießen (mit Zielhilfe)</div><div><b>EIN/AUS</b> Fahrzeug</div>
       <div><b>E</b> Shop / Mission</div><div><b>HOCH / RUNTER</b> Springen · Heli</div><div><b>TAUCHEN / AUF</b> Unter Wasser schwimmen</div><div><b>SICHT</b> Ego-Sicht umschalten</div><div><b>Kreis links</b> Waffenrad</div><div><b>Flugzeug</b> GAS +/− für Schub, Joystick hoch = Nase hoch</div>
     </div>
-    <div class="ver">Version 99</div>
+    <div class="ver">Version 100</div>
   </div>
 </div>
 
@@ -418,7 +425,8 @@ body.touch.playing #touch { display: block; }
     <button class="btn ghost" id="adXmas" style="font-size:15px;padding:6px 12px">Weihnachten testen: Aus</button>
     <button class="btn ghost" id="adMoon" style="font-size:15px;padding:6px 12px">Mond: gesperrt</button>
     <button class="btn" id="adLock" style="font-size:15px;padding:6px 12px;background:#7a0c14;border-color:#f2c230">🔓 Server: offen</button>
-    <button class="btn" id="adYacht" style="font-size:15px;padding:6px 12px">Flug-Yacht spawnen</button></span></div>
+    <button class="btn" id="adYacht" style="font-size:15px;padding:6px 12px">Flug-Yacht spawnen</button>
+    <button class="btn" id="adCut" style="font-size:15px;padding:6px 12px;background:#14203a;border-color:#6aa0ff">🎬 Cutscene</button></span></div>
   <div class="hint" style="padding-bottom:6px">Flugmodus: Joystick/WASD fliegt in Blickrichtung, HOCH/RUNTER (Leertaste/Shift) steigt und sinkt. Geld geben und nehmen kommt beim Spieler innerhalb von 15 Sekunden an (beim Nehmen nie unter 0 €).</div>
   <div class="opt" style="display:block"><div style="margin-bottom:8px">Cheats <span style="color:var(--muted);font-size:15px">· alles, was auch per Code geht – ein Tipp genügt</span></div><div id="adCheats" style="display:flex;flex-wrap:wrap;gap:8px"></div></div>
   <div class="opt" style="display:block"><div style="margin-bottom:8px">Teleportieren <span style="color:var(--muted);font-size:15px">· zu Spielern in deiner Lobby</span></div><div id="adTp" style="display:flex;flex-wrap:wrap;gap:8px"></div></div>
@@ -438,6 +446,12 @@ body.touch.playing #touch { display: block; }
 <div class="modal" id="packsModal" hidden><div class="panel" style="width:min(960px,100%)"><header><h2>🎁 Erweiterungen</h2><div style="display:flex;gap:14px;align-items:center"><span class="cash" id="packsCash"></span><button class="x" data-close>✕</button></div></header><div class="hint" style="border:0">Kaufe themen­basierte Packs mit Ingame-Geld – jedes schaltet schnelle Autos, Yachten, Flugzeuge, Skins und Spezialwaffen dauerhaft frei. Autos holst du danach im Autosalone / über „Meine Fahrzeuge“, Boote am Steg, Flugzeuge im Hangar, Skins im Kleiderschrank.</div><div class="packGrid" id="packsRows"></div></div></div>
 
 <div id="lockScreen" hidden><div class="lockBox"><div style="font-size:70px">🔒</div><h2>Server gesperrt</h2><p>Ein Admin hat den Server vorübergehend gesperrt.<br>Bitte habe etwas Geduld – sobald er wieder freigegeben ist, kannst du weiterspielen.</p></div></div>
+<div id="cutscene" hidden>
+  <div class="csbar top"></div><div class="csbar bot"></div>
+  <div id="csTitle">★ ADMIN-CUTSCENE · MERLO NERO SR-71</div>
+  <div id="csSub"></div>
+  <button id="csSkip">Überspringen ⏭</button>
+</div>
 <div id="chatLog"></div>
 <input id="chatInput" maxlength="120" placeholder="Nachricht … (Enter = senden, Esc = abbrechen)" autocomplete="off">
 <button id="chatBtn" title="Chat (T)">💬</button>
@@ -479,19 +493,19 @@ body.touch.playing #touch { display: block; }
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/data.js?v=99"></script>
-<script src="js/world.js?v=99"></script>
-<script src="js/entities.js?v=99"></script>
-<script src="js/extra.js?v=99"></script>
-<script src="js/main.js?v=99"></script>
-<script src="js/server-config.js?v=99"></script>
-<script src="js/cfnet.js?v=99"></script>
-<script src="js/online.js?v=99"></script>
-<script src="js/account.js?v=99"></script>
-<script src="js/launcher.js?v=99"></script>
-<script src="js/packs.js?v=99"></script>
-<script src="js/phone.js?v=99"></script>
-<script src="js/addons.js?v=99"></script>
+<script src="js/data.js?v=100"></script>
+<script src="js/world.js?v=100"></script>
+<script src="js/entities.js?v=100"></script>
+<script src="js/extra.js?v=100"></script>
+<script src="js/main.js?v=100"></script>
+<script src="js/server-config.js?v=100"></script>
+<script src="js/cfnet.js?v=100"></script>
+<script src="js/online.js?v=100"></script>
+<script src="js/account.js?v=100"></script>
+<script src="js/launcher.js?v=100"></script>
+<script src="js/packs.js?v=100"></script>
+<script src="js/phone.js?v=100"></script>
+<script src="js/addons.js?v=100"></script>
 <script>
 // Auto-Update: prüft regelmäßig, ob eine neue Version veröffentlicht wurde, und lädt dann automatisch neu.
 (function () {
