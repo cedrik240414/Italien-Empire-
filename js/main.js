@@ -340,7 +340,7 @@ function buildPlayerModel() {
   updateGunModel();
 }
 const GUN_LEN = { pistola: 0.28, revolver: 0.32, deagle: 0.36, mitra: 0.45, uzi: 0.38, cecchino: 1.1, heavysniper: 1.35, minigun: 1.0, rpg: 1.2, granat: 0.7, laser: 0.9, lmg: 1.0 };
-function updateGunModel() { const w = IE.weaponById[S.cur]; IE.setGunLen(P.h, !w || w.id === 'faust' || w.melee ? 0 : GUN_LEN[w.id] || 0.8, w && (w.id === 'minigun' || w.id === 'rpg') ? 2.6 : w && w.id === 'granat' ? 2 : 1); }
+function updateGunModel() { const w = IE.weaponById[S.cur]; IE.setGunLen(P.h, !w || w.id === 'faust' || w.melee ? 0 : GUN_LEN[w.id] || 0.8, w && (w.id === 'minigun' || w.id === 'rpg') ? 2.6 : w && w.id === 'granat' ? 2 : 1); P.h.hold = w && w.id === 'minigun' ? 'minigun' : w && (w.id === 'rpg' || w.id === 'granat') ? 'rpg' : ''; }
 // Feuer (Molotowcocktail): Flammen + Schaden über einige Sekunden
 IE.spawnFire = function (pos, r) {
   const flames = [];
