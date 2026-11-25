@@ -89,8 +89,16 @@ IE.animHuman = function (h, phase, amp, aiming, dead) {
   if (dead) return;
   const s = Math.sin(phase) * amp;
   h.legL.rotation.x = s; h.legR.rotation.x = -s;
-  h.armL.rotation.x = -s * 0.8;
-  if (aiming) { h.armR.rotation.x = -Math.PI / 2; h.armR.rotation.z = 0; } else h.armR.rotation.x = s * 0.8;
+  if (aiming) {
+    // beidhändig zielen: beide Arme nach vorne an die Waffe, die Stützhand führt zur Mitte
+    h.armR.rotation.set(-Math.PI / 2, -0.12, 0);
+    h.armL.rotation.set(-Math.PI / 2, 0.5, 0);
+    h.gun.rotation.x = Math.PI / 2;   // Lauf wieder nach vorne ausrichten (Arm-Drehung kompensieren)
+  } else {
+    h.armR.rotation.set(s * 0.8, 0, 0);
+    h.armL.rotation.set(-s * 0.8, 0, 0);
+    h.gun.rotation.x = 0;
+  }
 };
 IE.setGunLen = function (h, len, thick) { h.gun.visible = len > 0; if (len > 0) { h.gunMesh.scale.set(thick || 1, thick || 1, len / 0.3); h.gunMesh.position.z = len / 2 - 0.05; } };
 
