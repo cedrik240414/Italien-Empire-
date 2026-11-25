@@ -90,8 +90,8 @@ IE.animHuman = function (h, phase, amp, aiming, dead) {
   const s = Math.sin(phase) * amp;
   h.legL.rotation.x = s; h.legR.rotation.x = -s;
   if (aiming) {
-    if (h.hold === 'rpg') {            // Raketenwerfer auf der Schulter
-      h.armR.rotation.set(-2.5, -0.1, 0); h.armL.rotation.set(-1.45, 0.5, 0); h.gun.rotation.x = 2.5;
+    if (h.hold === 'rpg') {            // Raketenwerfer auf der Schulter, Rohr nach vorne (leicht angehoben)
+      h.armR.rotation.set(-1.7, -0.1, 0); h.armL.rotation.set(-1.4, 0.45, 0); h.gun.rotation.x = 1.45;
     } else if (h.hold === 'minigun') { // Minigun beidhändig tief vor dem Körper
       h.armR.rotation.set(-0.95, -0.12, 0); h.armL.rotation.set(-0.95, 0.35, 0); h.gun.rotation.x = 0.95;
     } else {                            // normale Waffe: beidhändig, beide Hände an der Waffe
